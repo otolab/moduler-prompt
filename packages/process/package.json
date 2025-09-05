@@ -34,7 +34,8 @@
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {
-    "@moduler-prompt/core": "*"
+    "@moduler-prompt/core": "*",
+    "@moduler-prompt/driver": "*"
   },
   "devDependencies": {
     "@eslint/js": "^9.34.0",
