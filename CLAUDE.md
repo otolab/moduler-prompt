@@ -1,0 +1,51 @@
+# Claude向けインデックス
+
+このドキュメントは、Claudeが効率的にコードベースを理解・操作するためのインデックスです。
+
+## プロジェクト概要
+
+モジュラープロンプトフレームワーク - プロンプトを再利用可能なモジュールとして構築・管理するTypeScriptフレームワーク
+
+## コア機能
+
+### 型定義 (`packages/core/src/types.ts`)
+- `PromptModule<TContext>` - 標準セクションは自動的にSectionElementになる
+- `Element` - 6種類の要素型（Text, Message, Material, Chunk, Section, SubSection）
+- `DynamicContent` - 動的コンテンツ生成（Section/SubSection生成不可）
+- `SectionContent` - 標準セクションの内容型（string | SubSectionElement | DynamicContent）
+
+### マージ (`packages/core/src/merge.ts`)
+- `merge(...modules)` - 複数モジュールの統合
+- 同名サブセクションのitemsを結合
+- createContextは全て実行して結果をマージ（後の値で上書き）
+- 順序制御: 通常要素 → サブセクション
+
+### コンパイル (`packages/core/src/compile.ts`)
+- `compile(module, context)` - 標準セクションを自動的にSectionElementに変換
+- DynamicContentを実行して文字列に変換
+- セクション内の要素を並び替え（通常要素 → サブセクション）
+- セクション分類（instructions/data/output）
+
+## 重要な制約
+
+1. **階層制限**: 最大2階層（Section → SubSection → string）
+2. **動的コンテンツ制約**: DynamicContentはSection/SubSectionを生成不可
+3. **要素順序**: セクション内でも通常要素 → サブセクションの順序
+4. **標準セクション**: 自動的にSectionElementとして処理される
+
+## テスト
+
+- `*.test.ts` - 実装と同階層にユニットテスト配置
+- 包括的なマージ・コンパイルテスト実装済み
+
+## 今後の実装予定
+
+- [ ] `@moduler-prompt/driver` - 各種AIモデルドライバー
+- [ ] `@moduler-prompt/process` - ストリーム処理等のパターン
+- [ ] `@moduler-prompt/presets` - 事前定義モジュール集
+
+## 主要ドキュメント
+
+- [仕様書](./docs/PROMPT_MODULE_SPEC_V2.md)
+- [API](./docs/API.md)
+- [Getting Started](./docs/GETTING_STARTED.md)

@@ -1,33 +1,18 @@
-/**
- * Compile functionality for PromptModules
- */
-
 import type {
   PromptModule,
-  ModuleContent,
   CompiledPrompt,
-  Element,
-  TextElement,
-  DynamicContent,
-  Context,
-  SectionType,
-  standardSections
-} from './types.js';
-
-import { standardSections as sections } from './types.js';
+  SectionContent,
+  StandardSectionName,
+  SectionElement,
+  SubSectionElement,
+  DynamicElement
+} from './types';
+import { STANDARD_SECTIONS } from './types';
 
 /**
- * Get section type by section name
+ * モジュールとコンテキストからプロンプトをコンパイル
  */
-function getSectionType(sectionName: string): SectionType {
-  const section = sections.find(s => s.name === sectionName);
-  return section?.type || 'data'; // Default to 'data' for unknown sections
-}
-
-/**
- * Compile a PromptModule with context into a CompiledPrompt
- */
-export function compile<TContext = Context>(
+export function compile<TContext = any>(
   module: PromptModule<TContext>,
   context: TContext
 ): CompiledPrompt {
@@ -36,89 +21,116 @@ export function compile<TContext = Context>(
     data: [],
     output: []
   };
-  
-  // Process each section
-  for (const [sectionName, sectionContent] of Object.entries(module)) {
-    // Skip non-content properties
-    if (sectionName === 'createContext' || !sectionContent) {
-      continue;
-    }
-    
-    // Get the section type
-    const sectionType = getSectionType(sectionName);
-    
-    // Compile the section content
-    const compiledElements = compileSection(
-      sectionContent as ModuleContent<TContext>,
+
+  // 標準セクションを処理
+  for (const sectionName of Object.keys(STANDARD_SECTIONS) as StandardSectionName[]) {
+    const sectionContent = module[sectionName];
+    if (!sectionContent) continue;
+
+    const sectionDef = STANDARD_SECTIONS[sectionName];
+    const sectionElement = compileSectionToElement(
+      sectionContent,
+      sectionDef.title,
       context
     );
-    
-    // Add section header as a text element
-    const sectionDef = sections.find(s => s.name === sectionName);
-    if (sectionDef && compiledElements.length > 0) {
-      const headerElement: TextElement = {
-        type: 'text',
-        content: `${sectionDef.title}\n${'='.repeat(sectionDef.title.length)}`
-      };
-      compiled[sectionType].push(headerElement);
-    }
-    
-    // Add compiled elements
-    compiled[sectionType].push(...compiledElements);
+
+    // セクションタイプに応じて分類
+    compiled[sectionDef.type].push(sectionElement);
   }
-  
+
   return compiled;
 }
 
 /**
- * Compile a section's content
+ * セクションコンテンツをSectionElementにコンパイル
  */
-function compileSection<TContext>(
-  content: ModuleContent<TContext>,
+function compileSectionToElement<TContext>(
+  content: SectionContent<TContext>,
+  title: string,
   context: TContext
-): Element[] {
-  const elements: Element[] = [];
-  
+): SectionElement {
+  const plainItems: string[] = [];
+  const subsections: SubSectionElement[] = [];
+
   for (const item of content) {
     if (typeof item === 'function') {
-      // Execute DynamicContent
-      const result = (item as DynamicContent<TContext>)(context);
-      
-      if (result) {
-        if (Array.isArray(result)) {
-          // DynamicElement[]
-          elements.push(...result);
-        } else {
-          // Single DynamicElement
-          elements.push(result);
+      // DynamicContentを実行
+      const dynamicResult = item(context);
+      if (dynamicResult) {
+        // DynamicElementを文字列に変換して追加
+        const dynamicElements = Array.isArray(dynamicResult) ? dynamicResult : [dynamicResult];
+        for (const element of dynamicElements) {
+          plainItems.push(formatDynamicElementAsString(element));
         }
       }
-      // null/undefined results are ignored
     } else if (typeof item === 'string') {
-      // Convert string to TextElement
-      elements.push({
-        type: 'text',
-        content: item
-      } as TextElement);
-    } else if (typeof item === 'object' && 'type' in item) {
-      // Already an Element (including SectionElement and SubSectionElement if statically defined)
-      elements.push(item as Element);
+      // 文字列はそのまま追加
+      plainItems.push(item);
+    } else if (item.type === 'subsection') {
+      // SubSectionElementは別に保持
+      subsections.push(item);
     }
-    // Unknown types are ignored
   }
-  
-  return elements;
+
+  // 順序: 通常要素 → サブセクション
+  const items: (string | SubSectionElement)[] = [
+    ...plainItems,
+    ...subsections
+  ];
+
+  return {
+    type: 'section',
+    content: '',
+    title,
+    items
+  };
 }
 
 /**
- * Helper function to create a context if module provides createContext
+ * DynamicElementを文字列に変換
  */
-export function createContext<TContext = Context>(
+function formatDynamicElementAsString(element: DynamicElement): string {
+  switch (element.type) {
+    case 'text':
+      return element.content;
+    
+    case 'message':
+      const role = element.role.charAt(0).toUpperCase() + element.role.slice(1);
+      const content = typeof element.content === 'string' 
+        ? element.content 
+        : '[attachments]';
+      return element.name 
+        ? `[${role} - ${element.name}]: ${content}`
+        : `[${role}]: ${content}`;
+    
+    case 'material':
+      const materialContent = typeof element.content === 'string'
+        ? element.content
+        : '[attachments]';
+      return `[Material: ${element.title}]\n${materialContent}`;
+    
+    case 'chunk':
+      const chunkContent = typeof element.content === 'string'
+        ? element.content
+        : '[attachments]';
+      return `[Chunk from ${element.partOf}]\n${chunkContent}`;
+    
+    default:
+      // 型の網羅性チェック
+      const _exhaustive: never = element;
+      void _exhaustive;
+      return '';
+  }
+}
+
+/**
+ * コンテキストを作成するヘルパー関数
+ */
+export function createContext<TContext = any>(
   module: PromptModule<TContext>
 ): TContext {
   if (module.createContext) {
     return module.createContext();
   }
-  // Return empty object as fallback
   return {} as TContext;
 }

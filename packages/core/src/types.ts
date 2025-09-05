@@ -1,22 +1,6 @@
-/**
- * Core type definitions for the Modular Prompt Framework
- */
+// 基本型定義
 
-// ============================================================================
-// Base Types
-// ============================================================================
-
-/**
- * Content with token usage information
- */
-export interface ContentWithUsage {
-  content: string;
-  usage: number;
-}
-
-/**
- * Attachment for multimodal content
- */
+// Attachment定義
 export interface Attachment {
   type: 'text' | 'image_url' | 'file';
   text?: string;
@@ -24,232 +8,130 @@ export interface Attachment {
   file?: { path: string; mime_type: string };
 }
 
-// ============================================================================
-// Element Types
-// ============================================================================
-
-/**
- * Base element interface
- */
-interface BaseElement {
-  type: string;
-  content: string | Attachment[];
-}
-
-/**
- * Text element - simple text content
- */
-export interface TextElement extends BaseElement {
+// テキスト要素
+export interface TextElement {
   type: 'text';
   content: string;
 }
 
-/**
- * Message element - chat message with role
- */
-export interface MessageElement extends BaseElement {
+// メッセージ要素
+export interface MessageElement {
   type: 'message';
-  content: string;
+  content: string | Attachment[];
   role: 'system' | 'assistant' | 'user';
   name?: string;
-  attachments?: Attachment[];
 }
 
-/**
- * Material element - reference material
- */
-export interface MaterialElement extends BaseElement {
+// 資料要素
+export interface MaterialElement {
   type: 'material';
-  content: string;
+  content: string | Attachment[];
   id: string;
   title: string;
   usage?: number;
-  attachments?: Attachment[];
 }
 
-/**
- * Chunk element - split text chunk
- */
-export interface ChunkElement extends BaseElement {
+// 分割テキスト要素
+export interface ChunkElement {
   type: 'chunk';
-  content: string;
+  content: string | Attachment[];
   partOf: string;
   index?: number;
   usage?: number;
-  attachments?: Attachment[];
 }
 
-/**
- * Section element (first level hierarchy)
- */
-export interface SectionElement extends BaseElement {
+// セクション要素（第1階層）
+export interface SectionElement<TContext = any> {
   type: 'section';
   content: string;
   title: string;
-  items: (string | SubSectionElement)[];  // Items are interpreted as bullet points
+  items: (string | SubSectionElement | DynamicContent<TContext>)[];
 }
 
-/**
- * Subsection element (second level hierarchy)
- */
-export interface SubSectionElement extends BaseElement {
+// サブセクション要素（第2階層）
+export interface SubSectionElement {
   type: 'subsection';
   content: string;
   title: string;
-  items: string[];  // Only strings, interpreted as bullet points
+  items: string[];
 }
 
-/**
- * All element types
- */
+// 統合型
 export type Element = 
   | TextElement
-  | MessageElement
-  | MaterialElement
-  | ChunkElement
+  | MessageElement 
+  | MaterialElement 
+  | ChunkElement 
   | SectionElement
   | SubSectionElement;
 
-/**
- * Elements that can be dynamically generated
- * (excludes SectionElement and SubSectionElement)
- */
+// 動的に生成できる要素（構造要素は除外）
 export type DynamicElement = 
   | TextElement
-  | MessageElement
-  | MaterialElement
+  | MessageElement 
+  | MaterialElement 
   | ChunkElement;
 
-// ============================================================================
-// Context Types
-// ============================================================================
+// コンテキストに基づいて動的に要素を生成
+export type DynamicContent<TContext = any> = 
+  (context: TContext) => DynamicElement[] | DynamicElement | null;
 
-/**
- * Context is freely defined by each PromptModule
- * Core framework only defines that Context exists
- */
-export type Context = any;
+// セクションコンテンツ型
+export type SectionContent<TContext = any> = 
+  (string | SubSectionElement | DynamicContent<TContext>)[];
 
-/**
- * Common context types for reuse (not enforced)
- */
-
-export interface Material extends ContentWithUsage {
-  id: string;
-  title: string;
-  attachments?: Attachment[];
-}
-
-export interface Chunk extends ContentWithUsage {
-  partOf: string;
-  attachments?: Attachment[];
-}
-
-export interface Message {
-  content: string;
-  role: 'system' | 'assistant' | 'user';
-  usage?: number;
-  name?: string;
-  attachments?: Attachment[];
-}
-
-// ============================================================================
-// Section Definitions
-// ============================================================================
-
-/**
- * Section type classification
- */
-export type SectionType = 'instructions' | 'data' | 'output';
-
-/**
- * Section definition
- */
-export interface SectionDefinition {
-  name: string;
-  type: SectionType;
-  title: string;
-}
-
-/**
- * Standard sections provided by the framework
- */
-export const standardSections: SectionDefinition[] = [
-  // Instructions sections
-  { name: 'objective', type: 'instructions', title: 'Objective and Role' },
-  { name: 'terms', type: 'instructions', title: 'Term Explanations' },
-  { name: 'processing', type: 'instructions', title: 'Processing Algorithm' },
-  { name: 'instructions', type: 'instructions', title: 'Instructions' },
-  { name: 'guidelines', type: 'instructions', title: 'Guidelines' },
-  { name: 'preparationNote', type: 'instructions', title: 'Response Preparation Note' },
-  
-  // Data sections
-  { name: 'state', type: 'data', title: 'Current State' },
-  { name: 'materials', type: 'data', title: 'Prepared Materials' },
-  { name: 'chunks', type: 'data', title: 'Input Chunks' },
-  { name: 'messages', type: 'data', title: 'Messages' },
-  
-  // Output sections
-  { name: 'cue', type: 'output', title: 'Output' },
-  { name: 'schema', type: 'output', title: 'Output Schema' }
-];
-
-// ============================================================================
-// Module Types
-// ============================================================================
-
-/**
- * Dynamic content generator function
- */
-export type DynamicContent<TContext = Context> = (
-  context: TContext
-) => DynamicElement[] | DynamicElement | null;
-
-/**
- * Module content can be string, Element, or DynamicContent
- */
-export type ModuleContent<TContext = Context> = (
-  | string
-  | Element
-  | DynamicContent<TContext>
-)[];
-
-/**
- * Prompt module definition
- */
-export interface PromptModule<TContext = Context> {
-  // Context creation
+// プロンプトモジュール
+export interface PromptModule<TContext = any> {
+  // コンテキストの生成
   createContext?: () => TContext;
   
-  // Instructions sections
-  objective?: ModuleContent<TContext>;
-  terms?: ModuleContent<TContext>;
-  processing?: ModuleContent<TContext>;
-  instructions?: ModuleContent<TContext>;
-  guidelines?: ModuleContent<TContext>;
-  preparationNote?: ModuleContent<TContext>;
+  // Instructions セクション
+  objective?: SectionContent<TContext>;
+  terms?: SectionContent<TContext>;
+  processing?: SectionContent<TContext>;
+  instructions?: SectionContent<TContext>;
+  guidelines?: SectionContent<TContext>;
+  preparationNote?: SectionContent<TContext>;
   
-  // Data sections
-  state?: ModuleContent<TContext>;
-  materials?: ModuleContent<TContext>;
-  chunks?: ModuleContent<TContext>;
-  messages?: ModuleContent<TContext>;
+  // Data セクション
+  state?: SectionContent<TContext>;
+  materials?: SectionContent<TContext>;
+  chunks?: SectionContent<TContext>;
+  messages?: SectionContent<TContext>;
   
-  // Output sections
-  cue?: ModuleContent<TContext>;
-  schema?: ModuleContent<TContext>;
-  
-  // Allow custom sections (for future extension)
-  [key: string]: any;
+  // Output セクション
+  cue?: SectionContent<TContext>;
+  schema?: SectionContent<TContext>;
 }
 
-// ============================================================================
-// Compiled Types
-// ============================================================================
+// 標準セクション定義
+export const STANDARD_SECTIONS = {
+  // Instructions
+  objective: { type: 'instructions' as const, title: 'Objective and Role' },
+  terms: { type: 'instructions' as const, title: 'Term Explanations' },
+  processing: { type: 'instructions' as const, title: 'Processing Algorithm' },
+  instructions: { type: 'instructions' as const, title: 'Instructions' },
+  guidelines: { type: 'instructions' as const, title: 'Guidelines' },
+  preparationNote: { type: 'instructions' as const, title: 'Response Preparation Note' },
+  
+  // Data
+  state: { type: 'data' as const, title: 'Current State' },
+  materials: { type: 'data' as const, title: 'Prepared Materials' },
+  chunks: { type: 'data' as const, title: 'Input Chunks' },
+  messages: { type: 'data' as const, title: 'Messages' },
+  
+  // Output
+  cue: { type: 'output' as const, title: 'Output' },
+  schema: { type: 'output' as const, title: 'Output Schema' }
+} as const;
 
-/**
- * Compiled prompt with elements organized by section type
- */
+// セクション名の型
+export type StandardSectionName = keyof typeof STANDARD_SECTIONS;
+
+// セクションタイプの型
+export type SectionType = 'instructions' | 'data' | 'output';
+
+// コンパイル済みプロンプト
 export interface CompiledPrompt {
   instructions: Element[];
   data: Element[];
