@@ -31,7 +31,7 @@ interface WorkflowResult<TContext> {
 
 interface WorkflowError<TContext> extends Error {
   context: TContext;        // エラー時点のコンテキスト（再開可能）
-  partial?: string;         // 部分的な出力
+  partialResult?: string;   // 部分的な出力
 }
 ```
 
@@ -80,101 +80,15 @@ interface WorkflowError<TContext> extends Error {
 3. 要約フェーズ: チャンクごとに要約を生成・統合
 4. サイズ調整と最終出力
 
-### 3. AnalysisWorkflow
+### 3. StreamWorkflow
 
-コンテンツの詳細分析。
+ステートを保持しながらチャンクを逐次処理。
 
-**コンテキスト**:
-- `content`: 分析対象
-- `analysisType`: 分析タイプ
-- `criteria`: 分析基準
-- `currentAnalysis`: 現在の分析結果
+### 4. ConcatWorkflow
 
-**オプション**:
-- `type`: 分析タイプ (structure/content/quality/comprehensive)
-- `depth`: 分析深度 (shallow/deep)
-- `criteria`: カスタム分析基準
-- `chunkSize`: チャンクサイズ
-
-**処理フロー**:
-1. コンテンツをチャンクに分割
-2. 浅い分析: 単一パスで分析
-3. 深い分析: StreamProcessingを使用して段階的分析
-4. 分析結果の統合
-
-## ワークフロー間の連携
-
-ワークフローは独立していますが、必要に応じて連携可能：
-
-```typescript
-// SummarizeWorkflow内でStreamProcessingを利用
-const summarizeModule = merge(
-  streamProcessing,
-  contentSummarize
-);
-
-// DialogueWorkflow内でSummarizeWorkflowを利用（将来実装）
-class DialogueWorkflow {
-  private summarizer?: SummarizeWorkflow;
-  
-  async execute(...) {
-    if (needsSummarization) {
-      const summary = await this.summarizer.summarize(...);
-      // 要約結果を使用
-    }
-  }
-}
-```
+各チャンクを独立して処理し、結果を結合。
 
 ## エラーハンドリングと再開
 
-```typescript
-try {
-  const result = await workflow.execute(driver, context, options);
-} catch (error) {
-  if (isWorkflowError(error)) {
-    // エラー時点のコンテキストで再開可能
-    const recoveredResult = await workflow.execute(
-      driver, 
-      error.context,  // 保存されたコンテキスト
-      options
-    );
-  }
-}
-```
-
-## 使用例
-
-```typescript
-// DialogueWorkflow
-const dialogue = new DialogueWorkflow();
-const result = await dialogue.respond(
-  driver,
-  "こんにちは",
-  { messages: [] },
-  { twoPass: true }
-);
-
-// SummarizeWorkflow
-const summarizer = new SummarizeWorkflow();
-const summary = await summarizer.summarize(
-  driver,
-  longText,
-  { targetTokens: 500, enableAnalysis: true }
-);
-
-// AnalysisWorkflow
-const analyzer = new AnalysisWorkflow();
-const analysis = await analyzer.analyze(
-  driver,
-  codeContent,
-  { type: 'structure', depth: 'deep' }
-);
-```
-
-## 今後の拡張
-
-- ストリーミング実行のサポート
-- ワークフローの合成・パイプライン
-- 進捗レポート機能
+ワークフローはステートレス関数として実装され、エラー時にコンテキストを返すため、処理を再開できます。
 - メトリクス収集

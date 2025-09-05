@@ -298,24 +298,27 @@ interface Attachment {
 
 ## @moduler-prompt/process
 
+### ワークフロー
+
+#### `streamProcess(driver, module, context, options)`
+ステートを保持しながらチャンクを逐次処理。
+
+#### `concatProcess(driver, module, context, options)`
+各チャンクを独立して処理し、結果を結合。
+
 ### モジュール
+
+#### `streamProcessing`
+チャンク単位の逐次処理と状態管理。
 
 #### `withMaterials`
 参考資料をプロンプトに含めるモジュール。
 
-#### `answerWithReferences`
-資料を参照しながら回答する指示を追加。
+#### `dialogueモジュール群`
+対話処理用モジュール。
 
-#### `streamProcessing`
-チャンク単位の逐次処理と状態管理。コンテキストに基づいて以下を動的に制御：
-- 出力サイズ制御（`targetTokens`設定時）
-- 初回・最終イテレーションの検出と適切な指示
-- 状態のサイズが閾値を超えた場合の積極的な削減
-
-### ワークフロー
-
-#### `createStreamWorkflow(config)`
-処理アルゴリズムとストリーム処理を組み合わせる。
+#### `summarizeモジュール群`
+要約処理用モジュール。
 
 #### `StreamProcessor`
 チャンクのバッチ処理とステート管理を実行するクラス。
