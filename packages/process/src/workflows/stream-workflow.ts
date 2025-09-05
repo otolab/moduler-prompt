@@ -1,132 +1,138 @@
-import { merge, compile } from '@moduler-prompt/core';
-import type { PromptModule, CompiledPrompt } from '@moduler-prompt/core';
-import { streamProcessing } from '../modules/stream-processing.js';
+import { compile } from '@moduler-prompt/core';
+import type { PromptModule } from '@moduler-prompt/core';
+import { WorkflowExecutionError, type AIDriver, type WorkflowResult } from './types.js';
 import type { StreamProcessingContext } from '../modules/stream-processing.js';
 
 /**
- * Stream workflow configuration
+ * Options for stream workflow
  */
-export interface StreamWorkflowConfig {
-  /** Base algorithm module for processing */
-  algorithm: PromptModule<any>;
-  /** Whether to enable size control */
-  sizeControl?: boolean;
-  /** Target token size for size control */
+export interface StreamWorkflowOptions {
+  tokenLimit?: number;
+  maxChunk?: number;
   targetTokens?: number;
 }
 
 /**
- * Stream workflow context
+ * Get next range of chunks to process
  */
-export interface StreamWorkflowContext extends StreamProcessingContext {
-  iteration?: number;
-  totalIterations?: number;
+function getNextRange(
+  chunks: StreamProcessingContext['chunks'],
+  currentRange?: { start?: number; end?: number },
+  options?: { tokenLimit?: number; maxChunk?: number }
+): { start: number; end: number } | undefined {
+  const {
+    tokenLimit = 128000,
+    maxChunk = 100,
+  } = options || {};
+
+  if (!chunks || chunks.length === 0) {
+    return undefined;
+  }
+
+  const range = { ...currentRange };
+
+  if (range.end === undefined) {
+    range.end = 0;
+  } else {
+    range.start = range.end;
+  }
+  if (range.start === undefined) {
+    range.start = range.end;
+  }
+
+  let tokens = 0;
+  for (let i = range.start; i < chunks.length; i++) {
+    tokens += chunks[i].usage || 0;
+    range.end = i + 1;
+
+    if (tokens > tokenLimit || range.end - range.start > maxChunk) {
+      break;
+    }
+  }
+
+  if (range.start >= range.end) {
+    return undefined; // done
+  }
+
+  return range as { start: number; end: number };
 }
 
 /**
- * Creates a stream processing workflow
+ * Stream processing workflow - processes chunks sequentially with state accumulation
+ * Each iteration processes a range of chunks and updates the state
  */
-export function createStreamWorkflow(config: StreamWorkflowConfig): PromptModule<StreamWorkflowContext> {
-  // Base stream processing module already handles size control dynamically
-  const baseModule = streamProcessing;
+export async function streamProcess(
+  driver: AIDriver,
+  module: PromptModule<StreamProcessingContext>,
+  context: StreamProcessingContext,
+  options: StreamWorkflowOptions = {}
+): Promise<WorkflowResult<StreamProcessingContext>> {
   
-  // Merge base stream processing with the algorithm
-  const workflowModule = merge(baseModule, config.algorithm);
-  
-  // Add workflow-specific enhancements
-  const enhancedModule: PromptModule<StreamWorkflowContext> = {
-    ...workflowModule,
-    
-    objective: [
-      ...(workflowModule.objective || []),
-      (context) => {
-        if (context.iteration && context.totalIterations) {
-          return {
-            type: 'text',
-            content: `This is iteration ${context.iteration} of ${context.totalIterations} in the stream processing workflow.`
-          };
-        }
-        return null;
-      }
-    ],
-    
-    createContext: () => ({
-      targetTokens: config.targetTokens,
-      ...workflowModule.createContext?.()
-    })
+  const {
+    tokenLimit,
+    maxChunk,
+    targetTokens
+  } = options;
+
+  if (!context.chunks || context.chunks.length === 0) {
+    throw new Error('No chunks provided for stream processing');
+  }
+
+  // Initialize or use existing state
+  let state: StreamProcessingContext['state'] = context.state || {
+    content: '',
+    usage: 0
   };
-  
-  return enhancedModule;
-}
 
-/**
- * Executes a single iteration of stream processing
- */
-export async function executeStreamIteration(
-  workflow: PromptModule<StreamWorkflowContext>,
-  context: StreamWorkflowContext
-): Promise<CompiledPrompt> {
-  return compile(workflow, context);
-}
+  // Calculate initial range
+  let range = getNextRange(context.chunks, context.range, { tokenLimit, maxChunk });
+  
+  while (range) {
+    const iterationContext: StreamProcessingContext = {
+      ...context,
+      state,
+      range,
+      targetTokens
+    };
 
-/**
- * Stream processing runner
- */
-export class StreamProcessor<TContext extends StreamWorkflowContext = StreamWorkflowContext> {
-  private workflow: PromptModule<TContext>;
-  private currentState: string = '';
-  private iteration: number = 0;
-  
-  constructor(workflow: PromptModule<TContext>) {
-    this.workflow = workflow;
-  }
-  
-  /**
-   * Process a batch of chunks
-   */
-  async processBatch(
-    chunks: TContext['chunks'],
-    context?: Partial<TContext>
-  ): Promise<CompiledPrompt> {
-    this.iteration++;
+    const prompt = compile(module, iterationContext);
     
-    const fullContext: TContext = {
-      chunks,
-      state: {
-        content: this.currentState,
-        usage: this.currentState.length // Simplified token counting
-      },
-      iteration: this.iteration,
-      ...context
-    } as TContext;
-    
-    const result = await executeStreamIteration(this.workflow as unknown as PromptModule<StreamWorkflowContext>, fullContext as unknown as StreamWorkflowContext);
-    
-    // Extract the next state from the result
-    // This would typically be parsed from the AI response
-    // For now, we return the compiled prompt
-    return result;
+    let nextState: string;
+    try {
+      nextState = await driver.query(prompt);
+    } catch (error) {
+      // Return error with context that can be used to resume
+      throw new WorkflowExecutionError(error as Error, {
+        ...context,
+        state,
+        range
+      }, {
+        phase: 'stream-iteration',
+        partialResult: state.content
+      });
+    }
+
+    // Update state with the result
+    state = {
+      content: nextState,
+      usage: nextState.length // Simplified token counting
+    };
+
+    range = getNextRange(context.chunks, range, { tokenLimit, maxChunk });
   }
-  
-  /**
-   * Update the current state
-   */
-  updateState(newState: string): void {
-    this.currentState = newState;
-  }
-  
-  /**
-   * Get the current state
-   */
-  getState(): string {
-    return this.currentState;
-  }
-  
-  /**
-   * Reset the processor
-   */
-  reset(): void {
-    this.currentState = '';
-    this.iteration = 0;
-  }
+
+  const finalContext: StreamProcessingContext = {
+    ...context,
+    state,
+    range: undefined // Processing complete
+  };
+
+  return {
+    output: state.content,
+    context: finalContext,
+    metadata: {
+      finalLength: state.content.length,
+      targetTokens
+    }
+  };
 }

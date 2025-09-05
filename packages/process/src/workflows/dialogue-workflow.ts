@@ -9,10 +9,10 @@ import {
 import { withMaterials } from '../modules/material.js';
 import type { DialogueContext } from '../modules/dialogue.js';
 import type { MaterialContext } from '../modules/material.js';
-import { ModuleWorkflow, WorkflowExecutionError, type AIDriver, type WorkflowResult } from './types.js';
+import { WorkflowExecutionError, type AIDriver, type WorkflowResult } from './types.js';
 
 /**
- * Extended dialogue context with materials
+ * Extended dialogue context with materials and preparation note
  */
 export interface DialogueWorkflowContext extends DialogueContext, MaterialContext {
   preparationNote?: {
@@ -30,136 +30,112 @@ export interface DialogueWorkflowOptions {
 }
 
 /**
- * Dialogue workflow implementation
+ * Dialogue workflow - handles conversational interactions with optional two-pass processing
  */
-export class DialogueWorkflow extends ModuleWorkflow<DialogueWorkflowContext, DialogueWorkflowOptions> {
+export async function dialogueProcess(
+  driver: AIDriver,
+  module: PromptModule<DialogueWorkflowContext>,
+  context: DialogueWorkflowContext,
+  options: DialogueWorkflowOptions = {}
+): Promise<WorkflowResult<DialogueWorkflowContext>> {
   
-  constructor(baseModule?: PromptModule<DialogueWorkflowContext>) {
-    super(baseModule || dialogueBase);
+  const { twoPass = false, maintainState = false, includematerials = false } = options;
+  
+  // Build the module based on options
+  let workflowModule = module;
+  
+  if (maintainState) {
+    workflowModule = merge(workflowModule, withTalkState);
   }
-
-  async execute(
-    driver: AIDriver,
-    context: DialogueWorkflowContext,
-    options: DialogueWorkflowOptions = {}
-  ): Promise<WorkflowResult<DialogueWorkflowContext>> {
-    
-    const { twoPass = false, maintainState = false, includematerials = false } = options;
-    
-    // Build the module based on options (let these fail if there's a code error)
-    let workflowModule = this.module;
-    
-    if (maintainState) {
-      workflowModule = merge(workflowModule, withTalkState);
-    }
-    
-    if (includematerials && context.materials) {
-      workflowModule = merge(workflowModule, withMaterials);
-    }
-    
-    if (twoPass) {
-      // First pass: Generate preparation notes
-      const firstPassModule = merge(workflowModule, firstOfTwoPassResponse);
-      const firstPassPrompt = compile(firstPassModule, context);
-      
-      let preparationNote: string;
-      try {
-        preparationNote = await driver.query(firstPassPrompt);
-      } catch (error) {
-        // Preserve context on driver error for first pass
-        throw new WorkflowExecutionError(error as Error, context, {
-          phase: 'firstPass'
-        });
-      }
-      
-      // Update context with preparation note
-      const updatedContext: DialogueWorkflowContext = {
-        ...context,
-        preparationNote: { content: preparationNote }
-      };
-      
-      // Second pass: Generate actual response
-      const secondPassModule = merge(workflowModule, secondOfTwoPassResponse);
-      const secondPassPrompt = compile(secondPassModule, updatedContext);
-      
-      let response: string;
-      try {
-        response = await driver.query(secondPassPrompt);
-      } catch (error) {
-        // Preserve updated context (with preparation note) on driver error for second pass
-        throw new WorkflowExecutionError(error as Error, updatedContext, {
-          phase: 'secondPass'
-        });
-      }
-      
-      // Update messages with the response
-      const finalContext: DialogueWorkflowContext = {
-        ...updatedContext,
-        messages: [
-          ...(context.messages || []),
-          { role: 'assistant', content: response }
-        ]
-      };
-      
-      return {
-        output: response,
-        context: finalContext,
-        metadata: {
-          twoPass: true,
-          preparationNoteLength: preparationNote.length
-        }
-      };
-    } else {
-      // Single pass response
-      const prompt = compile(workflowModule, context);
-      
-      let response: string;
-      try {
-        response = await driver.query(prompt);
-      } catch (error) {
-        // Preserve context on driver error
-        throw new WorkflowExecutionError(error as Error, context, {
-          phase: 'singlePass'
-        });
-      }
-      
-      // Update context
-      const finalContext: DialogueWorkflowContext = {
-        ...context,
-        messages: [
-          ...(context.messages || []),
-          { role: 'assistant', content: response }
-        ]
-      };
-      
-      return {
-        output: response,
-        context: finalContext,
-        metadata: {
-          twoPass: false
-        }
-      };
-    }
+  
+  if (includematerials && context.materials) {
+    workflowModule = merge(workflowModule, withMaterials);
   }
-
-  /**
-   * Convenience method to add a user message and get response
-   */
-  async respond(
-    driver: AIDriver,
-    message: string,
-    context: DialogueWorkflowContext = { messages: [] },
-    options?: DialogueWorkflowOptions
-  ): Promise<WorkflowResult<DialogueWorkflowContext>> {
-    // Add user message to context
+  
+  if (twoPass) {
+    // First pass: Generate preparation notes
+    const firstPassModule = merge(workflowModule, firstOfTwoPassResponse);
+    const firstPassPrompt = compile(firstPassModule, context);
+    
+    let preparationNote: string;
+    try {
+      preparationNote = await driver.query(firstPassPrompt);
+    } catch (error) {
+      // Preserve context on driver error for first pass
+      throw new WorkflowExecutionError(error as Error, context, {
+        phase: 'firstPass',
+        partialResult: ''
+      });
+    }
+    
+    // Update context with preparation note
     const updatedContext: DialogueWorkflowContext = {
       ...context,
+      preparationNote: { content: preparationNote }
+    };
+    
+    // Second pass: Generate actual response
+    const secondPassModule = merge(workflowModule, secondOfTwoPassResponse);
+    const secondPassPrompt = compile(secondPassModule, updatedContext);
+    
+    let response: string;
+    try {
+      response = await driver.query(secondPassPrompt);
+    } catch (error) {
+      // Preserve updated context (with preparation note) on driver error for second pass
+      throw new WorkflowExecutionError(error as Error, updatedContext, {
+        phase: 'secondPass',
+        partialResult: preparationNote
+      });
+    }
+    
+    // Update messages with the response
+    const finalContext: DialogueWorkflowContext = {
+      ...updatedContext,
       messages: [
         ...(context.messages || []),
-        { role: 'user', content: message }
+        { role: 'assistant', content: response }
       ]
     };
     
-    return this.execute(driver, updatedContext, options);
+    return {
+      output: response,
+      context: finalContext,
+      metadata: {
+        twoPass: true,
+        preparationNoteLength: preparationNote.length
+      }
+    };
+  } else {
+    // Single pass response
+    const prompt = compile(workflowModule, context);
+    
+    let response: string;
+    try {
+      response = await driver.query(prompt);
+    } catch (error) {
+      // Preserve context on driver error
+      throw new WorkflowExecutionError(error as Error, context, {
+        phase: 'singlePass',
+        partialResult: ''
+      });
+    }
+    
+    // Update context with new message
+    const finalContext: DialogueWorkflowContext = {
+      ...context,
+      messages: [
+        ...(context.messages || []),
+        { role: 'assistant', content: response }
+      ]
+    };
+    
+    return {
+      output: response,
+      context: finalContext,
+      metadata: {
+        twoPass: false
+      }
+    };
   }
 }

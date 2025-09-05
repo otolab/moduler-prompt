@@ -1,31 +1,32 @@
-// Legacy stream workflow (backward compatibility)
-export { 
-  createStreamWorkflow, 
-  executeStreamIteration,
-  StreamProcessor 
-} from './stream-workflow.js';
-export type { 
-  StreamWorkflowConfig,
-  StreamWorkflowContext 
-} from './stream-workflow.js';
-
-// New workflow architecture
+// Core workflow types
 export type { 
   AIDriver,
   WorkflowResult,
   WorkflowError,
-  Workflow
+  WorkflowExecutionError
 } from './types.js';
-export { ModuleWorkflow, WorkflowExecutionError } from './types.js';
 
-export { DialogueWorkflow } from './dialogue-workflow.js';
+// Stream workflow
+export { streamProcess } from './stream-workflow.js';
+export type { StreamWorkflowOptions } from './stream-workflow.js';
+
+// Dialogue workflow
+export { dialogueProcess } from './dialogue-workflow.js';
 export type { 
   DialogueWorkflowContext,
   DialogueWorkflowOptions 
 } from './dialogue-workflow.js';
 
-export { SummarizeWorkflow } from './summarize-workflow.js';
+// Summarize workflow
+export { summarizeProcess } from './summarize-workflow.js';
 export type { 
   SummarizeWorkflowContext,
   SummarizeWorkflowOptions 
 } from './summarize-workflow.js';
+
+// Concat workflow
+export { concatProcess } from './concat-process-workflow.js';
+export type {
+  ConcatProcessContext,
+  ConcatProcessOptions
+} from './concat-process-workflow.js';

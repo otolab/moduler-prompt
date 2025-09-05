@@ -27,9 +27,8 @@ export interface WorkflowResult<TContext> {
  */
 export interface WorkflowError<TContext> extends Error {
   context: TContext;  // エラー時点のコンテキスト（再開可能）
-  partial?: string;   // 部分的な出力
+  partialResult?: string;   // 部分的な出力
   phase?: string;     // エラーが発生したフェーズ
-  iteration?: number; // エラーが発生したイテレーション
 }
 
 /**
@@ -37,17 +36,15 @@ export interface WorkflowError<TContext> extends Error {
  */
 export class WorkflowExecutionError<TContext = any> extends Error implements WorkflowError<TContext> {
   public context: TContext;
-  public partial?: string;
+  public partialResult?: string;
   public phase?: string;
-  public iteration?: number;
   
   constructor(
     originalError: Error | string,
     context: TContext,
     options?: {
-      partial?: string;
+      partialResult?: string;
       phase?: string;
-      iteration?: number;
     }
   ) {
     const message = typeof originalError === 'string' 
@@ -57,9 +54,8 @@ export class WorkflowExecutionError<TContext = any> extends Error implements Wor
     super(message);
     this.name = 'WorkflowExecutionError';
     this.context = context;
-    this.partial = options?.partial;
+    this.partialResult = options?.partialResult;
     this.phase = options?.phase;
-    this.iteration = options?.iteration;
     
     // Preserve original stack trace if available
     if (originalError instanceof Error && originalError.stack) {
@@ -68,45 +64,3 @@ export class WorkflowExecutionError<TContext = any> extends Error implements Wor
   }
 }
 
-/**
- * Base workflow interface
- */
-export interface Workflow<TContext, TOptions = Record<string, any>> {
-  /**
-   * Execute workflow with given context
-   * @param driver AI driver for execution
-   * @param context Initial context (defined by PromptModule)
-   * @param options Additional options
-   */
-  execute(
-    driver: AIDriver,
-    context: TContext,
-    options?: TOptions
-  ): Promise<WorkflowResult<TContext>>;
-
-  /**
-   * Stream execution (optional)
-   */
-  executeStream?(
-    driver: AIDriver,
-    context: TContext,
-    options?: TOptions
-  ): AsyncGenerator<Partial<WorkflowResult<TContext>>>;
-}
-
-/**
- * Workflow that uses a PromptModule
- */
-export abstract class ModuleWorkflow<TContext, TOptions = Record<string, any>> 
-  implements Workflow<TContext, TOptions> {
-  
-  constructor(
-    protected module: PromptModule<TContext>
-  ) {}
-
-  abstract execute(
-    driver: AIDriver,
-    context: TContext,
-    options?: TOptions
-  ): Promise<WorkflowResult<TContext>>;
-}
