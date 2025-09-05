@@ -73,8 +73,30 @@ export async function concatProcess(
       
       try {
         const result = await driver.query(prompt);
+        
+        // Check finish reason for dynamic failures
+        if (result.finishReason && result.finishReason !== 'stop') {
+          throw new WorkflowExecutionError(
+            `Query failed with reason: ${result.finishReason}`,
+            {
+              ...context,
+              results,
+              processedCount: startIndex + index
+            },
+            {
+              phase: 'parallel-process',
+              partialResult: results.length > 0 ? results.join(separator) : '',
+              finishReason: result.finishReason
+            }
+          );
+        }
+        
         return result.content;
       } catch (error) {
+        // If it's already a WorkflowExecutionError, re-throw
+        if (error instanceof WorkflowExecutionError) {
+          throw error;
+        }
         throw new WorkflowExecutionError(error as Error, {
           ...context,
           results,
@@ -109,9 +131,31 @@ export async function concatProcess(
       
       try {
         const queryResult = await driver.query(prompt);
+        
+        // Check finish reason for dynamic failures
+        if (queryResult.finishReason && queryResult.finishReason !== 'stop') {
+          throw new WorkflowExecutionError(
+            `Query failed with reason: ${queryResult.finishReason}`,
+            {
+              ...context,
+              results,
+              processedCount
+            },
+            {
+              phase: 'sequential-process',
+              partialResult: results.length > 0 ? results.join(separator) : undefined,
+              finishReason: queryResult.finishReason
+            }
+          );
+        }
+        
         results.push(queryResult.content);
         processedCount = startIndex + i + batch.length;
       } catch (error) {
+        // If it's already a WorkflowExecutionError, re-throw
+        if (error instanceof WorkflowExecutionError) {
+          throw error;
+        }
         throw new WorkflowExecutionError(error as Error, {
           ...context,
           results,

@@ -24,6 +24,7 @@ export interface WorkflowError<TContext> extends Error {
   context: TContext;  // エラー時点のコンテキスト（再開可能）
   partialResult?: string;   // 部分的な出力
   phase?: string;     // エラーが発生したフェーズ
+  finishReason?: 'stop' | 'length' | 'error';  // 終了理由
 }
 
 /**
@@ -33,6 +34,7 @@ export class WorkflowExecutionError<TContext = any> extends Error implements Wor
   public context: TContext;
   public partialResult?: string;
   public phase?: string;
+  public finishReason?: 'stop' | 'length' | 'error';
   
   constructor(
     originalError: Error | string,
@@ -40,6 +42,7 @@ export class WorkflowExecutionError<TContext = any> extends Error implements Wor
     options?: {
       partialResult?: string;
       phase?: string;
+      finishReason?: 'stop' | 'length' | 'error';
     }
   ) {
     const message = typeof originalError === 'string' 
@@ -51,6 +54,7 @@ export class WorkflowExecutionError<TContext = any> extends Error implements Wor
     this.context = context;
     this.partialResult = options?.partialResult;
     this.phase = options?.phase;
+    this.finishReason = options?.finishReason;
     
     // Preserve original stack trace if available
     if (originalError instanceof Error && originalError.stack) {

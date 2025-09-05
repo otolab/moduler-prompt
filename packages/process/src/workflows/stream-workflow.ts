@@ -108,9 +108,31 @@ export async function streamProcess(
     let nextStateUsage: number;
     try {
       const result = await driver.query(prompt);
+      
+      // Check finish reason for dynamic failures
+      if (result.finishReason && result.finishReason !== 'stop') {
+        throw new WorkflowExecutionError(
+          `Query failed with reason: ${result.finishReason}`,
+          {
+            ...context,
+            state,
+            range
+          },
+          {
+            phase: 'stream-iteration',
+            partialResult: state.content,
+            finishReason: result.finishReason
+          }
+        );
+      }
+      
       nextStateContent = result.content;
       nextStateUsage = result.usage?.completionTokens || estimateTokens(result.content);
     } catch (error) {
+      // If it's already a WorkflowExecutionError, re-throw
+      if (error instanceof WorkflowExecutionError) {
+        throw error;
+      }
       // Return error with context that can be used to resume
       throw new WorkflowExecutionError(error as Error, {
         ...context,

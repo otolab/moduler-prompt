@@ -60,8 +60,26 @@ export async function dialogueProcess(
     let preparationNote: string;
     try {
       const queryResult = await driver.query(firstPassPrompt);
+      
+      // Check finish reason for dynamic failures
+      if (queryResult.finishReason && queryResult.finishReason !== 'stop') {
+        throw new WorkflowExecutionError(
+          `Query failed with reason: ${queryResult.finishReason}`,
+          context,
+          {
+            phase: 'firstPass',
+            partialResult: '',
+            finishReason: queryResult.finishReason
+          }
+        );
+      }
+      
       preparationNote = queryResult.content;
     } catch (error) {
+      // If it's already a WorkflowExecutionError, re-throw
+      if (error instanceof WorkflowExecutionError) {
+        throw error;
+      }
       // Preserve context on driver error for first pass
       throw new WorkflowExecutionError(error as Error, context, {
         phase: 'firstPass',
@@ -82,8 +100,26 @@ export async function dialogueProcess(
     let response: string;
     try {
       const queryResult = await driver.query(secondPassPrompt);
+      
+      // Check finish reason for dynamic failures
+      if (queryResult.finishReason && queryResult.finishReason !== 'stop') {
+        throw new WorkflowExecutionError(
+          `Query failed with reason: ${queryResult.finishReason}`,
+          updatedContext,
+          {
+            phase: 'secondPass',
+            partialResult: preparationNote,
+            finishReason: queryResult.finishReason
+          }
+        );
+      }
+      
       response = queryResult.content;
     } catch (error) {
+      // If it's already a WorkflowExecutionError, re-throw
+      if (error instanceof WorkflowExecutionError) {
+        throw error;
+      }
       // Preserve updated context (with preparation note) on driver error for second pass
       throw new WorkflowExecutionError(error as Error, updatedContext, {
         phase: 'secondPass',
@@ -115,8 +151,26 @@ export async function dialogueProcess(
     let response: string;
     try {
       const queryResult = await driver.query(prompt);
+      
+      // Check finish reason for dynamic failures
+      if (queryResult.finishReason && queryResult.finishReason !== 'stop') {
+        throw new WorkflowExecutionError(
+          `Query failed with reason: ${queryResult.finishReason}`,
+          context,
+          {
+            phase: 'singlePass',
+            partialResult: '',
+            finishReason: queryResult.finishReason
+          }
+        );
+      }
+      
       response = queryResult.content;
     } catch (error) {
+      // If it's already a WorkflowExecutionError, re-throw
+      if (error instanceof WorkflowExecutionError) {
+        throw error;
+      }
       // Preserve context on driver error
       throw new WorkflowExecutionError(error as Error, context, {
         phase: 'singlePass',

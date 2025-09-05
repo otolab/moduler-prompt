@@ -87,8 +87,31 @@ export async function summarizeProcess(
       
       try {
         const queryResult = await driver.query(prompt);
+        
+        // Check finish reason for dynamic failures
+        if (queryResult.finishReason && queryResult.finishReason !== 'stop') {
+          throw new WorkflowExecutionError(
+            `Query failed with reason: ${queryResult.finishReason}`,
+            {
+              ...currentContext,
+              state: { content: analysisState, usage: estimateTokens(analysisState) },
+              range: { start: i, end: Math.min(i + 3, currentContext.chunks.length) },
+              analysisReport: analysisState
+            },
+            {
+              phase: 'analysis',
+              partialResult: analysisState,
+              finishReason: queryResult.finishReason
+            }
+          );
+        }
+        
         analysisState = queryResult.content;
       } catch (error) {
+        // If it's already a WorkflowExecutionError, re-throw
+        if (error instanceof WorkflowExecutionError) {
+          throw error;
+        }
         // Preserve context and phase info on driver error
         throw new WorkflowExecutionError(error as Error, {
           ...currentContext,
@@ -140,8 +163,30 @@ export async function summarizeProcess(
     
     try {
       const queryResult = await driver.query(prompt);
+      
+      // Check finish reason for dynamic failures
+      if (queryResult.finishReason && queryResult.finishReason !== 'stop') {
+        throw new WorkflowExecutionError(
+          `Query failed with reason: ${queryResult.finishReason}`,
+          {
+            ...currentContext,
+            state: { content: summaryState, usage: estimateTokens(summaryState) },
+            range: { start: i, end: Math.min(i + 3, currentContext.chunks.length) }
+          },
+          {
+            phase: 'summarization',
+            partialResult: summaryState,
+            finishReason: queryResult.finishReason
+          }
+        );
+      }
+      
       summaryState = queryResult.content;
     } catch (error) {
+      // If it's already a WorkflowExecutionError, re-throw
+      if (error instanceof WorkflowExecutionError) {
+        throw error;
+      }
       // Preserve context and phase info on driver error
       throw new WorkflowExecutionError(error as Error, {
         ...currentContext,
