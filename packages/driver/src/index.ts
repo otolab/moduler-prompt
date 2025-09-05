@@ -11,11 +11,13 @@ export type {
 // Converter utilities
 export {
   elementsToPromptText,
-  promptTextToMessages
+  promptTextToMessages,
+  compiledPromptToElements
 } from './converter.js';
 
 // Test driver
 export {
   TestDriver,
-  type TestDriverOptions
+  type TestDriverOptions,
+  type ResponseProvider
 } from './test-driver.js';

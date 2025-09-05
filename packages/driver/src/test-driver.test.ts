@@ -1,6 +1,6 @@
 import { describe, it, expect, beforeEach } from 'vitest';
 import { TestDriver } from './test-driver.js';
-import type { Element } from '@moduler-prompt/core';
+import type { CompiledPrompt } from '@moduler-prompt/core';
 
 describe('TestDriver', () => {
   let driver: TestDriver;
@@ -10,131 +10,201 @@ describe('TestDriver', () => {
   });
   
   describe('query', () => {
-    it('returns default response', async () => {
-      const result = await driver.query('test prompt');
-      expect(result).toBe('Test response');
+    it('throws error when no responses provided', async () => {
+      const compiledPrompt: CompiledPrompt = {
+        instructions: [{ type: 'text', content: 'test prompt' }],
+        data: [],
+        output: []
+      };
+      await expect(driver.query(compiledPrompt)).rejects.toThrow('No more responses available');
     });
     
-    it('returns configured responses in order', async () => {
+    it('returns responses in sequence', async () => {
       driver = new TestDriver({
         responses: ['First', 'Second', 'Third']
       });
       
-      expect(await driver.query('prompt 1')).toBe('First');
-      expect(await driver.query('prompt 2')).toBe('Second');
-      expect(await driver.query('prompt 3')).toBe('Third');
-      expect(await driver.query('prompt 4')).toBe('Test response');
+      const prompt: CompiledPrompt = {
+        instructions: [{ type: 'text', content: 'prompt' }],
+        data: [],
+        output: []
+      };
+      
+      expect(await driver.query(prompt)).toBe('First');
+      expect(await driver.query(prompt)).toBe('Second');
+      expect(await driver.query(prompt)).toBe('Third');
     });
     
-    it('records query history', async () => {
-      await driver.query('test prompt', { temperature: 0.7 });
+    it('throws error when no more responses available', async () => {
+      driver = new TestDriver({
+        responses: ['Only one']
+      });
       
-      const lastQuery = driver.getLastQuery();
-      expect(lastQuery?.prompt).toBe('test prompt');
-      expect(lastQuery?.options?.temperature).toBe(0.7);
+      const prompt: CompiledPrompt = {
+        instructions: [{ type: 'text', content: 'test' }],
+        data: [],
+        output: []
+      };
+      
+      await driver.query(prompt); // Use the only response
+      await expect(driver.query(prompt)).rejects.toThrow('No more responses available');
     });
     
-    it('handles Element array input', async () => {
-      const elements: Element[] = [
-        { type: 'text', content: 'Hello' },
-        { type: 'text', content: 'World' }
-      ];
+    it('handles CompiledPrompt input', async () => {
+      driver = new TestDriver({
+        responses: ['Test response']
+      });
       
-      const result = await driver.query(elements);
+      const prompt: CompiledPrompt = {
+        instructions: [{ type: 'text', content: 'Hello' }],
+        data: [{ type: 'text', content: 'World' }],
+        output: []
+      };
+      
+      const result = await driver.query(prompt);
       expect(result).toBe('Test response');
-      
-      const lastQuery = driver.getLastQuery();
-      expect(lastQuery?.prompt).toContain('Hello');
-      expect(lastQuery?.prompt).toContain('World');
     });
     
     it('simulates delay', async () => {
-      driver = new TestDriver({ delay: 100 });
+      driver = new TestDriver({ 
+        responses: ['Delayed response'],
+        delay: 100 
+      });
+      const prompt: CompiledPrompt = {
+        instructions: [{ type: 'text', content: 'test' }],
+        data: [],
+        output: []
+      };
       
       const start = Date.now();
-      await driver.query('test');
+      await driver.query(prompt);
       const duration = Date.now() - start;
       
       expect(duration).toBeGreaterThanOrEqual(90);
     });
-    
-    it('throws error when configured', async () => {
-      driver = new TestDriver({
-        throwError: true,
-        errorMessage: 'Custom error'
-      });
-      
-      await expect(driver.query('test')).rejects.toThrow('Custom error');
-    });
   });
   
-  describe('chat', () => {
-    it('returns chat result with usage', async () => {
-      const messages = [
-        { role: 'user' as const, content: 'Hello' }
-      ];
-      
-      const result = await driver.chat(messages);
-      
-      expect(result.content).toBe('Test response');
-      expect(result.usage).toBeDefined();
-      expect(result.usage?.totalTokens).toBe(150);
-      expect(result.finishReason).toBe('stop');
-    });
-    
-    it('records chat history', async () => {
-      const messages = [
-        { role: 'user' as const, content: 'Hello' }
-      ];
-      
-      await driver.chat(messages, { maxTokens: 100 });
-      
-      const lastChat = driver.getLastChat();
-      expect(lastChat?.messages).toEqual(messages);
-      expect(lastChat?.options?.maxTokens).toBe(100);
-    });
-  });
   
   describe('streamQuery', () => {
     it('streams response character by character', async () => {
       driver = new TestDriver({
         responses: ['Hello']
       });
+      const prompt: CompiledPrompt = {
+        instructions: [{ type: 'text', content: 'test' }],
+        data: [],
+        output: []
+      };
       
       const chars: string[] = [];
-      for await (const char of driver.streamQuery('test')) {
+      for await (const char of driver.streamQuery(prompt)) {
         chars.push(char);
       }
       
       expect(chars.join('')).toBe('Hello');
       expect(chars).toEqual(['H', 'e', 'l', 'l', 'o']);
     });
+    
+    it('streams multiple responses in sequence', async () => {
+      driver = new TestDriver({
+        responses: ['Hi', 'Bye']
+      });
+      const prompt: CompiledPrompt = {
+        instructions: [{ type: 'text', content: 'test' }],
+        data: [],
+        output: []
+      };
+      
+      const chars1: string[] = [];
+      for await (const char of driver.streamQuery(prompt)) {
+        chars1.push(char);
+      }
+      expect(chars1.join('')).toBe('Hi');
+      
+      const chars2: string[] = [];
+      for await (const char of driver.streamQuery(prompt)) {
+        chars2.push(char);
+      }
+      expect(chars2.join('')).toBe('Bye');
+    });
+    
+    it('throws error when no more responses available', async () => {
+      driver = new TestDriver({
+        responses: []
+      });
+      
+      const prompt: CompiledPrompt = {
+        instructions: [{ type: 'text', content: 'test' }],
+        data: [],
+        output: []
+      };
+      
+      const iterator = driver.streamQuery(prompt);
+      await expect(iterator.next()).rejects.toThrow('No more responses available');
+    });
   });
   
+  describe('response provider function', () => {
+    it('uses response provider function', async () => {
+      let callCount = 0;
+      const driver = new TestDriver({
+        responses: (prompt) => {
+          callCount++;
+          return `Response ${callCount}`;
+        }
+      });
+      
+      const prompt: CompiledPrompt = {
+        instructions: [{ type: 'text', content: 'test' }],
+        data: [],
+        output: []
+      };
+      
+      expect(await driver.query(prompt)).toBe('Response 1');
+      expect(await driver.query(prompt)).toBe('Response 2');
+      expect(await driver.query(prompt)).toBe('Response 3');
+    });
+    
+    it('uses async response provider function', async () => {
+      const driver = new TestDriver({
+        responses: async (prompt) => {
+          await new Promise(resolve => setTimeout(resolve, 10));
+          return 'Async response';
+        }
+      });
+      
+      const prompt: CompiledPrompt = {
+        instructions: [{ type: 'text', content: 'test' }],
+        data: [],
+        output: []
+      };
+      
+      expect(await driver.query(prompt)).toBe('Async response');
+    });
+    
+    it('streams with response provider function', async () => {
+      const driver = new TestDriver({
+        responses: () => 'ABC'
+      });
+      
+      const prompt: CompiledPrompt = {
+        instructions: [{ type: 'text', content: 'test' }],
+        data: [],
+        output: []
+      };
+      
+      const chars: string[] = [];
+      for await (const char of driver.streamQuery(prompt)) {
+        chars.push(char);
+      }
+      
+      expect(chars).toEqual(['A', 'B', 'C']);
+    });
+  });
+
   describe('utility methods', () => {
-    it('resets state', async () => {
-      await driver.query('test1');
-      await driver.query('test2');
-      
-      expect(driver.queryHistory).toHaveLength(2);
-      
-      driver.reset();
-      
-      expect(driver.queryHistory).toHaveLength(0);
-    });
-    
-    it('sets new responses', async () => {
-      driver.setResponses(['New response']);
-      
-      const result = await driver.query('test');
-      expect(result).toBe('New response');
-    });
-    
-    it('closes and resets', async () => {
-      await driver.query('test');
-      await driver.close();
-      
-      expect(driver.queryHistory).toHaveLength(0);
+    it('closes driver', async () => {
+      await expect(driver.close()).resolves.toBeUndefined();
     });
   });
 });

@@ -28,6 +28,44 @@ export interface WorkflowResult<TContext> {
 export interface WorkflowError<TContext> extends Error {
   context: TContext;  // エラー時点のコンテキスト（再開可能）
   partial?: string;   // 部分的な出力
+  phase?: string;     // エラーが発生したフェーズ
+  iteration?: number; // エラーが発生したイテレーション
+}
+
+/**
+ * Workflow error implementation with context preservation
+ */
+export class WorkflowExecutionError<TContext = any> extends Error implements WorkflowError<TContext> {
+  public context: TContext;
+  public partial?: string;
+  public phase?: string;
+  public iteration?: number;
+  
+  constructor(
+    originalError: Error | string,
+    context: TContext,
+    options?: {
+      partial?: string;
+      phase?: string;
+      iteration?: number;
+    }
+  ) {
+    const message = typeof originalError === 'string' 
+      ? originalError 
+      : originalError.message;
+    
+    super(message);
+    this.name = 'WorkflowExecutionError';
+    this.context = context;
+    this.partial = options?.partial;
+    this.phase = options?.phase;
+    this.iteration = options?.iteration;
+    
+    // Preserve original stack trace if available
+    if (originalError instanceof Error && originalError.stack) {
+      this.stack = originalError.stack;
+    }
+  }
 }
 
 /**

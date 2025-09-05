@@ -1,119 +1,76 @@
-import type { Element } from '@moduler-prompt/core';
-import type { AIDriver, QueryOptions, ChatMessage, QueryResult } from './types.js';
-import { elementsToPromptText } from './converter.js';
+import type { CompiledPrompt } from '@moduler-prompt/core';
+import type { AIDriver, QueryOptions } from './types.js';
+
+/**
+ * Response provider function type
+ */
+export type ResponseProvider = (prompt: CompiledPrompt, options?: QueryOptions) => string | Promise<string>;
 
 /**
  * Test driver options
  */
 export interface TestDriverOptions {
-  responses?: string[];
-  defaultResponse?: string;
+  responses?: string[] | ResponseProvider;
   delay?: number;
-  throwError?: boolean;
-  errorMessage?: string;
 }
 
 /**
  * Test driver for unit testing
  */
 export class TestDriver implements AIDriver {
-  private responses: string[];
-  private currentIndex = 0;
-  private defaultResponse: string;
+  private responseQueue: string[];
+  private responseProvider?: ResponseProvider;
   private delay: number;
-  private throwError: boolean;
-  private errorMessage: string;
-  
-  public queryHistory: Array<{ prompt: string; options?: QueryOptions }> = [];
-  public chatHistory: Array<{ messages: ChatMessage[]; options?: QueryOptions }> = [];
   
   constructor(options: TestDriverOptions = {}) {
-    this.responses = options.responses || [];
-    this.defaultResponse = options.defaultResponse || 'Test response';
+    if (typeof options.responses === 'function') {
+      this.responseProvider = options.responses;
+      this.responseQueue = [];
+    } else {
+      this.responseQueue = options.responses ? [...options.responses] : [];
+      this.responseProvider = undefined;
+    }
     this.delay = options.delay || 0;
-    this.throwError = options.throwError || false;
-    this.errorMessage = options.errorMessage || 'Test error';
   }
   
-  async query(prompt: string | Element[], options?: QueryOptions): Promise<string> {
-    // Convert elements to text if needed
-    const promptText = typeof prompt === 'string' 
-      ? prompt 
-      : elementsToPromptText(prompt);
-    
-    // Record query
-    this.queryHistory.push({ prompt: promptText, options });
-    
-    // Simulate delay
-    if (this.delay > 0) {
-      await new Promise(resolve => setTimeout(resolve, this.delay));
-    }
-    
-    // Throw error if configured
-    if (this.throwError) {
-      throw new Error(this.errorMessage);
-    }
-    
-    // Return response
-    if (this.currentIndex < this.responses.length) {
-      const response = this.responses[this.currentIndex];
-      this.currentIndex++;
+  async query(prompt: CompiledPrompt, options?: QueryOptions): Promise<string> {
+    // If we have a response provider function, use it
+    if (this.responseProvider) {
+      const response = await this.responseProvider(prompt, options);
+      
+      if (this.delay > 0) {
+        await new Promise(resolve => setTimeout(resolve, this.delay));
+      }
+      
       return response;
     }
     
-    return this.defaultResponse;
-  }
-  
-  async chat(messages: ChatMessage[], options?: QueryOptions): Promise<QueryResult> {
-    // Record chat
-    this.chatHistory.push({ messages, options });
+    // Otherwise use the queue
+    if (this.responseQueue.length === 0) {
+      throw new Error('No more responses available');
+    }
     
     // Simulate delay
     if (this.delay > 0) {
       await new Promise(resolve => setTimeout(resolve, this.delay));
     }
     
-    // Throw error if configured
-    if (this.throwError) {
-      throw new Error(this.errorMessage);
-    }
-    
-    // Get response
-    let content: string;
-    if (this.currentIndex < this.responses.length) {
-      content = this.responses[this.currentIndex];
-      this.currentIndex++;
-    } else {
-      content = this.defaultResponse;
-    }
-    
-    return {
-      content,
-      usage: {
-        promptTokens: 100,
-        completionTokens: 50,
-        totalTokens: 150
-      },
-      finishReason: 'stop'
-    };
+    return this.responseQueue.shift()!;
   }
   
-  async *streamQuery(prompt: string | Element[], options?: QueryOptions): AsyncIterable<string> {
-    // Convert elements to text if needed
-    const promptText = typeof prompt === 'string' 
-      ? prompt 
-      : elementsToPromptText(prompt);
-    
-    // Record query
-    this.queryHistory.push({ prompt: promptText, options });
-    
-    // Get response
+  
+  async *streamQuery(prompt: CompiledPrompt, options?: QueryOptions): AsyncIterable<string> {
     let response: string;
-    if (this.currentIndex < this.responses.length) {
-      response = this.responses[this.currentIndex];
-      this.currentIndex++;
+    
+    // If we have a response provider function, use it
+    if (this.responseProvider) {
+      response = await this.responseProvider(prompt, options);
     } else {
-      response = this.defaultResponse;
+      // Otherwise use the queue
+      if (this.responseQueue.length === 0) {
+        throw new Error('No more responses available');
+      }
+      response = this.responseQueue.shift()!;
     }
     
     // Stream response character by character
@@ -126,40 +83,6 @@ export class TestDriver implements AIDriver {
   }
   
   async close(): Promise<void> {
-    // Reset state
-    this.currentIndex = 0;
-    this.queryHistory = [];
-    this.chatHistory = [];
-  }
-  
-  /**
-   * Reset the driver state
-   */
-  reset(): void {
-    this.currentIndex = 0;
-    this.queryHistory = [];
-    this.chatHistory = [];
-  }
-  
-  /**
-   * Set new responses
-   */
-  setResponses(responses: string[]): void {
-    this.responses = responses;
-    this.currentIndex = 0;
-  }
-  
-  /**
-   * Get the last query
-   */
-  getLastQuery(): { prompt: string; options?: QueryOptions } | undefined {
-    return this.queryHistory[this.queryHistory.length - 1];
-  }
-  
-  /**
-   * Get the last chat
-   */
-  getLastChat(): { messages: ChatMessage[]; options?: QueryOptions } | undefined {
-    return this.chatHistory[this.chatHistory.length - 1];
+    // No resources to clean up
   }
 }

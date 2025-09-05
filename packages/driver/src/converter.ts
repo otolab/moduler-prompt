@@ -1,4 +1,4 @@
-import type { Element, TextElement, MessageElement, MaterialElement, ChunkElement, SectionElement, SubSectionElement } from '@moduler-prompt/core';
+import type { Element, TextElement, MessageElement, MaterialElement, ChunkElement, SectionElement, SubSectionElement, CompiledPrompt } from '@moduler-prompt/core';
 
 /**
  * Convert elements to prompt text
@@ -159,4 +159,28 @@ export function promptTextToMessages(prompt: string, role: 'system' | 'user' = '
     role,
     content: prompt
   }];
+}
+
+/**
+ * Convert compiled prompt to element array
+ */
+export function compiledPromptToElements(compiledPrompt: CompiledPrompt): Element[] {
+  const elements: Element[] = [];
+  
+  // Add instructions section
+  if (compiledPrompt.instructions.length > 0) {
+    elements.push(...compiledPrompt.instructions);
+  }
+  
+  // Add data section
+  if (compiledPrompt.data.length > 0) {
+    elements.push(...compiledPrompt.data);
+  }
+  
+  // Add output section
+  if (compiledPrompt.output.length > 0) {
+    elements.push(...compiledPrompt.output);
+  }
+  
+  return elements;
 }

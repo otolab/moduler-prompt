@@ -16,7 +16,7 @@ export type {
   WorkflowError,
   Workflow
 } from './types.js';
-export { ModuleWorkflow } from './types.js';
+export { ModuleWorkflow, WorkflowExecutionError } from './types.js';
 
 export { DialogueWorkflow } from './dialogue-workflow.js';
 export type { 
@@ -29,10 +29,3 @@ export type {
   SummarizeWorkflowContext,
   SummarizeWorkflowOptions 
 } from './summarize-workflow.js';
-
-export { AnalysisWorkflow } from './analysis-workflow.js';
-export type { 
-  AnalysisContext,
-  AnalysisOptions,
-  AnalysisType 
-} from './analysis-workflow.js';

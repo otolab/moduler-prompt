@@ -1,4 +1,4 @@
-import type { Element } from '@moduler-prompt/core';
+import type { Element, CompiledPrompt } from '@moduler-prompt/core';
 
 /**
  * Chat message role
@@ -41,19 +41,14 @@ export interface QueryOptions {
  */
 export interface AIDriver {
   /**
-   * Query the AI model with a prompt
+   * Query the AI model with a compiled prompt
    */
-  query(prompt: string | Element[], options?: QueryOptions): Promise<string>;
-  
-  /**
-   * Query with chat messages
-   */
-  chat?(messages: ChatMessage[], options?: QueryOptions): Promise<QueryResult>;
+  query(prompt: CompiledPrompt, options?: QueryOptions): Promise<string>;
   
   /**
    * Stream query (optional)
    */
-  streamQuery?(prompt: string | Element[], options?: QueryOptions): AsyncIterable<string>;
+  streamQuery?(prompt: CompiledPrompt, options?: QueryOptions): AsyncIterable<string>;
   
   /**
    * Close the driver connection

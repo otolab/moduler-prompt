@@ -1,4 +1,4 @@
-import { describe, it, expect, vi } from 'vitest';
+import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { DialogueWorkflow } from './dialogue-workflow.js';
 import type { AIDriver } from './types.js';
 import type { DialogueWorkflowContext } from './dialogue-workflow.js';
