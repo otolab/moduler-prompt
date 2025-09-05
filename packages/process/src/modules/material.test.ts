@@ -16,7 +16,7 @@ describe('material modules', () => {
       expect(result.output).toBeDefined();
       
       // termsはinstructionsセクションにある
-      const termsSection = result.instructions.find(e => e.type === 'section' && e.title === 'Terms');
+      const termsSection = result.instructions.find(e => e.type === 'section' && e.title === 'Term Explanations');
       expect(termsSection).toBeDefined();
     });
 
@@ -40,23 +40,21 @@ describe('material modules', () => {
       const result = compile(withMaterials, context);
       
       // Materialsセクションはdataに含まれる
-      const materialsSection = result.data.find(e => e.type === 'section' && e.title === 'Materials');
+      const materialsSection = result.data.find(e => e.type === 'section' && e.title === 'Prepared Materials');
       expect(materialsSection).toBeDefined();
       
       if (materialsSection?.type === 'section') {
-        // material要素が含まれているか確認
-        const materials = materialsSection.items.filter(item => {
-          return typeof item === 'object' && 'type' in item && item.type === 'material';
-        });
-        expect(materials).toHaveLength(2);
+        // material要素が文字列に変換されているか確認
+        const materialTexts = materialsSection.items.filter(item => 
+          typeof item === 'string' && item.includes('[Material:')
+        );
+        expect(materialTexts).toHaveLength(2);
         
         // 最初のmaterialの内容を確認
-        const firstMaterial = materials[0];
-        if (firstMaterial && typeof firstMaterial === 'object' && 'type' in firstMaterial) {
-          expect(firstMaterial.content).toBe('This is the content of document 1');
-          expect(firstMaterial.title).toBe('Document 1');
-          expect(firstMaterial.id).toBe('doc1');
-        }
+        expect(materialTexts[0]).toContain('Document 1');
+        expect(materialTexts[0]).toContain('This is the content of document 1');
+        expect(materialTexts[1]).toContain('Document 2');
+        expect(materialTexts[1]).toContain('This is the content of document 2');
       }
     });
   });
@@ -92,7 +90,7 @@ describe('material modules', () => {
       }
       
       // Materialsセクションも存在することを確認
-      const materialsSection = result.data.find(e => e.type === 'section' && e.title === 'Materials');
+      const materialsSection = result.data.find(e => e.type === 'section' && e.title === 'Prepared Materials');
       expect(materialsSection).toBeDefined();
     });
 

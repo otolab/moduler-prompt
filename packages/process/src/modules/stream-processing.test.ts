@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest';
 import { compile } from '@moduler-prompt/core';
-import { streamProcessing, streamProcessingWithSizeControl } from './stream-processing';
+import { streamProcessing } from './stream-processing';
 import type { StreamProcessingContext } from './stream-processing';
 
 describe('stream-processing modules', () => {
@@ -18,10 +18,11 @@ describe('stream-processing modules', () => {
       
       const sectionTitles = allSections.map(s => s.title);
       
-      expect(sectionTitles).toContain('Objective');
-      expect(sectionTitles).toContain('Terms');
+      expect(sectionTitles).toContain('Objective and Role');
+      expect(sectionTitles).toContain('Term Explanations');
+      expect(sectionTitles).toContain('Processing Methodology');
       expect(sectionTitles).toContain('Instructions');
-      expect(sectionTitles).toContain('Cue');
+      expect(sectionTitles).toContain('Output');
     });
 
     it('stateがある場合Current Stateセクションを生成', () => {
@@ -33,21 +34,16 @@ describe('stream-processing modules', () => {
       };
       
       const result = compile(streamProcessing, context);
-      const stateSection = result.data.find(e => e.type === 'section' && e.title === 'State');
+      const stateSection = result.data.find(e => e.type === 'section' && e.title === 'Current State');
       
       expect(stateSection).toBeDefined();
       if (stateSection?.type === 'section') {
-        // chunk要素が含まれているか確認
-        const chunks = stateSection.items.filter(item => {
-          return typeof item === 'object' && 'type' in item && item.type === 'chunk';
-        });
-        expect(chunks.length).toBeGreaterThan(0);
-        
-        const firstChunk = chunks[0];
-        if (firstChunk && typeof firstChunk === 'object' && 'type' in firstChunk) {
-          expect(firstChunk.content).toBe('Previous iteration result');
-          expect(firstChunk.usage).toBe(150);
-        }
+        // chunk要素が文字列に変換されているか確認
+        const stateText = stateSection.items.find(item => 
+          typeof item === 'string' && item.includes('[Chunk from state]')
+        );
+        expect(stateText).toBeDefined();
+        expect(stateText).toContain('Previous iteration result');
       }
     });
 
@@ -69,22 +65,20 @@ describe('stream-processing modules', () => {
       };
       
       const result = compile(streamProcessing, context);
-      const materialsSection = result.data.find(e => e.type === 'section' && e.title === 'Materials');
+      const materialsSection = result.data.find(e => e.type === 'section' && e.title === 'Prepared Materials');
       
       expect(materialsSection).toBeDefined();
       if (materialsSection?.type === 'section') {
-        // chunk要素が含まれているか確認
-        const chunks = materialsSection.items.filter(item => {
-          return typeof item === 'object' && 'type' in item && item.type === 'chunk';
-        });
-        expect(chunks).toHaveLength(2);
+        // chunk要素が文字列に変換されているか確認
+        const chunkTexts = materialsSection.items.filter(item => 
+          typeof item === 'string' && item.includes('[Chunk from')
+        );
+        expect(chunkTexts).toHaveLength(2);
         
-        const firstChunk = chunks[0];
-        if (firstChunk && typeof firstChunk === 'object' && 'type' in firstChunk) {
-          expect(firstChunk.content).toBe('Chunk 1 content');
-          expect(firstChunk.partOf).toBe('Document A');
-          expect(firstChunk.usage).toBe(50);
-        }
+        expect(chunkTexts[0]).toContain('Chunk 1 content');
+        expect(chunkTexts[0]).toContain('Document A');
+        expect(chunkTexts[1]).toContain('Chunk 2 content');
+        expect(chunkTexts[1]).toContain('Document B');
       }
     });
 
@@ -104,32 +98,28 @@ describe('stream-processing modules', () => {
       };
       
       const result = compile(streamProcessing, context);
-      const materialsSection = result.data.find(e => e.type === 'section' && e.title === 'Materials');
+      const materialsSection = result.data.find(e => e.type === 'section' && e.title === 'Prepared Materials');
       
       if (materialsSection?.type === 'section') {
-        const chunks = materialsSection.items.filter(item => {
-          return typeof item === 'object' && 'type' in item && item.type === 'chunk';
-        });
+        const chunkTexts = materialsSection.items.filter(item => 
+          typeof item === 'string' && item.includes('[Chunk from')
+        );
         
-        expect(chunks).toHaveLength(3); // インデックス1, 2, 3
-        if (chunks[0] && typeof chunks[0] === 'object' && 'content' in chunks[0]) {
-          expect(chunks[0].content).toBe('Chunk 1');
-        }
-        if (chunks[2] && typeof chunks[2] === 'object' && 'content' in chunks[2]) {
-          expect(chunks[2].content).toBe('Chunk 3');
-        }
+        expect(chunkTexts).toHaveLength(3); // インデックス1, 2, 3
+        expect(chunkTexts[0]).toContain('Chunk 1');
+        expect(chunkTexts[2]).toContain('Chunk 3');
       }
     });
   });
 
-  describe('streamProcessingWithSizeControl', () => {
-    it('streamProcessingの機能を継承', () => {
+  describe('streamProcessing with targetTokens', () => {
+    it('targetTokensが設定されている場合サイズ制御の指示を追加', () => {
       const context: StreamProcessingContext = {
         state: { content: 'State' },
         chunks: [{ content: 'Chunk' }]
       };
       
-      const result = compile(streamProcessingWithSizeControl, context);
+      const result = compile(streamProcessing, context);
       
       // 基本的なセクションが存在
       const allSections = [
@@ -140,7 +130,8 @@ describe('stream-processing modules', () => {
       
       const sectionTitles = allSections.map(s => s.title);
       
-      expect(sectionTitles).toContain('Objective');
+      expect(sectionTitles).toContain('Objective and Role');
+      expect(sectionTitles).toContain('Processing Methodology');
       expect(sectionTitles).toContain('Instructions');
       expect(sectionTitles).toContain('Guidelines'); // 追加のガイドライン
     });
@@ -154,15 +145,15 @@ describe('stream-processing modules', () => {
         }
       };
       
-      const result = compile(streamProcessingWithSizeControl, context);
-      const instructionsSection = result.instructions.find(e => e.type === 'section' && e.title === 'Instructions');
+      const result = compile(streamProcessing, context);
+      const methodologySection = result.instructions.find(e => e.type === 'section' && e.title === 'Processing Methodology');
       
-      if (instructionsSection?.type === 'section') {
-        const instructionTexts = instructionsSection.items
-          .filter(item => typeof item === 'string')
+      if (methodologySection?.type === 'section') {
+        const methodologyTexts = methodologySection.items
+          .map(item => typeof item === 'string' ? item : (item.type === 'text' ? item.content : ''))
           .join(' ');
         
-        const hasSizeInstruction = instructionTexts.includes('1000 tokens');
+        const hasSizeInstruction = methodologyTexts.includes('1000 tokens');
         expect(hasSizeInstruction).toBe(true);
       }
     });
@@ -176,16 +167,55 @@ describe('stream-processing modules', () => {
         }
       };
       
-      const result = compile(streamProcessingWithSizeControl, context);
-      const instructionsSection = result.instructions.find(e => e.type === 'section' && e.title === 'Instructions');
+      const result = compile(streamProcessing, context);
+      const methodologySection = result.instructions.find(e => e.type === 'section' && e.title === 'Processing Methodology');
       
-      if (instructionsSection?.type === 'section') {
-        const instructionTexts = instructionsSection.items
+      if (methodologySection?.type === 'section') {
+        const methodologyTexts = methodologySection.items
+          .map(item => typeof item === 'string' ? item : (item.type === 'text' ? item.content : ''))
+          .join(' ');
+        
+        const hasAggressiveReduction = methodologyTexts.includes('aggressively reduce');
+        expect(hasAggressiveReduction).toBe(true);
+      }
+    });
+  });
+
+  describe('streamProcessing with range', () => {
+    it('最初のイテレーションの場合、初期化の指示を生成', () => {
+      const context: StreamProcessingContext = {
+        chunks: [{ content: 'chunk1' }, { content: 'chunk2' }],
+        range: { start: 0, end: 1 }
+      };
+      
+      const result = compile(streamProcessing, context);
+      
+      // objectiveに最初のイテレーション情報が含まれているか確認
+      const objectiveSection = result.instructions.find(e => e.type === 'section' && e.title === 'Objective and Role');
+      if (objectiveSection?.type === 'section') {
+        const objectiveTexts = objectiveSection.items
           .filter(item => typeof item === 'string')
           .join(' ');
         
-        const hasAggressiveReduction = instructionTexts.includes('aggressively reduces');
-        expect(hasAggressiveReduction).toBe(true);
+        expect(objectiveTexts).toContain('first iteration');
+      }
+    });
+
+    it('最終イテレーションの場合、特別な指示を生成', () => {
+      const context: StreamProcessingContext = {
+        chunks: [{ content: 'chunk1' }, { content: 'chunk2' }, { content: 'chunk3' }],
+        range: { start: 2, end: 3 } // end === chunks.length
+      };
+      
+      const result = compile(streamProcessing, context);
+      
+      const objectiveSection = result.instructions.find(e => e.type === 'section' && e.title === 'Objective and Role');
+      if (objectiveSection?.type === 'section') {
+        const objectiveTexts = objectiveSection.items
+          .filter(item => typeof item === 'string')
+          .join(' ');
+        
+        expect(objectiveTexts).toContain('final iteration');
       }
     });
   });

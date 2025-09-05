@@ -2,7 +2,6 @@ import { describe, it, expect } from 'vitest';
 import { compile, merge } from '@moduler-prompt/core';
 import { withMaterials } from './modules/material';
 import { streamProcessing } from './modules/stream-processing';
-import { createStreamWorkflow } from './workflows/stream-workflow';
 import type { MaterialContext } from './modules/material';
 import type { StreamProcessingContext } from './modules/stream-processing';
 
@@ -37,27 +36,21 @@ describe('integration tests', () => {
       .filter(e => e.type === 'section')
       .map(s => s.title);
     
-    console.log('Available sections:', sectionTitles);
-    
     expect(sectionTitles).toContain('Term Explanations'); // withMaterialsのterms
     expect(sectionTitles).toContain('Objective and Role'); // streamProcessingのobjective
   });
   
-  it('ワークフローで実際のプロンプトを生成できる', () => {
-    const summarizeAlgorithm = {
-      processing: [
+  it('streamProcessingで実際のプロンプトを生成できる', () => {
+    const summarizeModule = {
+      instructions: [
         'Summarize the key points from the input chunks',
         'Merge the summary with the current state'
       ]
     };
     
-    const workflow = createStreamWorkflow({
-      algorithm: summarizeAlgorithm,
-      sizeControl: true,
-      targetTokens: 500
-    });
+    const workflow = merge(streamProcessing, summarizeModule);
     
-    const context = {
+    const context: StreamProcessingContext = {
       chunks: [
         { content: 'This is a test chunk with some important information.' }
       ],
@@ -65,8 +58,7 @@ describe('integration tests', () => {
         content: 'Previous summary of earlier chunks',
         usage: 100
       },
-      iteration: 2,
-      totalIterations: 5,
+      range: { start: 1, end: 2 },
       targetTokens: 500
     };
     
@@ -79,11 +71,5 @@ describe('integration tests', () => {
     
     // 各セクションに内容があることを確認
     expect(result.instructions.length).toBeGreaterThan(0);
-    
-    // デバッグ出力
-    console.log('\n=== Generated Prompt Structure ===');
-    console.log('Instructions sections:', result.instructions.filter(e => e.type === 'section').map(s => s.title));
-    console.log('Data sections:', result.data.filter(e => e.type === 'section').map(s => s.title));
-    console.log('Output sections:', result.output.filter(e => e.type === 'section').map(s => s.title));
   });
 });

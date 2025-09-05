@@ -1,6 +1,6 @@
 import { merge, compile } from '@moduler-prompt/core';
 import type { PromptModule, CompiledPrompt } from '@moduler-prompt/core';
-import { streamProcessing, streamProcessingWithSizeControl } from '../modules/stream-processing.js';
+import { streamProcessing } from '../modules/stream-processing.js';
 import type { StreamProcessingContext } from '../modules/stream-processing.js';
 
 /**
@@ -27,9 +27,8 @@ export interface StreamWorkflowContext extends StreamProcessingContext {
  * Creates a stream processing workflow
  */
 export function createStreamWorkflow(config: StreamWorkflowConfig): PromptModule<StreamWorkflowContext> {
-  const baseModule = config.sizeControl 
-    ? streamProcessingWithSizeControl 
-    : streamProcessing;
+  // Base stream processing module already handles size control dynamically
+  const baseModule = streamProcessing;
   
   // Merge base stream processing with the algorithm
   const workflowModule = merge(baseModule, config.algorithm);
@@ -47,7 +46,7 @@ export function createStreamWorkflow(config: StreamWorkflowConfig): PromptModule
             content: `This is iteration ${context.iteration} of ${context.totalIterations} in the stream processing workflow.`
           };
         }
-        return { type: 'text', content: '' };
+        return null;
       }
     ],
     
