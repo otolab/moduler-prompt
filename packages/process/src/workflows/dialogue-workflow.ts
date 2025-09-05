@@ -59,7 +59,8 @@ export async function dialogueProcess(
     
     let preparationNote: string;
     try {
-      preparationNote = await driver.query(firstPassPrompt);
+      const queryResult = await driver.query(firstPassPrompt);
+      preparationNote = queryResult.content;
     } catch (error) {
       // Preserve context on driver error for first pass
       throw new WorkflowExecutionError(error as Error, context, {
@@ -80,7 +81,8 @@ export async function dialogueProcess(
     
     let response: string;
     try {
-      response = await driver.query(secondPassPrompt);
+      const queryResult = await driver.query(secondPassPrompt);
+      response = queryResult.content;
     } catch (error) {
       // Preserve updated context (with preparation note) on driver error for second pass
       throw new WorkflowExecutionError(error as Error, updatedContext, {
@@ -112,7 +114,8 @@ export async function dialogueProcess(
     
     let response: string;
     try {
-      response = await driver.query(prompt);
+      const queryResult = await driver.query(prompt);
+      response = queryResult.content;
     } catch (error) {
       // Preserve context on driver error
       throw new WorkflowExecutionError(error as Error, context, {

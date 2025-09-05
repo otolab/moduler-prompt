@@ -1,13 +1,8 @@
 import type { PromptModule, CompiledPrompt, Element } from '@moduler-prompt/core';
-import type { AIDriver as DriverInterface } from '@moduler-prompt/driver';
+import type { QueryResult } from '@moduler-prompt/driver';
 
-/**
- * AI Driver interface for executing prompts
- * Extends the driver interface to support CompiledPrompt
- */
-export interface AIDriver extends DriverInterface {
-  query(prompt: string | Element[] | CompiledPrompt): Promise<string>;
-}
+// Re-export types from driver package
+export type { AIDriver, QueryResult } from '@moduler-prompt/driver';
 
 /**
  * Result of workflow execution

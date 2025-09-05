@@ -1,5 +1,5 @@
 import type { CompiledPrompt } from '@moduler-prompt/core';
-import type { AIDriver, QueryOptions } from './types.js';
+import type { AIDriver, QueryOptions, QueryResult } from './types.js';
 
 /**
  * Response provider function type
@@ -12,6 +12,13 @@ export type ResponseProvider = (prompt: CompiledPrompt, options?: QueryOptions) 
 export interface TestDriverOptions {
   responses?: string[] | ResponseProvider;
   delay?: number;
+}
+
+/**
+ * Simple token estimation (roughly 4 characters per token)
+ */
+function estimateTokens(text: string): number {
+  return Math.ceil(text.length / 4);
 }
 
 /**
@@ -33,16 +40,24 @@ export class TestDriver implements AIDriver {
     this.delay = options.delay || 0;
   }
   
-  async query(prompt: CompiledPrompt, options?: QueryOptions): Promise<string> {
+  async query(prompt: CompiledPrompt, options?: QueryOptions): Promise<QueryResult> {
     // If we have a response provider function, use it
     if (this.responseProvider) {
-      const response = await this.responseProvider(prompt, options);
+      const content = await this.responseProvider(prompt, options);
       
       if (this.delay > 0) {
         await new Promise(resolve => setTimeout(resolve, this.delay));
       }
       
-      return response;
+      return {
+        content,
+        usage: {
+          promptTokens: estimateTokens(JSON.stringify(prompt)),
+          completionTokens: estimateTokens(content),
+          totalTokens: estimateTokens(JSON.stringify(prompt)) + estimateTokens(content)
+        },
+        finishReason: 'stop'
+      };
     }
     
     // Otherwise use the queue
@@ -55,7 +70,16 @@ export class TestDriver implements AIDriver {
       await new Promise(resolve => setTimeout(resolve, this.delay));
     }
     
-    return this.responseQueue.shift()!;
+    const content = this.responseQueue.shift()!;
+    return {
+      content,
+      usage: {
+        promptTokens: estimateTokens(JSON.stringify(prompt)),
+        completionTokens: estimateTokens(content),
+        totalTokens: estimateTokens(JSON.stringify(prompt)) + estimateTokens(content)
+      },
+      finishReason: 'stop'
+    };
   }
   
   

@@ -6,6 +6,13 @@ import type { StreamProcessingContext } from '../modules/stream-processing.js';
 import { WorkflowExecutionError, type AIDriver, type WorkflowResult } from './types.js';
 
 /**
+ * Simple token estimation (roughly 4 characters per token)
+ */
+function estimateTokens(text: string): number {
+  return Math.ceil(text.length / 4);
+}
+
+/**
  * Context for summarization workflow
  */
 export interface SummarizeWorkflowContext {
@@ -72,19 +79,20 @@ export async function summarizeProcess(
     for (let i = 0; i < currentContext.chunks.length; i += 3) {
       const batchContext: SummarizeWorkflowContext = {
         ...currentContext,
-        state: { content: analysisState, usage: analysisState.length },
+        state: { content: analysisState, usage: estimateTokens(analysisState) },
         range: { start: i, end: Math.min(i + 3, currentContext.chunks.length) }
       };
       
       const prompt = compile(analysisModule, batchContext);
       
       try {
-        analysisState = await driver.query(prompt);
+        const queryResult = await driver.query(prompt);
+        analysisState = queryResult.content;
       } catch (error) {
         // Preserve context and phase info on driver error
         throw new WorkflowExecutionError(error as Error, {
           ...currentContext,
-          state: { content: analysisState, usage: analysisState.length },
+          state: { content: analysisState, usage: estimateTokens(analysisState) },
           range: { start: i, end: Math.min(i + 3, currentContext.chunks.length) },
           analysisReport: analysisState
         }, {
@@ -118,7 +126,7 @@ export async function summarizeProcess(
       ...currentContext,
       state: { 
         content: summaryState, 
-        usage: summaryState.length 
+        usage: estimateTokens(summaryState) 
       },
       range: { 
         start: i, 
@@ -131,12 +139,13 @@ export async function summarizeProcess(
     const prompt = compile(summarizeModule, batchContext);
     
     try {
-      summaryState = await driver.query(prompt);
+      const queryResult = await driver.query(prompt);
+      summaryState = queryResult.content;
     } catch (error) {
       // Preserve context and phase info on driver error
       throw new WorkflowExecutionError(error as Error, {
         ...currentContext,
-        state: { content: summaryState, usage: summaryState.length },
+        state: { content: summaryState, usage: estimateTokens(summaryState) },
         range: { start: i, end: Math.min(i + 3, currentContext.chunks.length) }
       }, {
         phase: 'summarization',
@@ -145,7 +154,7 @@ export async function summarizeProcess(
     }
     
     // Check if we're approaching target size
-    if (summaryState.length > targetTokens * 4) {  // Rough char to token estimate
+    if (estimateTokens(summaryState) > targetTokens * 4) {  // Rough char to token estimate
       // Aggressive reduction needed - will be handled by the module
     }
   }
@@ -156,7 +165,7 @@ export async function summarizeProcess(
     phase: 'complete',
     state: {
       content: summaryState,
-      usage: summaryState.length
+      usage: estimateTokens(summaryState)
     },
     analysisReport,
     range: undefined // Processing complete
@@ -167,7 +176,7 @@ export async function summarizeProcess(
     context: finalContext,
     metadata: {
       analysisEnabled: enableAnalysis,
-      finalLength: summaryState.length,
+      finalLength: estimateTokens(summaryState),
       targetTokens
     }
   };

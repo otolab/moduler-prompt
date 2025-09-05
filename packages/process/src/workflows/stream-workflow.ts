@@ -4,6 +4,13 @@ import { WorkflowExecutionError, type AIDriver, type WorkflowResult } from './ty
 import type { StreamProcessingContext } from '../modules/stream-processing.js';
 
 /**
+ * Simple token estimation (roughly 4 characters per token)
+ */
+function estimateTokens(text: string): number {
+  return Math.ceil(text.length / 4);
+}
+
+/**
  * Options for stream workflow
  */
 export interface StreamWorkflowOptions {
@@ -97,9 +104,12 @@ export async function streamProcess(
 
     const prompt = compile(module, iterationContext);
     
-    let nextState: string;
+    let nextStateContent: string;
+    let nextStateUsage: number;
     try {
-      nextState = await driver.query(prompt);
+      const result = await driver.query(prompt);
+      nextStateContent = result.content;
+      nextStateUsage = result.usage?.completionTokens || estimateTokens(result.content);
     } catch (error) {
       // Return error with context that can be used to resume
       throw new WorkflowExecutionError(error as Error, {
@@ -114,8 +124,8 @@ export async function streamProcess(
 
     // Update state with the result
     state = {
-      content: nextState,
-      usage: nextState.length // Simplified token counting
+      content: nextStateContent,
+      usage: nextStateUsage
     };
 
     range = getNextRange(context.chunks, range, { tokenLimit, maxChunk });
@@ -131,7 +141,7 @@ export async function streamProcess(
     output: state.content,
     context: finalContext,
     metadata: {
-      finalLength: state.content.length,
+      finalTokens: state.usage,
       targetTokens
     }
   };

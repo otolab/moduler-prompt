@@ -43,7 +43,7 @@ export interface AIDriver {
   /**
    * Query the AI model with a compiled prompt
    */
-  query(prompt: CompiledPrompt, options?: QueryOptions): Promise<string>;
+  query(prompt: CompiledPrompt, options?: QueryOptions): Promise<QueryResult>;
   
   /**
    * Stream query (optional)

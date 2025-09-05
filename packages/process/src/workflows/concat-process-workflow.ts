@@ -3,6 +3,13 @@ import type { PromptModule } from '@moduler-prompt/core';
 import { WorkflowExecutionError, type AIDriver, type WorkflowResult } from './types.js';
 
 /**
+ * Simple token estimation (roughly 4 characters per token)
+ */
+function estimateTokens(text: string): number {
+  return Math.ceil(text.length / 4);
+}
+
+/**
  * Context for concat processing workflow
  */
 export interface ConcatProcessContext {
@@ -65,7 +72,8 @@ export async function concatProcess(
       const prompt = compile(module, chunkContext);
       
       try {
-        return await driver.query(prompt);
+        const result = await driver.query(prompt);
+        return result.content;
       } catch (error) {
         throw new WorkflowExecutionError(error as Error, {
           ...context,
@@ -100,8 +108,8 @@ export async function concatProcess(
       const prompt = compile(module, batchContext);
       
       try {
-        const result = await driver.query(prompt);
-        results.push(result);
+        const queryResult = await driver.query(prompt);
+        results.push(queryResult.content);
         processedCount = startIndex + i + batch.length;
       } catch (error) {
         throw new WorkflowExecutionError(error as Error, {
