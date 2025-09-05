@@ -1,0 +1,38 @@
+{
+  "name": "@moduler-prompt/root",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Modular prompt framework for generative AI",
+  "workspaces": [
+    "packages/*"
+  ],
+  "scripts": {
+    "build": "npm run build --workspaces",
+    "test": "npm run test --workspaces",
+    "clean": "npm run clean --workspaces",
+    "dev": "npm run dev --workspace=@moduler-prompt/core",
+    "lint": "npm run lint --workspaces",
+    "typecheck": "npm run typecheck --workspaces"
+  },
+  "devDependencies": {
+    "@types/node": "^20.0.0",
+    "typescript": "^5.0.0"
+  },
+  "engines": {
+    "node": ">=18.0.0",
+    "npm": ">=9.0.0"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/otolab/moduler-prompt.git"
+  },
+  "keywords": [
+    "prompt",
+    "ai",
+    "llm",
+    "modular",
+    "framework"
+  ],
+  "author": "",
+  "license": "MIT"
+}
