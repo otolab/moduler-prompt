@@ -134,8 +134,8 @@ const compiled = compile(taskModule, context);
 import type { SubSectionElement } from '@moduler-prompt/core';
 
 const structuredModule: PromptModule = {
-  // processing自体が "Processing Algorithm" セクションになる
-  processing: [
+  // methodology自体が "Processing Methodology" セクションになる
+  methodology: [
     '入力データを検証',
     '前処理を実行',
     '後述の「変換処理」を実行',
@@ -154,7 +154,7 @@ const structuredModule: PromptModule = {
 };
 
 // コンパイル時に以下のような構造になる：
-// ## Processing Algorithm
+// ## Processing Methodology
 // - 入力データを検証
 // - 前処理を実行
 // - 後述の「変換処理」を実行

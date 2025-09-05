@@ -129,7 +129,7 @@ interface PromptModule<TContext = any> {
   // Instructions セクション（自動的にSectionElementになる）
   objective?: SectionContent<TContext>;
   terms?: SectionContent<TContext>;
-  processing?: SectionContent<TContext>;
+  methodology?: SectionContent<TContext>;
   instructions?: SectionContent<TContext>;
   guidelines?: SectionContent<TContext>;
   preparationNote?: SectionContent<TContext>;
@@ -242,7 +242,7 @@ const STANDARD_SECTIONS = {
   // Instructions
   objective: { type: 'instructions' as const, title: 'Objective and Role' },
   terms: { type: 'instructions' as const, title: 'Term Explanations' },
-  processing: { type: 'instructions' as const, title: 'Processing Algorithm' },
+  methodology: { type: 'instructions' as const, title: 'Processing Methodology' },
   instructions: { type: 'instructions' as const, title: 'Instructions' },
   guidelines: { type: 'instructions' as const, title: 'Guidelines' },
   preparationNote: { type: 'instructions' as const, title: 'Response Preparation Note' },
@@ -295,3 +295,27 @@ interface Attachment {
   file?: { path: string; mime_type: string };
 }
 ```
+
+## @moduler-prompt/process
+
+### モジュール
+
+#### `withMaterials`
+参考資料をプロンプトに含めるモジュール。
+
+#### `answerWithReferences`
+資料を参照しながら回答する指示を追加。
+
+#### `streamProcessing`
+チャンク単位の逐次処理と状態管理。コンテキストに基づいて以下を動的に制御：
+- 出力サイズ制御（`targetTokens`設定時）
+- 初回・最終イテレーションの検出と適切な指示
+- 状態のサイズが閾値を超えた場合の積極的な削減
+
+### ワークフロー
+
+#### `createStreamWorkflow(config)`
+処理アルゴリズムとストリーム処理を組み合わせる。
+
+#### `StreamProcessor`
+チャンクのバッチ処理とステート管理を実行するクラス。

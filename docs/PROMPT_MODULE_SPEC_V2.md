@@ -25,7 +25,7 @@ const standardSections = {
   // Instructions
   objective: { type: 'instructions', title: 'Objective and Role' },
   terms: { type: 'instructions', title: 'Term Explanations' },
-  processing: { type: 'instructions', title: 'Processing Algorithm' },
+  methodology: { type: 'instructions', title: 'Processing Methodology' },
   instructions: { type: 'instructions', title: 'Instructions' },
   guidelines: { type: 'instructions', title: 'Guidelines' },
   preparationNote: { type: 'instructions', title: 'Response Preparation Note' },
@@ -137,7 +137,7 @@ interface PromptModule<TContext = any> {
   // Instructions セクション（自動的にSectionElementになる）
   objective?: (string | SubSectionElement | DynamicContent<TContext>)[];
   terms?: (string | SubSectionElement | DynamicContent<TContext>)[];
-  processing?: (string | SubSectionElement | DynamicContent<TContext>)[];
+  methodology?: (string | SubSectionElement | DynamicContent<TContext>)[];
   instructions?: (string | SubSectionElement | DynamicContent<TContext>)[];
   guidelines?: (string | SubSectionElement | DynamicContent<TContext>)[];
   preparationNote?: (string | SubSectionElement | DynamicContent<TContext>)[];
@@ -161,7 +161,7 @@ interface PromptModule<TContext = any> {
 ```typescript
 // 入力（簡潔な記法）
 const module: PromptModule = {
-  processing: [
+  methodology: [
     '入力データを検証',
     '前処理を実行',
     {
@@ -174,7 +174,7 @@ const module: PromptModule = {
 };
 
 // コンパイル後の出力
-// ## Processing Algorithm
+// ## Processing Methodology
 // - 入力データを検証
 // - 前処理を実行
 // ### 変換処理
@@ -277,7 +277,7 @@ const streamProcessingModule: PromptModule<StreamingContext> = {
   
   objective: ['ストリーミング処理を実行する'],
   
-  processing: [
+  methodology: [
     'チャンクごとに順次処理を実行',
     {
       type: 'subsection',
