@@ -9,6 +9,7 @@
 - 🎯 **マルチモデル対応**: 様々な生成AIモデルへの統一インターフェース
 - 🚀 **ストリーム処理**: 大規模データの効率的な処理
 - 🛠️ **型安全**: TypeScriptによる完全な型定義
+- 🔀 **柔軟なマージ**: モジュールの再帰的統合と順序制御
 
 ## プロジェクト構造
 
@@ -23,8 +24,11 @@
 
 ## ドキュメント
 
-- [コンセプトと設計思想](./docs/IDEAS.md)
-- [既存実装の分析](./docs/EXISTING_IMPLEMENTATION.md)
+- [はじめに](./docs/GETTING_STARTED.md) - クイックスタートガイド
+- [API リファレンス](./docs/API.md) - 詳細なAPI仕様
+- [仕様書 v2](./docs/PROMPT_MODULE_SPEC_V2.md) - プロンプトモジュール仕様
+- [コンセプトと設計思想](./docs/IDEAS.md) - フレームワークの理念
+- [既存実装の分析](./docs/EXISTING_IMPLEMENTATION.md) - 旧バージョンの分析
 
 ## インストール
 
@@ -34,28 +38,42 @@ npm install @moduler-prompt/core @moduler-prompt/driver
 
 ## 使用例
 
-```javascript
-import { mergePrompts, buildPrompt } from '@moduler-prompt/core';
-import { OpenAIDriver } from '@moduler-prompt/driver/openai';
+```typescript
+import { merge, compile, createContext } from '@moduler-prompt/core';
+import type { PromptModule, ChunkElement } from '@moduler-prompt/core';
 
 // モジュールの定義
-const analysisModule = {
+interface AnalysisContext {
+  sourceCode: string;
+  language: string;
+}
+
+const analysisModule: PromptModule<AnalysisContext> = {
+  createContext: () => ({
+    sourceCode: '',
+    language: 'javascript'
+  }),
+  
   objective: ['コードの品質を分析する'],
   instructions: ['静的解析を実行', 'パフォーマンス問題を特定'],
+  
+  chunks: [
+    (context) => ({
+      type: 'chunk',
+      content: context.sourceCode,
+      partOf: `main.${context.language}`
+    } as ChunkElement)
+  ],
+  
   cue: ['分析結果をJSON形式で出力']
 };
 
-// コンテキストの準備
-const context = {
-  chunks: [{ content: sourceCode, partOf: 'main.js' }]
-};
-
-// プロンプトのビルド
-const prompt = buildPrompt(mergePrompts(analysisModule), context);
-
 // 実行
-const driver = new OpenAIDriver({ model: 'gpt-4' });
-const result = await driver.query(prompt);
+const context = createContext(analysisModule);
+context.sourceCode = 'const example = () => { ... }';
+
+const compiled = compile(analysisModule, context);
+// compiledは instructions, data, output のElement配列を含む
 ```
 
 ## 開発
