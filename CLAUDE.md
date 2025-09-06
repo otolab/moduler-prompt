@@ -38,11 +38,11 @@
 - `*.test.ts` - 実装と同階層にユニットテスト配置
 - 包括的なマージ・コンパイルテスト実装済み
 
-## 今後の実装予定
+## パッケージ構成
 
-- [ ] `@moduler-prompt/driver` - 各種AIモデルドライバー
-- [ ] `@moduler-prompt/process` - ストリーム処理等のパターン
-- [ ] `@moduler-prompt/presets` - 事前定義モジュール集
+- `@moduler-prompt/core` - コア機能（型定義、マージ、コンパイル）
+- `@moduler-prompt/process` - ストリーム処理とマテリアル管理モジュール
+- `@moduler-prompt/driver` - AIモデルドライバー（開発中）
 
 ## 主要ドキュメント
 

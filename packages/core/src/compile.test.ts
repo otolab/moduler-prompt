@@ -26,7 +26,7 @@ describe('compile', () => {
     it('標準セクションがSectionElementに変換される', () => {
       const module: PromptModule = {
         objective: ['AIアシスタントとして動作する'],
-        processing: ['データを分析', '結果を生成']
+        methodology: ['データを分析', '結果を生成']
       };
       const context = {};
       const result = compile(module, context);
@@ -41,14 +41,14 @@ describe('compile', () => {
       expect(result.instructions[1]).toEqual({
         type: 'section',
         content: '',
-        title: 'Processing Algorithm',
+        title: 'Processing Methodology',
         items: ['データを分析', '結果を生成']
       });
     });
 
     it('SubSectionElementを含むセクションを処理できる', () => {
       const module: PromptModule = {
-        processing: [
+        methodology: [
           '入力を検証',
           {
             type: 'subsection',
@@ -66,7 +66,7 @@ describe('compile', () => {
       expect(result.instructions[0]).toEqual({
         type: 'section',
         content: '',
-        title: 'Processing Algorithm',
+        title: 'Processing Methodology',
         items: [
           '入力を検証',
           '出力を生成',
@@ -259,7 +259,7 @@ describe('compile', () => {
       }
       
       const module: PromptModule<Context> = {
-        processing: [
+        methodology: [
           '処理を開始',
           (context) => ({
             type: 'text',
@@ -291,7 +291,7 @@ describe('compile', () => {
       expect(result.instructions[0]).toEqual({
         type: 'section',
         content: '',
-        title: 'Processing Algorithm',
+        title: 'Processing Methodology',
         items: [
           '処理を開始',
           'ステップ 3/5 を実行中',

@@ -48,6 +48,12 @@ function mergeTwo<T1 = any, T2 = any>(
 /**
  * 複数のPromptModuleをマージ
  */
+// 2つのモジュール  
+export function merge<T1, T2>(
+  module1: PromptModule<T1>,
+  module2: PromptModule<T2>
+): PromptModule<T1 & T2>;
+
 // 3つのモジュール
 export function merge<T1, T2, T3>(
   ...modules: [PromptModule<T1>, PromptModule<T2>, PromptModule<T3>]

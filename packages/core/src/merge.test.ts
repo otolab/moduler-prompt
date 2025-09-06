@@ -25,23 +25,23 @@ describe('merge', () => {
     it('同じセクションの文字列が結合される', () => {
       const module1: PromptModule = {
         objective: ['目的1'],
-        processing: ['処理1']
+        methodology: ['処理1']
       };
       const module2: PromptModule = {
         objective: ['目的2'],
-        processing: ['処理2']
+        methodology: ['処理2']
       };
       const result = merge(module1, module2);
       
       expect(result.objective).toEqual(['目的1', '目的2']);
-      expect(result.processing).toEqual(['処理1', '処理2']);
+      expect(result.methodology).toEqual(['処理1', '処理2']);
     });
   });
 
   describe('SubSectionElementのマージ', () => {
     it('異なるサブセクションは両方保持される', () => {
       const module1: PromptModule = {
-        processing: [
+        methodology: [
           '処理1',
           {
             type: 'subsection',
@@ -52,7 +52,7 @@ describe('merge', () => {
         ]
       };
       const module2: PromptModule = {
-        processing: [
+        methodology: [
           '処理2',
           {
             type: 'subsection',
@@ -64,7 +64,7 @@ describe('merge', () => {
       };
       const result = merge(module1, module2);
       
-      expect(result.processing).toEqual([
+      expect(result.methodology).toEqual([
         '処理1',
         '処理2',
         {
@@ -84,7 +84,7 @@ describe('merge', () => {
 
     it('同名のサブセクションはitemsがマージされる', () => {
       const module1: PromptModule = {
-        processing: [
+        methodology: [
           {
             type: 'subsection',
             content: '',
@@ -94,7 +94,7 @@ describe('merge', () => {
         ]
       };
       const module2: PromptModule = {
-        processing: [
+        methodology: [
           {
             type: 'subsection',
             content: '',
@@ -105,7 +105,7 @@ describe('merge', () => {
       };
       const result = merge(module1, module2);
       
-      expect(result.processing).toEqual([
+      expect(result.methodology).toEqual([
         {
           type: 'subsection',
           content: '',
@@ -138,7 +138,7 @@ describe('merge', () => {
       const dynamic = (_context: any) => ({ type: 'text', content: 'Dynamic' });
       
       const module1: PromptModule = {
-        processing: [
+        methodology: [
           '文字列1',
           dynamic,
           {
@@ -150,7 +150,7 @@ describe('merge', () => {
         ]
       };
       const module2: PromptModule = {
-        processing: [
+        methodology: [
           '文字列2',
           {
             type: 'subsection',
@@ -162,12 +162,12 @@ describe('merge', () => {
       };
       const result = merge(module1, module2);
       
-      expect(result.processing).toHaveLength(5);
-      expect(result.processing![0]).toBe('文字列1');
-      expect(result.processing![1]).toBe(dynamic);
-      expect(result.processing![2]).toBe('文字列2');
-      expect((result.processing![3] as SubSectionElement).title).toBe('サブ1');
-      expect((result.processing![4] as SubSectionElement).title).toBe('サブ2');
+      expect(result.methodology).toHaveLength(5);
+      expect(result.methodology![0]).toBe('文字列1');
+      expect(result.methodology![1]).toBe(dynamic);
+      expect(result.methodology![2]).toBe('文字列2');
+      expect((result.methodology![3] as SubSectionElement).title).toBe('サブ1');
+      expect((result.methodology![4] as SubSectionElement).title).toBe('サブ2');
     });
   });
 
@@ -244,21 +244,21 @@ describe('merge', () => {
     it('異なるセクションを持つ複数モジュールをマージできる', () => {
       const module1: PromptModule = { 
         objective: ['目的'],
-        processing: ['処理1']
+        methodology: ['処理1']
       };
       const module2: PromptModule = { 
         state: ['状態'],
-        processing: ['処理2']
+        methodology: ['処理2']
       };
       const module3: PromptModule = { 
         cue: ['出力'],
-        processing: ['処理3']
+        methodology: ['処理3']
       };
       
       const result = merge(module1, module2, module3);
       
       expect(result.objective).toEqual(['目的']);
-      expect(result.processing).toEqual(['処理1', '処理2', '処理3']);
+      expect(result.methodology).toEqual(['処理1', '処理2', '処理3']);
       expect(result.state).toEqual(['状態']);
       expect(result.cue).toEqual(['出力']);
     });
@@ -267,7 +267,7 @@ describe('merge', () => {
   describe('順序の保持', () => {
     it('通常要素 → サブセクションの順序が保持される', () => {
       const module1: PromptModule = {
-        processing: [
+        methodology: [
           {
             type: 'subsection',
             content: '',
@@ -278,7 +278,7 @@ describe('merge', () => {
         ]
       };
       const module2: PromptModule = {
-        processing: [
+        methodology: [
           '文字列2',
           {
             type: 'subsection',
@@ -291,10 +291,10 @@ describe('merge', () => {
       const result = merge(module1, module2);
       
       // 期待される順序: 文字列1, 文字列2, サブ1, サブ2
-      expect(result.processing![0]).toBe('文字列1');
-      expect(result.processing![1]).toBe('文字列2');
-      expect((result.processing![2] as SubSectionElement).title).toBe('サブ1');
-      expect((result.processing![3] as SubSectionElement).title).toBe('サブ2');
+      expect(result.methodology![0]).toBe('文字列1');
+      expect(result.methodology![1]).toBe('文字列2');
+      expect((result.methodology![2] as SubSectionElement).title).toBe('サブ1');
+      expect((result.methodology![3] as SubSectionElement).title).toBe('サブ2');
     });
   });
 
@@ -403,7 +403,7 @@ describe('merge', () => {
     it('5つ以上のモジュールもマージできる', () => {
       const modules: PromptModule[] = [
         { objective: ['目的1'], terms: ['用語1'] },
-        { objective: ['目的2'], processing: ['処理2'] },
+        { objective: ['目的2'], methodology: ['処理2'] },
         { objective: ['目的3'], instructions: ['手順3'] },
         { objective: ['目的4'], guidelines: ['ガイド4'] },
         { objective: ['目的5'], preparationNote: ['準備5'] },
@@ -414,7 +414,7 @@ describe('merge', () => {
       
       expect(merged.objective).toEqual(['目的1', '目的2', '目的3', '目的4', '目的5', '目的6']);
       expect(merged.terms).toEqual(['用語1']);
-      expect(merged.processing).toEqual(['処理2']);
+      expect(merged.methodology).toEqual(['処理2']);
       expect(merged.instructions).toEqual(['手順3']);
       expect(merged.guidelines).toEqual(['ガイド4']);
       expect(merged.preparationNote).toEqual(['準備5']);
