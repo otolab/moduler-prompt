@@ -42,10 +42,28 @@
 
 - `@moduler-prompt/core` - コア機能（型定義、マージ、コンパイル）
 - `@moduler-prompt/process` - ストリーム処理とマテリアル管理モジュール
-- `@moduler-prompt/driver` - AIモデルドライバー（開発中）
+- `@moduler-prompt/utils` - フォーマッターとコンバーター（テキスト/メッセージ形式変換）
+- `@moduler-prompt/driver` - AIモデルドライバー（OpenAI, Anthropic, VertexAI, Ollama, MLX ML）
+
+## ドライバー機能 (`packages/driver/`)
+
+### 利用可能なドライバー
+- **OpenAIDriver** - OpenAI API（GPT-4, GPT-3.5）
+- **AnthropicDriver** - Anthropic Claude API
+- **VertexAIDriver** - Google Cloud Vertex AI（Gemini）
+- **OllamaDriver** - ローカルLLM（OpenAI互換）
+- **MlxDriver** - Apple Silicon最適化モデル（Pythonサブプロセス）
+- **TestDriver** - テスト用モックドライバー
+
+### ドライバーアーキテクチャ
+- `BaseDriver` - 全ドライバーの基底クラス
+- プロンプト生成責任の統合（formatPrompt/formatPromptAsMessages）
+- 統一されたエラーハンドリングとストリーミングサポート
+- `preferMessageFormat`フラグによる形式選択
 
 ## 主要ドキュメント
 
 - [仕様書](./docs/PROMPT_MODULE_SPEC_V2.md)
 - [API](./docs/API.md)
 - [Getting Started](./docs/GETTING_STARTED.md)
+- [Driver API](./docs/DRIVER_API.md)

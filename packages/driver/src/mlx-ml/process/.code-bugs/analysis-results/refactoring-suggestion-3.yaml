@@ -1,0 +1,1042 @@
+index.test.ts:
+  analysis:
+    meta:
+      model: vertexai:gemini-2.5-pro
+      sources:
+        - path: index.test.ts
+          hash: 52e98a0be41a2f11eb1d8830b8ec153e93bc4add7b9e1d3bbd89d9dd4a81adab
+      version: 0.1.0
+    result:
+      content: |-
+        承知いたしました。提供された情報に基づき、コード分析を開始します。
+
+        ---
+
+        ### コード分析レポート
+
+        このレポートは、提供されたコードチャンクを分析し、「Analysis Procedure Guide」に基づいたリファクタリングの提案をまとめたものです。
+
+        ### 分析結果サマリー
+
+        以下のリファクタリング推奨項目が特定されました。
+
+        *   **長すぎるメソッド**: `testMlxApiV2` 関数が長大であり、複数の責務を持っているため、分割が推奨されます。
+        *   **callback のメソッド**: ストリーム処理に `on('data', ...)` や `on('end', ...)` といったコールバックスタイルのコードが使用されています。`async/await`構文（特に `for await...of`）への統一が望ましいです。
+        *   **テストすべき関数の未テスト状態**: ファイル内にテストフレームワーク (`describe`/`test`) の記述がありますが、主要なロジックである `testMlxApiV2` 関数の内容がテストケースとして記述されておらず、結果の検証も行われていません。
+
+        ---
+
+        ### 詳細な分析結果
+
+        #### 1. 長すぎるメソッド
+
+        **指摘事項**
+        `testMlxApiV2` 関数（L15-L116）は、約100行に及び非常に長大です。この関数は、以下の複数の異なるAPI機能のテストを単一の関数内で実行しており、単一責任の原則に反しています。
+
+        1.  Capabilities API のテスト
+        2.  Format Test API のテスト
+        3.  Chat API のテスト
+        4.  Completion API のテスト
+        5.  レガシー互換性（Direct chat）のテスト
+
+        **根拠**
+        *   `testMlxApiV2` 関数: L15-L116
+
+        **改善提案**
+        各APIテストのロジックを、それぞれ独立した小さな関数に分割することを推奨します。これにより、コードの可読性、保守性、再利用性が向上します。
+
+        ```typescript
+        // 改善案の例
+        async function testCapabilitiesApi(mlx: MlxProcess) { /* ... */ }
+        async function testFormatApi(mlx: MlxProcess) { /* ... */ }
+        async function testChatApi(mlx: MlxProcess) { /* ... */ }
+        // ...
+
+        async function testMlxApiV2() {
+          // ...
+          try {
+            await testCapabilitiesApi(mlx);
+            await testFormatApi(mlx);
+            await testChatApi(mlx);
+            // ...
+          }
+          // ...
+        }
+        ```
+
+        #### 2. callback のメソッド
+
+        **指摘事項**
+        ストリームデータの処理において、`stream.on('data', ...)` や `stream.on('end', ...)` といったイベントリスナー（コールバック）形式が使用されています。コード全体が `async/await` をベースにしている中で、この部分は古いスタイルであり、可読性を低下させる可能性があります。
+
+        **根拠**
+        *   Chat API のストリーム処理: L61-L68
+        *   Completion API のストリーム処理: L76-L83
+        *   Direct chat API のストリーム処理: L92-L99
+
+        **改善提案**
+        Node.js のストリームは非同期イテラブルに対応しているため、`for await...of` 構文を使用して、よりシンプルでモダンな `async/await` スタイルに書き換えることを推奨します。
+
+        ```typescript
+        // 改善案の例 (Chat API)
+        console.log('3. Chat API テスト');
+        const chatStream = await mlx.chat(messages, 'Hello', { max_tokens: 50 });
+
+        let chatResponse = '';
+        for await (const chunk of chatStream) {
+          process.stdout.write(chunk);
+          chatResponse += chunk;
+        }
+
+        console.log('\nChat完了\n');
+        ```
+
+        #### 3. テストすべき関数の未テスト状態
+
+        **指摘事項**
+        このファイルには `describe` や `test` といったテストフレームワークの構文が含まれていますが、実際に行われているテストは「`MlxProcess` がインポート可能か」という1点のみです。
+
+        エクスポートされている `testMlxApiV2` 関数は、実質的に複数のAPI機能のE2Eテストを実行するスクリプトですが、その処理内容はテストケースとして構造化されておらず、APIからの応答が期待通りであるかを検証するアサーション（`expect`）も含まれていません。
+
+        **根拠**
+        *   **既存のテスト**: L10-L14 で `MlxProcess` のインポートのみをテスト。
+        *   **テストされていないロジック**: `testMlxApiV2` 関数（L15-L116）内の各API呼び出しと、その結果（`console.log`で出力しているだけ）。
+
+        **改善提案**
+        `testMlxApiV2` の内容を、テストフレームワークの作法に則って `test` ブロックに分割し、各APIの応答を `expect` を用いて検証するようにリファクタリングすることを強く推奨します。これにより、手動でのコンソール出力確認が不要になり、自動化された堅牢なテストを実現できます。
+
+        ```typescript
+        // 改善案の例
+        describe('MLX Driver API v2.0', () => {
+          const modelName = 'Qwen/Qwen3-0.6B';
+          let mlx: MlxProcess;
+
+          beforeAll(() => {
+            mlx = new MlxProcess(modelName);
+          });
+
+          afterAll(() => {
+            mlx.exit();
+          });
+
+          test('getCapabilities should return capabilities', async () => {
+            const capabilities = await mlx.getCapabilities();
+            expect(capabilities.methods).toBeInstanceOf(Array);
+            expect(capabilities.features.apply_chat_template).toBe(true);
+          });
+
+          test('chat should return a stream of text', async () => {
+            const messages = [{ role: 'user' as const, content: 'Hello' }];
+            const stream = await mlx.chat(messages, undefined, { max_tokens: 10 });
+            let response = '';
+            for await (const chunk of stream) {
+              response += chunk;
+            }
+            expect(response.length).toBeGreaterThan(0);
+          });
+
+          // 他のAPIテストも同様に記述...
+        });
+        ```
+
+        ---
+
+        ### 今回の分析で問題がなかった項目
+
+        *   **単一の参照元しか持たないファイル**: 依存関係の情報が不足しているため、この項目は評価できませんでした。
+        *   **多すぎるエクスポート**: エクスポートは `testMlxApiV2` 関数のみであり、問題はありません。
+      usage: 1984
+  summary:
+    meta:
+      model: vertexai:gemini-2.5-pro
+      sources:
+        - path: index.test.ts
+          hash: 52e98a0be41a2f11eb1d8830b8ec153e93bc4add7b9e1d3bbd89d9dd4a81adab
+      version: 0.1.0
+    result:
+      results:
+        - hasFindings: false
+          name: 単一の参照元しか持たないファイル
+          details: []
+        - hasFindings: false
+          name: 多すぎるエクスポート
+          details: []
+        - hasFindings: true
+          name: 長すぎるメソッド
+          details:
+            - value: testMlxApiV2
+              reason: 関数が約100行と長大で、Capabilities, Format, Chat, Completion, Direct
+                chatの5つの異なるAPIテストを内包しており、単一責任の原則に反しています。
+        - hasFindings: true
+          name: callback のメソッド
+          details:
+            - value: ストリーム処理でのコールバック形式の使用
+              reason: async/awaitベースのコード内で、ストリーム処理に`on('data', ...)`や`on('end',
+                ...)`といったコールバック形式が混在しており、可読性を低下させています。
+              subItems:
+                - Chat API (L61-L68)
+                - Completion API (L76-L83)
+                - Direct chat API (L92-L99)
+        - hasFindings: true
+          name: テストすべき関数の未テスト状態
+          details:
+            - value: testMlxApiV2
+              reason: エクスポートされた主要ロジックであるにも関わらず、テストケースとして構造化されておらず、API応答を検証するアサーションが含まれていません。
+index.ts:
+  analysis:
+    meta:
+      model: vertexai:gemini-2.5-pro
+      sources:
+        - path: index.ts
+          hash: 5aa4646a3254497ba719b929acac3cafeb7364e4d6941a002305c2b69380bb1b
+        - path: index.test.ts
+          hash: 52e98a0be41a2f11eb1d8830b8ec153e93bc4add7b9e1d3bbd89d9dd4a81adab
+      version: 0.1.0
+    result:
+      content: |-
+        はい、承知いたしました。分析を開始します。
+
+        ## コード分析レポート
+
+        ### はじめに
+
+        対象ファイル `index.ts` について、提供された分析手順ガイドに基づきリファクタリングの観点から分析を行いました。
+        このファイルは、`mlx-ml.ts` ドライバーから利用されるメインAPIを定義しており、内部で `QueueManager`、`ProcessCommunication`、`ModelSpecificProcessor` といった複数のコンポーネントを協調させて動作させる責務を担っています。
+
+        以下に、分析項目ごとの結果と改善提案を報告します。
+
+        ---
+
+        ### 1. 単一の参照元しか持たないファイル
+
+        **分析結果:** 指摘事項なし
+
+        **理由:**
+        このファイル `index.ts` は、コメントに「`mlx-ml.ts`ドライバーからアクセスされるメイン API」と記載されている通り、外部モジュールからの利用を前提としたエントリーポイントです。また、関連テストファイル `index.test.ts` からも参照されています。したがって、単一の参照元しか持たないファイルには該当しません。
+
+        ---
+
+        ### 2. 多すぎるエクスポート
+
+        **分析結果:** 指摘事項なし
+
+        **理由:**
+        [Investigation result: import-and-export-details](investigation-result-import-and-export-details) によると、このファイルは `MlxProcess` クラスと4つの型定義 (`MlxMlModelOptions`, `MlxMessage`, `MlxCapabilities`, `MlxFormatTestResult`) をエクスポートしています。
+
+        - `MlxProcess` クラスは、`chat`, `completion`, `getCapabilities` などの関連性の高いメソッド群をカプセル化しており、単一の責務（MLXプロセスとの通信インターフェース）を担っています。
+        - 型定義は、`./types.js` から再エクスポートされており、このAPIを利用する側への利便性を提供する一般的な設計です。
+
+        機能が適切にクラスにまとめられており、エクスポート数が過剰であるとは言えません。
+
+        ---
+
+        ### 3. 長すぎるメソッド
+
+        **分析結果:** 指摘事項なし
+
+        **理由:**
+        ファイル内の各メソッド（`constructor`, `getCapabilities`, `formatTest`, `chat`, `completion` など）を確認したところ、いずれも処理内容が簡潔で、行数も適切でした。`chat` メソッドにはモデルの特性に応じた分岐がありますが、ロジックは単純明快であり、可読性を損なうものではありません。分割が必要なほど長いメソッドは存在しませんでした。
+
+        ---
+
+        ### 4. callback のメソッド
+
+        **分析結果:** 指摘事項なし
+
+        **理由:**
+        `MlxProcess` クラスが公開しているAPI (`getCapabilities`, `formatTest`, `chat`, `completion`) は、すべて `Promise` または `Promise<Readable>` を返すモダンな非同期設計になっています。
+
+        `constructor` 内で定義されているコールバックは、`ProcessCommunication` と `QueueManager` という内部コンポーネント間のイベント駆動型の連携に使用されており、これは `async/await` で置き換えるべき非同期フローとは性質が異なります。オブザーバーパターンとして適切な設計であり、リファクタリングの必要性は低いと判断します。
+
+        ---
+
+        ### 5. テストすべき関数の未テスト状態
+
+        **分析結果:** 指摘事項あり
+
+        **理由:**
+        このファイルは、外部に公開された `MlxProcess` クラスとそのパブリックメソッド群（`getCapabilities`, `formatTest`, `chat`, `completion` など）を含んでおり、これらはAPIの仕様を保証するためにテストされるべき重要な関数です。
+
+        [Related test: index.test.ts](related-file-index.test.ts) という対応するテストファイルは存在しますが、その内容は自動化されたテストとして不十分です。
+
+        - **アサーションの欠如:** テストファイル内の `testMlxApiV2` 関数は、APIを呼び出して結果を `console.log` で出力するだけで、`expect` などを用いた結果の検証（アサーション）が行われていません。これでは、手動での目視確認が必要となり、CI/CDでの自動回帰テストとして機能しません。
+        - **不適切なテスト構造:** `testMlxApiV2` 関数は、テストフレームワーク（Jestなど）の `test` や `it` ブロックでラップされておらず、単独で実行されるスクリプトとなっています。これは動作確認には有用ですが、体系的なユニットテストやインテグレーションテストとは言えません。
+
+        **改善提案:**
+        `index.test.ts` をリファクタリングし、テストフレームワークの作法に則ったテストケースを作成することを推奨します。
+
+        - `MlxProcess` の各パブリックメソッド（`getCapabilities`, `formatTest`, `chat`, `completion` など）に対して、個別の `test` ブロックを作成します。
+        - 各テストケース内で、APIの戻り値や副作用を `expect` を用いて検証します。例えば、`getCapabilities` が期待される構造のオブジェクトを返すこと、`chat` が `Readable` ストリームを返すことなどをアサーションで確認します。
+        - 必要に応じて、Pythonプロセスとの通信部分をモック化し、純粋なロジックのみをテストするユニットテストと、実際にプロセスを起動して検証するインテグレーションテストを分離することも検討してください。
+
+        **修正例（`getCapabilities` のテストケース）:**
+        ```typescript
+        import { MlxProcess } from './index.js';
+
+        describe('MlxProcess', () => {
+          let mlx: MlxProcess;
+          const modelName = 'Qwen/Qwen3-0.6B'; // テスト用のモデル
+
+          beforeAll(() => {
+            mlx = new MlxProcess(modelName);
+          });
+
+          afterAll(() => {
+            mlx.exit();
+          });
+
+          // ... 他のテストケース
+
+          test('getCapabilities should return capabilities object', async () => {
+            const capabilities = await mlx.getCapabilities();
+            
+            // 戻り値の型やプロパティを検証する
+            expect(capabilities).toBeDefined();
+            expect(typeof capabilities.methods).toBe('object');
+            expect(Array.isArray(capabilities.methods)).toBe(true);
+            expect(typeof capabilities.features.apply_chat_template).toBe('boolean');
+          });
+
+          // ... chat, completion 等のテストケースも同様に作成
+        });
+        ```
+      usage: 2148
+  summary:
+    meta:
+      model: vertexai:gemini-2.5-pro
+      sources:
+        - path: index.ts
+          hash: 5aa4646a3254497ba719b929acac3cafeb7364e4d6941a002305c2b69380bb1b
+        - path: index.test.ts
+          hash: 52e98a0be41a2f11eb1d8830b8ec153e93bc4add7b9e1d3bbd89d9dd4a81adab
+      version: 0.1.0
+    result:
+      results:
+        - hasFindings: false
+          name: 単一の参照元しか持たないファイル
+        - hasFindings: false
+          name: 多すぎるエクスポート
+        - hasFindings: false
+          name: 長すぎるメソッド
+        - hasFindings: false
+          name: callback のメソッド
+        - hasFindings: true
+          name: テストすべき関数の未テスト状態
+          details:
+            - value: 公開APIである`MlxProcess`クラスのメソッド群に対する自動テストが不十分です。
+              reason: "関連テストファイル `[Related test: index.test.ts](related-file-index.test.ts)`
+                は存在するものの、API呼び出しの結果を`console.log`で出力するだけで、`expect`等による結果の検証（アサー\
+                ション）が行われていません。そのため、自動化された回帰テストとして機能しません。"
+              subItems:
+                - "改善提案:
+                  `MlxProcess`の各パブリックメソッドに対して個別のテストケースを作成し、`expect`を用いて戻り値や副作用を\
+                  検証するべきです。"
+                - "改善提案:
+                  必要に応じて、Pythonプロセスとの通信部分をモック化し、ユニットテストとインテグレーションテストを分離することを検討し\
+                  てください。"
+model-specific.test.ts:
+  analysis:
+    meta:
+      model: vertexai:gemini-2.5-pro
+      sources:
+        - path: model-specific.test.ts
+          hash: cb482de0fce423ab27ffb2acf8c8f8f77221962bcb29681860700988c0b9a0b0
+      version: 0.1.0
+    result:
+      content: >-
+        # コード分析レポート
+
+
+        ## 分析対象ファイル
+
+
+        - (ファイル名は不明ですが、`model-specific.js` のユニットテストファイルと推測されます)
+
+
+        ## 分析サマリー
+
+
+        提供されたコードは `model-specific.js` に対するユニットテストです。
+
+        テストファイルという特性上、`Analysis Procedure Guide`
+        に記載されているリファクタリング観点の多くは直接適用されません。
+
+        コードの構造は、テスト対象の機能やモデルごとに `describe` ブロックで整理されており、可読性が高く、問題点は見つかりませんでした。
+
+
+        ---
+
+
+        ## 詳細分析結果
+
+
+        ### 1. 単一の参照元しか持たないファイル
+
+
+        - **分析結果:** 指摘事項なし。
+
+        - **理由:**
+          - 対象ファイルはユニットテストコードです。テストコードは通常、他のアプリケーションコードから参照されることを意図していないため、この分析項目の対象外です。
+
+        ### 2. 多すぎるエクスポート
+
+
+        - **分析結果:** 指摘事項なし。
+
+        - **理由:**
+          - 事前分析結果 `[Investigation result: import-and-export-details](investigation-result-import-and-export-details)` によると、このファイルは何もエクスポートしていません。テストファイルとしては一般的な実装であり、問題ありません。
+
+        ### 3. 長すぎるメソッド
+
+
+        - **分析結果:** 指摘事項なし。
+
+        - **理由:**
+          - 各テストケース (`test` ブロック) は、単一の責務（特定の入力に対する期待される出力の検証）に絞られており、簡潔に記述されています。
+          - `describe` ブロックによって、関連するテストがモデルごと (`Tanuki-8B-dpo-v1`, `CodeLlama`, etc.) や機能ごと (`Completion specific processing`, `Generate merged prompt`) にまとめられており、構造的にも適切です。
+
+        ### 4. callback のメソッド
+
+
+        - **分析結果:** 指摘事項なし。
+
+        - **理由:**
+          - コード内には `async/await` やPromise、コールバックが混在するような複雑な非同期処理は含まれていません。同期的なテストコードであり、問題ありません。
+
+        ### 5. テストすべき関数の未テスト状態
+
+
+        - **分析結果:** 指摘事項なし。
+
+        - **理由:**
+          - このファイル自体が `model-specific.js` のテストファイルです。
+          - `createModelSpecificProcessor` によって生成されたプロセッサのメソッド (`applyModelSpecificProcessing`, `applyCompletionSpecificProcessing`, `generateMergedPrompt`) がテストされており、`model-specific.js` の主要な機能がテスト対象となっていることが確認できます。
+          - したがって、「テストが存在しない」という状況には該当しません。
+      usage: 952
+  summary:
+    meta:
+      model: vertexai:gemini-2.5-pro
+      sources:
+        - path: model-specific.test.ts
+          hash: cb482de0fce423ab27ffb2acf8c8f8f77221962bcb29681860700988c0b9a0b0
+      version: 0.1.0
+    result:
+      results:
+        - hasFindings: false
+          name: 単一の参照元しか持たないファイル
+          details:
+            - value: 指摘事項なし
+              reason: 対象ファイルはユニットテストコードであり、他のアプリケーションコードから参照されることを意図していないため、この分析項目の対象外です。
+        - hasFindings: false
+          name: 多すぎるエクスポート
+          details:
+            - value: 指摘事項なし
+              reason: 事前分析結果によると、このファイルは何もエクスポートしていません。テストファイルとしては一般的な実装であり、問題ありません。
+        - hasFindings: false
+          name: 長すぎるメソッド
+          details:
+            - value: 指摘事項なし
+              reason: 各テストケースは単一の責務に絞られており簡潔です。また、describeブロックで関連テストがまとめられており構造的にも適切です。
+        - hasFindings: false
+          name: callback のメソッド
+          details:
+            - value: 指摘事項なし
+              reason: コード内に複雑な非同期処理は含まれておらず、同期的なテストコードであるため問題ありません。
+        - hasFindings: false
+          name: テストすべき関数の未テスト状態
+          details:
+            - value: 指摘事項なし
+              reason: このファイル自体が `model-specific.js` のテストファイルであり、「テストが存在しない」という状況には該当しません。
+model-specific.ts:
+  analysis:
+    meta:
+      model: vertexai:gemini-2.5-pro
+      sources:
+        - path: model-specific.ts
+          hash: f5e5f06a4faf75360252519f60e4e1664105fdbe7998a9911a5ac5895688a9fd
+        - path: model-specific.test.ts
+          hash: cb482de0fce423ab27ffb2acf8c8f8f77221962bcb29681860700988c0b9a0b0
+      version: 0.1.0
+    result:
+      content: |-
+        承知いたしました。分析を開始します。
+
+        ## コード分析レポート
+
+        `Analysis Procedure Guide` に基づき、提供されたコード `model-specific.ts` のリファクタリングに関する分析を実施しました。
+
+        ### 1. 単一の参照元しか持たないファイル
+
+        **分析結果:**
+        この項目は、ファイルの依存関係（dependents）に関する情報が必要ですが、今回は提供されていないため分析できませんでした。
+
+        ---
+
+        ### 2. 多すぎるエクスポート
+
+        **分析結果:** 問題ありません。
+
+        **理由:**
+        [Investigation result: import-and-export-details](investigation-result-import-and-export-details) の分析結果によると、以下の3つがエクスポートされています。
+        - `interface ModelSpecificProcessor`
+        - `class DefaultModelSpecificProcessor`
+        - `function createModelSpecificProcessor`
+
+        これらは「モデル固有の処理」という単一の責務に関連しており、インターフェイス、その実装クラス、そしてインスタンスを生成するファクトリー関数という密接な関係にあります。機能が詰め込まれすぎているとは言えず、現在のエクスポート内容は適切です。
+
+        ---
+
+        ### 3. 長すぎるメソッド
+
+        **分析結果:** `DefaultModelSpecificProcessor.applyModelSpecificProcessing` メソッドが長いため、リファクタリングを推奨します。
+
+        **理由:**
+        - **対象箇所:** `L38` から `L78` の `applyModelSpecificProcessing` メソッド。
+        - **問題点:** このメソッドは、モデル名に応じた処理を複数の `if-else if` 文で分岐させています。現在は3つのモデルに対応していますが、今後対応モデルが増えるたびにこのメソッドが長くなり、可読性とメンテナンス性が低下する可能性があります。
+        - **改善提案:** Strategy パターンや、モデル名をキーとし、処理を値とするオブジェクト（マップ）を利用して分岐ロジックを分離することが考えられます。これにより、各モデルの処理が独立し、新しいモデルの追加も容易になります。
+
+        ```typescript
+        // 改善案の例
+        // 各モデルの処理を個別の関数として定義
+        const tanukiProcessor = (messages: MlxMessage[]): MlxMessage[] => { /* ... */ };
+        const codeLlamaProcessor = (messages: MlxMessage[]): MlxMessage[] => { /* ... */ };
+
+        // モデル名と処理のマップ
+        const modelProcessors: { [key: string]: (messages: MlxMessage[]) => MlxMessage[] } = {
+          'Tanuki-8B-dpo-v1': tanukiProcessor,
+          'mlx-community/CodeLlama': codeLlamaProcessor,
+          // ...
+        };
+
+        // メソッド内での利用
+        applyModelSpecificProcessing(messages: MlxMessage[]): MlxMessage[] {
+          for (const modelPrefix in modelProcessors) {
+            if (this.modelName.includes(modelPrefix)) {
+              return modelProcessors[modelPrefix](messages);
+            }
+          }
+          return messages;
+        }
+        ```
+
+        ---
+
+        ### 4. callback のメソッド
+
+        **分析結果:** 問題ありません。
+
+        **理由:**
+        対象コード内には、旧来のコールバックスタイルの非同期処理は含まれていません。コードはすべて同期的に実行されており、`async/await` や `Promise` との混在もありません。
+
+        ---
+
+        ### 5. テストすべき関数の未テスト状態
+
+        **分析結果:** 問題ありません。
+
+        **理由:**
+        - **テスト対象の関数:**
+          - `createModelSpecificProcessor` (エクスポートされた関数)
+          - `DefaultModelSpecificProcessor` クラスの public メソッド (`applyModelSpecificProcessing`, `applyCompletionSpecificProcessing`, `generateMergedPrompt`)
+        - **テストの状況:**
+          - 提供されたテストファイル `model-specific.test.ts` ([Related test: model-specific.test.ts](related-file-model-specific.test.ts)) を確認したところ、上記のすべてのエクスポートされた関数・メソッドに対するテストケースが記述されています。
+          - `applyModelSpecificProcessing` については、複数のモデルパターン (`Tanuki-8B-dpo-v1`, `CodeLlama`, `Gemma-3`, `unknown-model`) が網羅的にテストされており、カバレッジが高いと考えられます。
+        - **結論:** テストすべき主要な関数はすべてテストされており、未テストの状態ではありません。
+
+        ---
+
+        ### まとめ
+
+        分析の結果、`DefaultModelSpecificProcessor.applyModelSpecificProcessing` メソッドが将来的な拡張性や可読性の観点からリファクタリングの対象となることが特定されました。その他の項目については、現状で大きな問題は見つかりませんでした。
+      usage: 1496
+  summary:
+    meta:
+      model: vertexai:gemini-2.5-pro
+      sources:
+        - path: model-specific.ts
+          hash: f5e5f06a4faf75360252519f60e4e1664105fdbe7998a9911a5ac5895688a9fd
+        - path: model-specific.test.ts
+          hash: cb482de0fce423ab27ffb2acf8c8f8f77221962bcb29681860700988c0b9a0b0
+      version: 0.1.0
+    result:
+      results:
+        - hasFindings: false
+          name: 単一の参照元しか持たないファイル
+          details:
+            - value: 分析に必要な依存関係情報が不足していたため、この項目の分析はスキップされました。
+              reason: ファイルの被参照関係（dependents）に関するデータが提供されていませんでした。
+        - hasFindings: false
+          name: 多すぎるエクスポート
+          details:
+            - value: エクスポートされている要素は単一の責務に関連しており、数が多すぎるとは判断されませんでした。
+              reason: エクスポートされているのは `ModelSpecificProcessor` インターフェイス、その実装
+                `DefaultModelSpecificProcessor`、およびファクトリー関数
+                `createModelSpecificProcessor` であり、これらは密接に関連しています。
+        - hasFindings: true
+          name: 長すぎるメソッド
+          details:
+            - value: DefaultModelSpecificProcessor.applyModelSpecificProcessing
+              reason: 複数の `if-else if`
+                文による分岐ロジックが、将来的なモデル追加の際に可読性とメンテナンス性を低下させる可能性があります。Strategy
+                パターンなどの利用が推奨されます。
+        - hasFindings: false
+          name: callback のメソッド
+          details:
+            - value: 対象コードにコールバックスタイルの非同期処理は含まれていませんでした。
+              reason: コードはすべて同期的に実行されています。
+        - hasFindings: false
+          name: テストすべき関数の未テスト状態
+          details:
+            - value: 主要なエクスポート関数・メソッドはすべてテストされています。
+              reason: 提供されたテストファイル `model-specific.test.ts` にて、`createModelSpecificProcessor`
+                と `DefaultModelSpecificProcessor` の public
+                メソッドに対するテストケースが確認できました。
+process-communication.ts:
+  analysis:
+    meta:
+      model: vertexai:gemini-2.5-pro
+      sources:
+        - path: process-communication.ts
+          hash: 92283f423275329f500bc043daab6c4caa18ee4df22c178e23978008e868915e
+      version: 0.1.0
+    result:
+      content: >-
+        承知いたしました。分析を開始します。
+
+
+        ### コード分析レポート
+
+
+        提供されたコードと事前分析結果に基づき、リファクタリングの観点から分析を行いました。結果は以下の通りです。
+
+
+        ---
+
+
+        #### **1. 単一の参照元しか持たないファイル**
+
+
+        *   **分析結果:**
+            *   この項目に関する分析は実施できませんでした。
+        *   **理由:**
+            *   この分析には、対象ファイルがどのファイルから参照されているかという依存関係の情報（`dependents`）が必要です。提供された資料にはこの情報が含まれていないため、評価を行うことができませんでした。
+
+        ---
+
+
+        #### **2. 多すぎるエクスポート**
+
+
+        *   **分析結果:**
+            *   問題は検出されませんでした。
+        *   **理由:**
+            *   事前分析結果によると、対象ファイルは `ProcessCommunicationCallbacks` インターフェースと `ProcessCommunication` クラスの2つをエクスポートしています。
+            *   これらは「Pythonプロセスとの通信管理」という単一の責務に密接に関連しており、`ProcessCommunication` クラスは `ProcessCommunicationCallbacks` を利用するため、まとめてエクスポートされているのは合理的です。エクスポート数は適切であると判断します。
+
+        ---
+
+
+        #### **3. 長すぎるメソッド**
+
+
+        *   **分析結果:**
+            *   `ProcessCommunication` クラスの `setupProcessHandlers` メソッド内にリファクタリングを推奨する箇所があります。
+        *   **理由:**
+            *   `setupProcessHandlers` メソッド内で定義されている `this.process.stdout.on('data', ...)` のコールバック関数が長くなっており、複数の責務を担っています。具体的には、データチャンクのデコード、終端文字 (`\\0`) の判定、ストリーミング処理とJSONレスポンス処理の分岐ロジックが単一の関数内に混在しており、可読性が低下しています。
+
+            ```typescript
+            // 該当箇所
+            this.process.stdout.on('data', (data) => {
+              const nullIndex = data.indexOf('\\0');
+              
+              if (nullIndex !== -1) {
+                // ... レスポンス終了時の処理 ...
+                if (this.currentStream) {
+                  // ... ストリーミングレスポンスの処理 ...
+                } else {
+                  // ... JSONレスポンスの処理 ...
+                }
+                // ...
+              } else {
+                // ... データ蓄積時の処理 ...
+                if (this.currentStream) {
+                  // ... ストリーミング中の処理 ...
+                } else {
+                  // ... JSONレスポンス蓄積中の処理 ...
+                }
+              }
+            });
+            ```
+        *   **改善提案:**
+            *   このコールバック関数内のロジックを、責務ごとに分割されたプライベートメソッド（例：`_handleDataChunk(data)`,`_processStreamingData(chunk)`, `_processJsonData(chunk)`など）に切り出すことを推奨します。これにより、各メソッドの責務が明確になり、コードの可読性とメンテナンス性が向上します。
+
+        ---
+
+
+        #### **4. callback のメソッド**
+
+
+        *   **分析結果:**
+            *   クラスの設計がコールバックスタイルに依存しており、`async/await` へのリファクタリングが望ましいです。
+        *   **理由:**
+            *   `ProcessCommunication` クラスは、コンストラクタで `ProcessCommunicationCallbacks` 型のコールバックオブジェクトを受け取り、非同期処理の結果を `onJsonResponse` と `onRequestCompleted` を通じて呼び出し元に通知しています。この設計は、処理の流れを追いにくくする可能性があります。
+
+            ```typescript
+            // 該当箇所
+            export interface ProcessCommunicationCallbacks {
+              onJsonResponse: (jsonData: string) => void;
+              onRequestCompleted: () => void;
+            }
+
+            export class ProcessCommunication {
+              constructor(modelName: string, callbacks: ProcessCommunicationCallbacks) {
+                this.callbacks = callbacks;
+                // ...
+              }
+              // ...
+              private setupProcessHandlers(): void {
+                // ...
+                this.callbacks.onJsonResponse(this.jsonBuffer);
+                // ...
+                this.callbacks.onRequestCompleted();
+                // ...
+              }
+            }
+            ```
+        *   **改善提案:**
+            *   このクラスを利用する側のコードの可読性を高めるために、`async/await` を使用したインターフェースに変更することを推奨します。例えば、データを送信して結果を受け取るメソッドを `Promise` を返すように変更することで、呼び出し側は `const result = await comm.sendAndReceive(data);` のように、より直感的で逐次的なコードを記述できるようになります。
+
+        ---
+
+
+        #### **5. テストすべき関数の未テスト状態**
+
+
+        *   **分析結果:**
+            *   エクスポートされている `ProcessCommunication` クラスはテストすべき重要なロジックを含んでいますが、対応するテストの存在が確認できません。
+        *   **理由:**
+            *   `ProcessCommunication` クラスは、子プロセスとの通信という外部依存性を持つものの、その中核機能である `stdout` からのデータストリームの処理ロジックは複雑です。
+                *   データチャンクの結合とデコード
+                *   終端文字 (`\\0`) に基づくレスポンスの分割
+                *   ストリーミングレスポンスとJSONレスポンスの処理分岐
+            *   これらのロジックは、仕様を明確にし、意図しない挙動を防ぐためにユニットテストで網羅的に検証することが極めて重要です。
+        *   **改善提案:**
+            *   `process_communication.test.ts` のようなテストファイルを作成し、`ProcessCommunication` クラスのテストを実装することを強く推奨します。テストでは、`child_process.spawn` をモックし、擬似的な `stdout` イベントを発行することで、データ処理ロジックが様々な入力パターン（例：データが一度に届く、分割して届く、終端文字がチャンクの途中にある等）に対して正しく動作することを検証すべきです。
+      usage: 1982
+  summary:
+    meta:
+      model: vertexai:gemini-2.5-pro
+      sources:
+        - path: process-communication.ts
+          hash: 92283f423275329f500bc043daab6c4caa18ee4df22c178e23978008e868915e
+      version: 0.1.0
+    result:
+      results:
+        - hasFindings: false
+          name: 単一の参照元しか持たないファイル
+        - hasFindings: false
+          name: 多すぎるエクスポート
+        - hasFindings: true
+          name: 長すぎるメソッド
+          details:
+            - value: ProcessCommunicationクラスのsetupProcessHandlersメソッド内にある`this.process.stdout.on('data',
+                ...)`のコールバック関数
+              reason: データチャンクのデコード、終端文字の判定、ストリーミング処理とJSONレスポンス処理の分岐ロジックが単一の関数内に混在しており、可読性が低下しているため。
+              subItems:
+                - "改善提案: コールバック関数内のロジックを、責務ごとに分割されたプライベートメソッドに切り出すことを推奨します。"
+        - hasFindings: true
+          name: callback のメソッド
+          details:
+            - value: ProcessCommunicationクラスのコールバックベースの設計
+              reason: コンストラクタでProcessCommunicationCallbacks型のコールバックオブジェクトを受け取り非同期処理の結果を通知する設計は、処理の流れを追いにくくする可能性があるため。
+              subItems:
+                - "改善提案:
+                  async/awaitを使用しPromiseを返すメソッドに変更することで、呼び出し側のコードをより直感的で逐次的な記述に\
+                  改善することを推奨します。"
+        - hasFindings: true
+          name: テストすべき関数の未テスト状態
+          details:
+            - value: ProcessCommunicationクラス
+              reason: 子プロセスとの通信におけるデータストリームの処理ロジック（データチャンクの結合、終端文字に基づくレスポンス分割、処理分岐）が複雑であり、仕様を明確にし意図しない挙動を防ぐためにユニットテストで網羅的に検証することが重要なため。
+              subItems:
+                - "改善提案:
+                  `process_communication.test.ts`のようなテストファイルを作成し、`child_process\
+                  .spawn`をモックしてデータ処理ロジックが様々な入力パターンに対して正しく動作することを検証すべきです。"
+queue.ts:
+  analysis:
+    meta:
+      model: vertexai:gemini-2.5-pro
+      sources:
+        - path: queue.ts
+          hash: 594d97d08d9a3ecbe141b39ebce000e4682beb96c6a354cf694dbf541796bd8a
+      version: 0.1.0
+    result:
+      content: |-
+        # コード分析レポート
+
+        ## 概要
+
+        提供されたコードチャンク（MLX Driverのキュー管理システム）の分析結果を報告します。
+        全体として、キュー管理ロジックは適切に実装されていますが、一部のメソッドの可読性向上と、テストコードの追加が推奨されます。
+
+        ---
+
+        ## 分析結果詳細
+
+        [Analysis Procedure Guide](analysis-procedure-guide) に基づき、以下の観点で分析を行いました。
+
+        ### 単一の参照元しか持たないファイル
+
+        **評価:** 情報不足のため評価不可
+
+        **理由:**
+        この分析には、対象ファイルがどのファイルから参照されているか（dependents）の情報が必要です。今回はその情報が提供されていないため、評価を行うことができません。
+
+        ---
+
+        ### 多すぎるエクスポート
+
+        **評価:** 問題なし
+
+        **理由:**
+        [Investigation result: import-and-export-details](investigation-result-import-and-export-details) によると、このファイルは `QueueManagerCallbacks` インターフェースと `QueueManager` クラスの2つをエクスポートしています。
+
+        `QueueManager` クラスは複数のパブリックメソッド（`addCapabilitiesRequest`, `addFormatTestRequest`, `addChatRequest`, `addCompletionRequest` など）を公開していますが、これらはすべて「リクエストキューの管理」という単一の責務に密接に関連しています。CRUD操作に相当するメソッド群が同一クラスにまとめられており、責務の観点から適切に設計されていると判断します。
+
+        ---
+
+        ### 長すぎるメソッド
+
+        **評価:** 改善の余地あり
+
+        **理由:**
+        `handleJsonResponse` メソッドが比較的長く、ネストした条件分岐を含んでいるため、可読性が低下しています。
+
+        ```typescript
+          handleJsonResponse(jsonData: string): void {
+            if (this.queue.length > 0) {
+              const queueItem = this.queue.shift();
+              if (queueItem?.expectJsonResponse) {
+                try {
+                  const jsonResponse = JSON.parse(jsonData);
+                  // (中略) リクエストメソッドに応じた分岐
+                } catch (e) {
+                  // (中略) エラー時のフォールバック処理の分岐
+                }
+              }
+            }
+            this.isProcessing = false;
+            this.processNext(); // 次のリクエストを処理
+          }
+        ```
+
+        **改善提案:**
+        `try` ブロック内と `catch` ブロック内の、リクエストの `method` に応じた処理を、それぞれ別のプライベートメソッドに切り出すことを推奨します。これにより、`handleJsonResponse` メソッドは処理の振り分けに専念でき、各リクエストタイプに対する処理が独立するため、コードの可読性と保守性が向上します。
+
+        例：
+        - `_handleCapabilitiesResponse(queueItem, jsonResponse)`
+        - `_handleFormatTestResponse(queueItem, jsonResponse)`
+        - `_handleResponseError(queueItem, error)`
+
+        ---
+
+        ### callback のメソッド
+
+        **評価:** 問題なし
+
+        **理由:**
+        `add...` で始まる各メソッドは `new Promise((resolve) => { ... })` を使用しています。これは、Promiseの `resolve` 関数をキューに保存し、後続の `handleJsonResponse` メソッドでレスポンスが来た際に呼び出す、という非同期処理パターンを実現するために意図的に使用されているものです。この実装は、リクエストとレスポンスを対応付けるための合理的な方法であり、単純な `async/await` への置き換えは適していません。したがって、リファクタリングの必要はないと判断します。
+
+        ---
+
+        ### テストすべき関数の未テスト状態
+
+        **評価:** 改善の余地あり
+
+        **理由:**
+        対象ファイルには、テストが不可欠なロジックが多数含まれていますが、対応するテストファイルの存在が確認できません。
+
+        **テストすべき関数:**
+        `QueueManager` クラスの以下のパブリックメソッドは、システムのコア機能であり、テストの重要性が高いです。
+        - **公開APIと状態変更:** `addCapabilitiesRequest`, `addFormatTestRequest`, `addChatRequest`, `addCompletionRequest`, `clear`
+        - **外部入力とエラーハンドリング:** `handleJsonResponse`
+        - **状態遷移ロジック:** `onRequestCompleted`
+        - **状態確認:** `length`, `isEmpty`
+
+        これらの関数は、キューへのアイテム追加、状態遷移（`isProcessing`）、非同期処理の解決、エラーハンドリングなど、複雑なロジックを含んでいます。
+
+        **改善提案:**
+        `QueueManager` クラスに対するテストファイル（例: `queueManager.test.ts`）を作成し、上記のメソッド群の動作を検証する単体テストを実装することを強く推奨します。特に、正常系だけでなく、JSONパースエラー時などの異常系のテストも網羅することが重要です。
+
+        ---
+        ### 処理状況
+
+        入力されたチャンク (7/7) の分析が完了しました。これが最終的な分析レポートです。
+      usage: 1656
+  summary:
+    meta:
+      model: vertexai:gemini-2.5-pro
+      sources:
+        - path: queue.ts
+          hash: 594d97d08d9a3ecbe141b39ebce000e4682beb96c6a354cf694dbf541796bd8a
+      version: 0.1.0
+    result:
+      results:
+        - hasFindings: false
+          name: 単一の参照元しか持たないファイル
+          details:
+            - value: 評価不可
+              reason: 対象ファイルがどのファイルから参照されているか（dependents）の情報が提供されていないため、評価できません。
+        - hasFindings: false
+          name: 多すぎるエクスポート
+          details:
+            - value: 問題なし
+              reason: エクスポートされている`QueueManagerCallbacks`インターフェースと`QueueManager`クラスは、「リクエストキューの管理」という単一の責務に密接に関連しており、適切に設計されています。
+        - hasFindings: true
+          name: 長すぎるメソッド
+          details:
+            - value: handleJsonResponse
+              reason: メソッドが長く、ネストした条件分岐を含んでいるため可読性が低下しています。リクエストの種別に応じた処理を、それぞれ別のプライベートメソッドに切り出すことが推奨されます。
+              subItems:
+                - _handleCapabilitiesResponse(queueItem, jsonResponse)
+                - _handleFormatTestResponse(queueItem, jsonResponse)
+                - _handleResponseError(queueItem, error)
+        - hasFindings: false
+          name: callback のメソッド
+          details:
+            - value: 問題なし
+              reason: Promiseのresolve関数をキューに保存し後から呼び出す非同期処理パターンは、リクエストとレスポンスを対応付けるための合理的な実装であり、リファクタリングの必要はありません。
+        - hasFindings: true
+          name: テストすべき関数の未テスト状態
+          details:
+            - value: QueueManagerクラスに対するテストファイルが存在しません。
+              reason: システムのコア機能であり、キューへのアイテム追加、状態遷移、非同期処理の解決、エラーハンドリングなど、テストが不可欠な複雑なロジックを含んでいるため、単体テストの実装が強く推奨されます。
+              subItems:
+                - addCapabilitiesRequest
+                - addFormatTestRequest
+                - addChatRequest
+                - addCompletionRequest
+                - clear
+                - handleJsonResponse
+                - onRequestCompleted
+                - length
+                - isEmpty
+types.ts:
+  analysis:
+    meta:
+      model: vertexai:gemini-2.5-pro
+      sources:
+        - path: types.ts
+          hash: a5bf6dc0fde9a8158e52bdbea7f0b4628b4d420f7c18f37cfd8b59daf26cb480
+      version: 0.1.0
+    result:
+      content: |-
+        はい、承知いたしました。分析を開始します。
+
+        ---
+
+        ### コード分析レポート
+
+        #### 分析の概要
+
+        - **対象ファイル**: `(不明なファイル名).ts` (MLX Driver API v2.0 型定義)
+        - **分析手順**: 提供された「Analysis Procedure Guide」に基づき、リファクタリングの観点からコードを分析します。
+        - **事前分析結果**: `import-and-export-details` の情報を利用します。
+
+        ---
+
+        ### 分析結果
+
+        #### 1. 単一の参照元しか持たないファイル
+
+        **分析結果**: 分析不能
+
+        **理由**:
+        この項目を分析するには、対象ファイルを参照している他のファイルの情報（`dependents`）が必要です。今回はその情報が提供されていないため、分析を実施できませんでした。
+
+        ---
+
+        #### 2. 多すぎるエクスポート
+
+        **分析結果**: リファクタリングの必要はありません。
+
+        **理由**:
+        事前分析結果 `import-and-export-details` によると、このファイルは20個の型定義 (`type` と `interface`) をエクスポートしています。
+
+        ```typescript
+        // エクスポートされている型定義の例
+        export type MlxMlModelOptions = BaseDriverOptions;
+        export interface MlxMessage { /* ... */ }
+        export interface MlxBaseRequest { /* ... */ }
+        // ...他多数
+        ```
+
+        一見するとエクスポート数は多いですが、ファイルの内容はすべてTypeScriptの型定義であり、具体的な実装（ロジック）は含まれていません。このファイルは `MLX Driver API` に関連する型定義をまとめて提供することを目的としており、分析手順ガイドに記載されている「ライブラリの index.ts のような、export そのものを目的とするファイル」という例外ケースに該当します。
+
+        したがって、多くの機能を一つのファイルに詰め込みすぎているわけではなく、現在の形式が適切であると判断します。
+
+        ---
+
+        #### 3. 長すぎるメソッド
+
+        **分析結果**: 該当しません。
+
+        **理由**:
+        対象ファイルには、具体的な処理を記述したメソッドや関数は含まれておらず、すべてTypeScriptの型定義です。そのため、この分析項目の対象外です。
+
+        ---
+
+        #### 4. callback のメソッド
+
+        **分析結果**: リファクタリングの必要はありません。
+
+        **理由**:
+        対象ファイルには、メソッドや関数の実装が含まれていません。
+
+        `CapabilitiesQueueItem` や `StreamingQueueItem` などの型定義内に `resolve: (value: T) => void` というコールバック関数に似た型定義が見られますが、これはPromiseベースの非同期処理で一般的に使用される `resolve` 関数の型であり、`async/await`への置き換えが推奨される旧来のNode.jsスタイルのコールバック (`(err, result) => {}`) とは異なります。したがって、問題ないと判断します。
+
+        ```typescript
+        export interface CapabilitiesQueueItem extends BaseQueueItem {
+          request: MlxCapabilitiesRequest;
+          resolve: (value: MlxCapabilities) => void; // Promiseのresolve関数を想定した型定義
+          expectJsonResponse: true;
+        }
+        ```
+
+        ---
+
+        #### 5. テストすべき関数の未テスト状態
+
+        **分析結果**: 該当しません。
+
+        **理由**:
+        対象ファイルには、テスト対象となる具体的なロジックを持つ関数が含まれていません。すべて型定義であるため、この分析項目の対象外です。
+
+        ---
+
+        ### 結論
+
+        提供されたコードは `MLX Driver API` のためのTypeScript型定義ファイルです。
+        分析手順ガイドに基づき5つの観点で分析しましたが、いずれの項目においても**リファクタリングが必要な箇所は見つかりませんでした。**
+
+        このファイルは型定義を集中管理するという役割を適切に果たしており、現状のままで問題ありません。
+      usage: 1304
+  summary:
+    meta:
+      model: vertexai:gemini-2.5-pro
+      sources:
+        - path: types.ts
+          hash: a5bf6dc0fde9a8158e52bdbea7f0b4628b4d420f7c18f37cfd8b59daf26cb480
+      version: 0.1.0
+    result:
+      results:
+        - hasFindings: false
+          name: 単一の参照元しか持たないファイル
+        - hasFindings: false
+          name: 多すぎるエクスポート
+        - hasFindings: false
+          name: 長すぎるメソッド
+        - hasFindings: false
+          name: callback のメソッド
+        - hasFindings: false
+          name: テストすべき関数の未テスト状態
