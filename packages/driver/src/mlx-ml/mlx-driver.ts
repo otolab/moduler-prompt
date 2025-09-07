@@ -63,6 +63,7 @@ export class MlxDriver extends BaseDriver {
   private process: MlxProcess;
   private model: string;
   private defaultOptions: Partial<MlxMlModelOptions>;
+  private capabilities: MlxCapabilities | null = null;
   
   constructor(config: MlxDriverConfig) {
     super();
@@ -71,6 +72,21 @@ export class MlxDriver extends BaseDriver {
     this.defaultOptions = config.defaultOptions || {};
     this.process = new MlxProcess(config.model);
     this.preferMessageFormat = true; // MLX uses message format
+  }
+  
+  /**
+   * Get special tokens from the MLX process
+   */
+  async getSpecialTokens(): Promise<MlxCapabilities['special_tokens'] | null> {
+    if (!this.capabilities) {
+      try {
+        this.capabilities = await this.process.getCapabilities();
+      } catch (error) {
+        console.error('Failed to get MLX capabilities:', error);
+        return null;
+      }
+    }
+    return this.capabilities?.special_tokens || null;
   }
   
   /**

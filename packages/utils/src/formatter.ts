@@ -7,14 +7,15 @@ import type {
   SectionElement,
   SubSectionElement
 } from '@moduler-prompt/core';
-import type { ElementFormatter, FormatterOptions } from './types.js';
+import type { ElementFormatter, FormatterOptions, SpecialToken, SpecialTokenPair } from './types.js';
 
 /**
  * Default formatter implementation for converting elements to text
  */
 export class DefaultFormatter implements ElementFormatter {
-  private options: Required<Omit<FormatterOptions, 'preamble' | 'sectionDescriptions' | 'formatter'>> & 
-    Pick<FormatterOptions, 'preamble' | 'sectionDescriptions'>;
+  private options: Required<Omit<FormatterOptions, 'preamble' | 'sectionDescriptions' | 'formatter' | 'specialTokens'>> & 
+    Pick<FormatterOptions, 'preamble' | 'sectionDescriptions' | 'specialTokens'>;
+  private specialTokens?: Record<string, SpecialToken | SpecialTokenPair>;
   
   constructor(options: FormatterOptions = {}) {
     this.options = {
@@ -38,8 +39,10 @@ export class DefaultFormatter implements ElementFormatter {
         char: options.indent?.char || ' ',
         ...options.indent
       },
-      lineBreak: options.lineBreak || '\n'
+      lineBreak: options.lineBreak || '\n',
+      specialTokens: options.specialTokens
     };
+    this.specialTokens = options.specialTokens;
   }
   
   format(element: Element): string {
@@ -65,6 +68,42 @@ export class DefaultFormatter implements ElementFormatter {
   
   formatAll(elements: Element[]): string {
     return elements.map(el => this.format(el)).join(this.options.lineBreak);
+  }
+  
+  setSpecialTokens(tokens: Record<string, SpecialToken | SpecialTokenPair>): void {
+    this.specialTokens = tokens;
+    this.options.specialTokens = tokens;
+    // Update markers if special tokens are provided
+    if (tokens) {
+      this.updateMarkersFromSpecialTokens(tokens);
+    }
+  }
+  
+  private updateMarkersFromSpecialTokens(tokens: Record<string, SpecialToken | SpecialTokenPair>): void {
+    // Auto-configure markers based on special tokens if available
+    const markers = this.options.markers;
+    
+    // Update section markers if tokens are available
+    if (tokens.system && this.isTokenPair(tokens.system)) {
+      markers.sectionStart = markers.sectionStart || tokens.system.start.text;
+      markers.sectionEnd = markers.sectionEnd || tokens.system.end.text;
+    }
+    
+    // Update code block markers
+    if (tokens.code && this.isTokenPair(tokens.code)) {
+      markers.materialStart = markers.materialStart || tokens.code.start.text;
+      markers.materialEnd = markers.materialEnd || tokens.code.end.text;
+    }
+    
+    // Update thinking/reasoning markers for subsections
+    if (tokens.thinking && this.isTokenPair(tokens.thinking)) {
+      markers.subsectionStart = markers.subsectionStart || tokens.thinking.start.text;
+      markers.subsectionEnd = markers.subsectionEnd || tokens.thinking.end.text;
+    }
+  }
+  
+  private isTokenPair(token: SpecialToken | SpecialTokenPair): token is SpecialTokenPair {
+    return 'start' in token && 'end' in token;
   }
   
   private formatText(element: TextElement): string {
@@ -160,8 +199,11 @@ export class DefaultFormatter implements ElementFormatter {
   }
   
   private formatSubSection(element: SubSectionElement): string {
-    const { lineBreak } = this.options;
+    const { markers, lineBreak } = this.options;
     const lines: string[] = [];
+    
+    // Add subsection start marker if provided
+    if (markers.subsectionStart) lines.push(markers.subsectionStart);
     
     lines.push(`### ${element.title}`);
     lines.push('');
@@ -170,6 +212,9 @@ export class DefaultFormatter implements ElementFormatter {
     for (const item of element.items) {
       lines.push(`- ${item}`);
     }
+    
+    // Add subsection end marker if provided
+    if (markers.subsectionEnd) lines.push(markers.subsectionEnd);
     
     return lines.join(lineBreak);
   }

@@ -38,6 +38,22 @@ export interface QueryOptions {
 }
 
 /**
+ * Special token definition
+ */
+export interface SpecialToken {
+  text: string;
+  id: number;
+}
+
+/**
+ * Special token pair definition
+ */
+export interface SpecialTokenPair {
+  start: SpecialToken;
+  end: SpecialToken;
+}
+
+/**
  * AI Driver interface for executing prompts
  */
 export interface AIDriver {
@@ -56,6 +72,12 @@ export interface AIDriver {
    * Drivers can dynamically determine their formatting needs
    */
   getFormatterOptions(): FormatterOptions;
+  
+  /**
+   * Get special tokens for this model (optional)
+   * Returns model-specific special tokens for formatting
+   */
+  getSpecialTokens?(): Promise<Record<string, SpecialToken | SpecialTokenPair> | null>;
   
   /**
    * Whether to prefer message format over text format

@@ -3,7 +3,7 @@ import json
 from mlx_lm import load, stream_generate
 from token_utils import get_capabilities, is_eod_token
 
-model_name = sys.argv[1] if len(sys.argv) > 1 else "Qwen/Qwen3-0.6B"
+model_name = sys.argv[1] if len(sys.argv) > 1 else "mlx-community/gemma-3-270m-it-qat-4bit"
 
 model, tokenizer = load(model_name)
 

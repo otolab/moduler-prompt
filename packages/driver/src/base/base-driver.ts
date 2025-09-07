@@ -70,6 +70,14 @@ export abstract class BaseDriver implements AIDriver {
   }
   
   /**
+   * Get special tokens for this model
+   * Default implementation returns null
+   */
+  async getSpecialTokens(): Promise<Record<string, any> | null> {
+    return null;
+  }
+  
+  /**
    * Close the driver connection
    * Default implementation does nothing
    */

@@ -1,6 +1,22 @@
 import type { Element } from '@moduler-prompt/core';
 
 /**
+ * Special token definition
+ */
+export interface SpecialToken {
+  text: string;
+  id: number;
+}
+
+/**
+ * Special token pair definition
+ */
+export interface SpecialTokenPair {
+  start: SpecialToken;
+  end: SpecialToken;
+}
+
+/**
  * Chat message format
  */
 export interface ChatMessage {
@@ -59,6 +75,11 @@ export interface FormatterOptions {
    * Line break settings
    */
   lineBreak?: '\n' | '\r\n';
+  
+  /**
+   * Model-specific special tokens
+   */
+  specialTokens?: Record<string, SpecialToken | SpecialTokenPair>;
 }
 
 /**
@@ -74,4 +95,9 @@ export interface ElementFormatter {
    * Format multiple elements
    */
   formatAll(elements: Element[]): string;
+  
+  /**
+   * Set special tokens for formatting
+   */
+  setSpecialTokens?(tokens: Record<string, SpecialToken | SpecialTokenPair>): void;
 }
