@@ -1,6 +1,7 @@
 import { describe, it, expect, beforeEach } from 'vitest';
 import { TestDriver } from './test-driver.js';
 import type { CompiledPrompt } from '@moduler-prompt/core';
+import type { FormatterOptions } from '@moduler-prompt/utils';
 
 describe('TestDriver', () => {
   let driver: TestDriver;
@@ -30,9 +31,9 @@ describe('TestDriver', () => {
         output: []
       };
       
-      expect(await driver.query(prompt)).toBe('First');
-      expect(await driver.query(prompt)).toBe('Second');
-      expect(await driver.query(prompt)).toBe('Third');
+      expect((await driver.query(prompt)).content).toBe('First');
+      expect((await driver.query(prompt)).content).toBe('Second');
+      expect((await driver.query(prompt)).content).toBe('Third');
     });
     
     it('throws error when no more responses available', async () => {
@@ -62,7 +63,7 @@ describe('TestDriver', () => {
       };
       
       const result = await driver.query(prompt);
-      expect(result).toBe('Test response');
+      expect(result.content).toBe('Test response');
     });
     
     it('simulates delay', async () => {
@@ -160,9 +161,9 @@ describe('TestDriver', () => {
         output: []
       };
       
-      expect(await driver.query(prompt)).toBe('Response 1');
-      expect(await driver.query(prompt)).toBe('Response 2');
-      expect(await driver.query(prompt)).toBe('Response 3');
+      expect((await driver.query(prompt)).content).toBe('Response 1');
+      expect((await driver.query(prompt)).content).toBe('Response 2');
+      expect((await driver.query(prompt)).content).toBe('Response 3');
     });
     
     it('uses async response provider function', async () => {
@@ -179,7 +180,7 @@ describe('TestDriver', () => {
         output: []
       };
       
-      expect(await driver.query(prompt)).toBe('Async response');
+      expect((await driver.query(prompt)).content).toBe('Async response');
     });
     
     it('streams with response provider function', async () => {
@@ -205,6 +206,67 @@ describe('TestDriver', () => {
   describe('utility methods', () => {
     it('closes driver', async () => {
       await expect(driver.close()).resolves.toBeUndefined();
+    });
+  });
+
+  describe('formatter options', () => {
+    it('returns default formatter options', () => {
+      const driver = new TestDriver();
+      const options = driver.getFormatterOptions();
+      
+      expect(options).toEqual({});
+    });
+    
+    it('returns custom formatter options', () => {
+      const customOptions: FormatterOptions = {
+        markers: {
+          materialStart: '<ref>',
+          materialEnd: '</ref>',
+          chunkStart: '<part>',
+          chunkEnd: '</part>'
+        },
+        lineBreak: '\r\n'
+      };
+      
+      const driver = new TestDriver({
+        formatterOptions: customOptions
+      });
+      
+      const options = driver.getFormatterOptions();
+      expect(options).toEqual(customOptions);
+    });
+    
+    it('uses formatter options for prompt formatting', async () => {
+      const driver = new TestDriver({
+        responses: ['Test response'],
+        formatterOptions: {
+          markers: {
+            materialStart: '=== ',
+            materialEnd: ' ==='
+          }
+        }
+      });
+      
+      const prompt: CompiledPrompt = {
+        instructions: [
+          {
+            type: 'section',
+            title: 'Test Section',
+            content: 'Test content',
+            items: ['Item 1', 'Item 2']
+          }
+        ],
+        data: [],
+        output: []
+      };
+      
+      const result = await driver.query(prompt);
+      
+      // The driver should use the formatter options internally
+      // We're mainly testing that it doesn't crash and returns expected result
+      expect(result.content).toBe('Test response');
+      expect(result.usage).toBeDefined();
+      expect(result.usage?.promptTokens).toBeGreaterThan(0);
     });
   });
 });

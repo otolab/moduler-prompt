@@ -1,5 +1,6 @@
 import type { CompiledPrompt } from '@moduler-prompt/core';
 import type { AIDriver, QueryOptions, QueryResult } from './types.js';
+import { formatPrompt, type FormatterOptions } from '@moduler-prompt/utils';
 
 /**
  * Response provider function type
@@ -12,6 +13,7 @@ export type ResponseProvider = (prompt: CompiledPrompt, options?: QueryOptions) 
 export interface TestDriverOptions {
   responses?: string[] | ResponseProvider;
   delay?: number;
+  formatterOptions?: FormatterOptions;
 }
 
 /**
@@ -28,6 +30,7 @@ export class TestDriver implements AIDriver {
   private responseQueue: string[];
   private responseProvider?: ResponseProvider;
   private delay: number;
+  private formatterOptions: FormatterOptions;
   
   constructor(options: TestDriverOptions = {}) {
     if (typeof options.responses === 'function') {
@@ -38,9 +41,17 @@ export class TestDriver implements AIDriver {
       this.responseProvider = undefined;
     }
     this.delay = options.delay || 0;
+    this.formatterOptions = options.formatterOptions || {};
+  }
+  
+  getFormatterOptions(): FormatterOptions {
+    return this.formatterOptions;
   }
   
   async query(prompt: CompiledPrompt, options?: QueryOptions): Promise<QueryResult> {
+    // Format the prompt to text using driver's formatter options
+    const formattedPrompt = formatPrompt(prompt, this.getFormatterOptions());
+    
     // If we have a response provider function, use it
     if (this.responseProvider) {
       const content = await this.responseProvider(prompt, options);
@@ -52,9 +63,9 @@ export class TestDriver implements AIDriver {
       return {
         content,
         usage: {
-          promptTokens: estimateTokens(JSON.stringify(prompt)),
+          promptTokens: estimateTokens(formattedPrompt),
           completionTokens: estimateTokens(content),
-          totalTokens: estimateTokens(JSON.stringify(prompt)) + estimateTokens(content)
+          totalTokens: estimateTokens(formattedPrompt) + estimateTokens(content)
         },
         finishReason: 'stop'
       };
@@ -74,9 +85,9 @@ export class TestDriver implements AIDriver {
     return {
       content,
       usage: {
-        promptTokens: estimateTokens(JSON.stringify(prompt)),
+        promptTokens: estimateTokens(formattedPrompt),
         completionTokens: estimateTokens(content),
-        totalTokens: estimateTokens(JSON.stringify(prompt)) + estimateTokens(content)
+        totalTokens: estimateTokens(formattedPrompt) + estimateTokens(content)
       },
       finishReason: 'stop'
     };

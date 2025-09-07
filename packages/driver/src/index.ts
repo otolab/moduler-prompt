@@ -8,13 +8,6 @@ export type {
   Role
 } from './types.js';
 
-// Converter utilities
-export {
-  elementsToPromptText,
-  promptTextToMessages,
-  compiledPromptToElements
-} from './converter.js';
-
 // Test driver
 export {
   TestDriver,

@@ -9,6 +9,7 @@
   "scripts": {
     "build": "npm run build --workspaces",
     "test": "npm run test --workspaces",
+    "test:run": "npm run test:run --workspaces --if-present",
     "clean": "npm run clean --workspaces",
     "dev": "npm run dev --workspace=@moduler-prompt/core",
     "lint": "npm run lint --workspaces",
@@ -16,7 +17,9 @@
   },
   "devDependencies": {
     "@types/node": "^20.0.0",
-    "typescript": "^5.0.0"
+    "@vitest/ui": "^3.2.4",
+    "typescript": "^5.0.0",
+    "vitest": "^3.2.4"
   },
   "engines": {
     "node": ">=18.0.0",

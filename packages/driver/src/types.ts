@@ -1,4 +1,5 @@
 import type { Element, CompiledPrompt } from '@moduler-prompt/core';
+import type { FormatterOptions } from '@moduler-prompt/utils';
 
 /**
  * Chat message role
@@ -49,6 +50,12 @@ export interface AIDriver {
    * Stream query (optional)
    */
   streamQuery?(prompt: CompiledPrompt, options?: QueryOptions): AsyncIterable<string>;
+  
+  /**
+   * Get formatter options for this driver
+   * Drivers can dynamically determine their formatting needs
+   */
+  getFormatterOptions(): FormatterOptions;
   
   /**
    * Close the driver connection
