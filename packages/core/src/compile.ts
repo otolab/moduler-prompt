@@ -14,7 +14,7 @@ import { STANDARD_SECTIONS } from './types';
  */
 export function compile<TContext = any>(
   module: PromptModule<TContext>,
-  context: TContext
+  context: TContext = {} as TContext
 ): CompiledPrompt {
   const compiled: CompiledPrompt = {
     instructions: [],
@@ -37,6 +37,59 @@ export function compile<TContext = any>(
     // セクションタイプに応じて分類
     compiled[sectionDef.type].push(sectionElement);
   }
+  
+  // 明示的なinstructions/data/outputセクションを処理
+  const directSections: SectionType[] = ['instructions', 'data', 'output'];
+  for (const sectionType of directSections) {
+    const content = module[sectionType];
+    if (!content) continue;
+    
+    // contentが関数の場合は実行
+    const resolvedContent = typeof content === 'function' 
+      ? content(context) || []
+      : content;
+    
+    // 配列に変換
+    const items = Array.isArray(resolvedContent) ? resolvedContent : [resolvedContent];
+    
+    // 既存のセクションがあるか確認
+    const sectionTitle = sectionType.charAt(0).toUpperCase() + sectionType.slice(1);
+    let defaultSection = compiled[sectionType].find(
+      el => el.type === 'section' && el.title === sectionTitle
+    ) as SectionElement | undefined;
+    
+    const otherElements: any[] = [];
+    
+    for (const item of items) {
+      if (typeof item === 'string' || (typeof item === 'object' && item !== null && item.type === 'subsection')) {
+        // 文字列とsubsectionは自動的にSectionElementに集約
+        if (!defaultSection) {
+          defaultSection = {
+            type: 'section',
+            title: sectionTitle,
+            content: '',
+            items: []
+          };
+          compiled[sectionType].push(defaultSection);
+        }
+        
+        if (typeof item === 'string') {
+          // 既に同じ文字列が存在しないかチェック
+          if (!defaultSection.items.includes(item)) {
+            defaultSection.items.push(item);
+          }
+        } else {
+          defaultSection.items.push(item);
+        }
+      } else if (typeof item === 'object' && item !== null) {
+        // その他のElement型のオブジェクトはそのまま追加
+        otherElements.push(item);
+      }
+    }
+    
+    // 他の要素を追加
+    compiled[sectionType].push(...otherElements);
+  }
 
   return compiled;
 }
@@ -52,7 +105,15 @@ function compileSectionToElement<TContext>(
   const plainItems: string[] = [];
   const subsections: SubSectionElement[] = [];
 
-  for (const item of content) {
+  // contentが関数の場合は実行して配列に変換
+  const resolvedContent = typeof content === 'function' 
+    ? content(context) || []
+    : content;
+  
+  // 配列でない場合は配列に変換
+  const contentItems = Array.isArray(resolvedContent) ? resolvedContent : [resolvedContent];
+
+  for (const item of contentItems) {
     if (typeof item === 'function') {
       // DynamicContentを実行
       const dynamicResult = item(context);

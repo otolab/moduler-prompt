@@ -20,6 +20,12 @@ export {
   type ResponseProvider
 } from './test-driver.js';
 
+// Echo driver
+export {
+  EchoDriver,
+  type EchoDriverConfig
+} from './echo-driver.js';
+
 // OpenAI driver
 export {
   OpenAIDriver,
