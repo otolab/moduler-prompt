@@ -1,4 +1,4 @@
-import type { Element, CompiledPrompt } from '@moduler-prompt/core';
+import type { CompiledPrompt } from '@moduler-prompt/core';
 import type { FormatterOptions } from '@moduler-prompt/utils';
 
 /**

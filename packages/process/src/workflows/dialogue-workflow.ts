@@ -1,7 +1,6 @@
 import { compile, merge } from '@moduler-prompt/core';
 import type { PromptModule } from '@moduler-prompt/core';
 import { 
-  dialogueBase, 
   firstOfTwoPassResponse, 
   secondOfTwoPassResponse,
   withTalkState 

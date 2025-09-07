@@ -2,12 +2,6 @@ import { compile } from '@moduler-prompt/core';
 import type { PromptModule } from '@moduler-prompt/core';
 import { WorkflowExecutionError, type AIDriver, type WorkflowResult } from './types.js';
 
-/**
- * Simple token estimation (roughly 4 characters per token)
- */
-function estimateTokens(text: string): number {
-  return Math.ceil(text.length / 4);
-}
 
 /**
  * Context for concat processing workflow
@@ -108,14 +102,9 @@ export async function concatProcess(
       }
     });
 
-    try {
-      const parallelResults = await Promise.all(promises);
-      results.push(...parallelResults);
-      processedCount = context.chunks.length;
-    } catch (error) {
-      // Re-throw with context
-      throw error;
-    }
+    const parallelResults = await Promise.all(promises);
+    results.push(...parallelResults);
+    processedCount = context.chunks.length;
   } else {
     // Process chunks sequentially, possibly in batches
     for (let i = 0; i < remainingChunks.length; i += batchSize) {

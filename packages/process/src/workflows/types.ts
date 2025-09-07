@@ -1,6 +1,3 @@
-import type { PromptModule, CompiledPrompt, Element } from '@moduler-prompt/core';
-import type { QueryResult } from '@moduler-prompt/driver';
-
 // Re-export types from driver package
 export type { AIDriver, QueryResult } from '@moduler-prompt/driver';
 

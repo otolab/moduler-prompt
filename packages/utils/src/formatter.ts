@@ -13,7 +13,7 @@ import type { ElementFormatter, FormatterOptions } from './types.js';
  * Default formatter implementation for converting elements to text
  */
 export class DefaultFormatter implements ElementFormatter {
-  private options: Required<Omit<FormatterOptions, 'preamble' | 'sectionDescriptions'>> & 
+  private options: Required<Omit<FormatterOptions, 'preamble' | 'sectionDescriptions' | 'formatter'>> & 
     Pick<FormatterOptions, 'preamble' | 'sectionDescriptions'>;
   
   constructor(options: FormatterOptions = {}) {

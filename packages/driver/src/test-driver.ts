@@ -1,6 +1,6 @@
 import type { CompiledPrompt } from '@moduler-prompt/core';
 import type { AIDriver, QueryOptions, QueryResult } from './types.js';
-import { formatPrompt, formatPromptAsMessages, type FormatterOptions, type ChatMessage } from '@moduler-prompt/utils';
+import { formatPrompt, formatPromptAsMessages, type FormatterOptions } from '@moduler-prompt/utils';
 
 /**
  * Response provider function type

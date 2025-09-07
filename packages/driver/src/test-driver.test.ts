@@ -149,7 +149,7 @@ describe('TestDriver', () => {
     it('uses response provider function', async () => {
       let callCount = 0;
       const driver = new TestDriver({
-        responses: (prompt) => {
+        responses: () => {
           callCount++;
           return `Response ${callCount}`;
         }
@@ -168,7 +168,7 @@ describe('TestDriver', () => {
     
     it('uses async response provider function', async () => {
       const driver = new TestDriver({
-        responses: async (prompt) => {
+        responses: async () => {
           await new Promise(resolve => setTimeout(resolve, 10));
           return 'Async response';
         }
