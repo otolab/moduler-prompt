@@ -70,3 +70,17 @@ refs/
 Thumbs.db
 .Spotlight-V100
 .Trashes
+
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+.python-version
+*.pyc
+*.pyo
+*.pyd
+
+# Analysis results
+.code-bugs/
