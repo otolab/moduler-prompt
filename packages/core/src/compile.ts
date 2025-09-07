@@ -5,7 +5,8 @@ import type {
   StandardSectionName,
   SectionElement,
   SubSectionElement,
-  DynamicElement
+  DynamicElement,
+  SectionType
 } from './types';
 import { STANDARD_SECTIONS } from './types';
 
@@ -31,64 +32,13 @@ export function compile<TContext = any>(
     const sectionElement = compileSectionToElement(
       sectionContent,
       sectionDef.title,
+      sectionDef.type,
+      sectionName,
       context
     );
 
     // セクションタイプに応じて分類
     compiled[sectionDef.type].push(sectionElement);
-  }
-  
-  // 明示的なinstructions/data/outputセクションを処理
-  const directSections: SectionType[] = ['instructions', 'data', 'output'];
-  for (const sectionType of directSections) {
-    const content = module[sectionType];
-    if (!content) continue;
-    
-    // contentが関数の場合は実行
-    const resolvedContent = typeof content === 'function' 
-      ? content(context) || []
-      : content;
-    
-    // 配列に変換
-    const items = Array.isArray(resolvedContent) ? resolvedContent : [resolvedContent];
-    
-    // 既存のセクションがあるか確認
-    const sectionTitle = sectionType.charAt(0).toUpperCase() + sectionType.slice(1);
-    let defaultSection = compiled[sectionType].find(
-      el => el.type === 'section' && el.title === sectionTitle
-    ) as SectionElement | undefined;
-    
-    const otherElements: any[] = [];
-    
-    for (const item of items) {
-      if (typeof item === 'string' || (typeof item === 'object' && item !== null && item.type === 'subsection')) {
-        // 文字列とsubsectionは自動的にSectionElementに集約
-        if (!defaultSection) {
-          defaultSection = {
-            type: 'section',
-            title: sectionTitle,
-            content: '',
-            items: []
-          };
-          compiled[sectionType].push(defaultSection);
-        }
-        
-        if (typeof item === 'string') {
-          // 既に同じ文字列が存在しないかチェック
-          if (!defaultSection.items.includes(item)) {
-            defaultSection.items.push(item);
-          }
-        } else {
-          defaultSection.items.push(item);
-        }
-      } else if (typeof item === 'object' && item !== null) {
-        // その他のElement型のオブジェクトはそのまま追加
-        otherElements.push(item);
-      }
-    }
-    
-    // 他の要素を追加
-    compiled[sectionType].push(...otherElements);
   }
 
   return compiled;
@@ -100,6 +50,8 @@ export function compile<TContext = any>(
 function compileSectionToElement<TContext>(
   content: SectionContent<TContext>,
   title: string,
+  category: SectionType,
+  sectionName: string,
   context: TContext
 ): SectionElement {
   const plainItems: string[] = [];
@@ -117,18 +69,17 @@ function compileSectionToElement<TContext>(
     if (typeof item === 'function') {
       // DynamicContentを実行
       const dynamicResult = item(context);
-      if (dynamicResult) {
-        // DynamicElementを文字列に変換して追加
-        const dynamicElements = Array.isArray(dynamicResult) ? dynamicResult : [dynamicResult];
-        for (const element of dynamicElements) {
-          plainItems.push(formatDynamicElementAsString(element));
-        }
+      const processedStrings = processDynamicContent(dynamicResult);
+      
+      // 変換された文字列を追加
+      for (const str of processedStrings) {
+        plainItems.push(str);
       }
     } else if (typeof item === 'string') {
-      // 文字列はそのまま追加
+      // 文字列をそのまま追加
       plainItems.push(item);
     } else if (item.type === 'subsection') {
-      // SubSectionElementは別に保持
+      // サブセクションを追加
       subsections.push(item);
     }
   }
@@ -141,10 +92,43 @@ function compileSectionToElement<TContext>(
 
   return {
     type: 'section',
+    category,
     content: '',
     title,
     items
   };
+}
+
+/**
+ * DynamicContentの結果を文字列配列に変換
+ * 文字列や文字列配列を直接返すことができるように拡張
+ */
+function processDynamicContent(
+  result: string | string[] | DynamicElement | DynamicElement[] | null | undefined
+): string[] {
+  // null/undefinedの場合は空配列
+  if (result === null || result === undefined) {
+    return [];
+  }
+  
+  // 文字列の場合
+  if (typeof result === 'string') {
+    return [result];
+  }
+  
+  // 配列の場合
+  if (Array.isArray(result)) {
+    return result.flatMap(item => {
+      if (typeof item === 'string') {
+        return item;  // 文字列はそのまま
+      } else {
+        return formatDynamicElementAsString(item);  // Elementは変換
+      }
+    });
+  }
+  
+  // 単一のElementの場合
+  return [formatDynamicElementAsString(result)];
 }
 
 /**
@@ -183,6 +167,7 @@ function formatDynamicElementAsString(element: DynamicElement): string {
       return '';
   }
 }
+
 
 /**
  * コンテキストを作成するヘルパー関数

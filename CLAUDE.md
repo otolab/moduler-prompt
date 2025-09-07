@@ -11,7 +11,7 @@
 ### 型定義 (`packages/core/src/types.ts`)
 - `PromptModule<TContext>` - 標準セクションは自動的にSectionElementになる
 - `Element` - 6種類の要素型（Text, Message, Material, Chunk, Section, SubSection）
-- `DynamicContent` - 動的コンテンツ生成（Section/SubSection生成不可）
+- `DynamicContent` - 動的コンテンツ生成（文字列/文字列配列/Element対応、Section/SubSection生成不可）
 - `SectionContent` - 標準セクションの内容型（string | SubSectionElement | DynamicContent）
 
 ### マージ (`packages/core/src/merge.ts`)
@@ -22,9 +22,13 @@
 
 ### コンパイル (`packages/core/src/compile.ts`)
 - `compile(module, context)` - 標準セクションを自動的にSectionElementに変換
-- DynamicContentを実行して文字列に変換
+- DynamicContentを実行して変換:
+  - 文字列 → そのまま使用
+  - 文字列配列 → 展開して使用（可変長データ対応）
+  - Element/Element配列 → 文字列に変換
 - セクション内の要素を並び替え（通常要素 → サブセクション）
 - セクション分類（instructions/data/output）
+- 重複を許容（セパレータ、強調、マーカーなどの意図的な重複をサポート）
 
 ## 重要な制約
 
@@ -63,7 +67,22 @@
 
 ## 主要ドキュメント
 
-- [仕様書](./docs/PROMPT_MODULE_SPEC_V2.md)
-- [API](./docs/API.md)
-- [Getting Started](./docs/GETTING_STARTED.md)
-- [Driver API](./docs/DRIVER_API.md)
+- [仕様書](./PROMPT_MODULE_SPECIFICATION.md)
+
+## DynamicContentの使用例
+
+```typescript
+// 簡潔な記述が可能
+const module: PromptModule<{ items: string[] }> = {
+  state: [
+    // 文字列を直接返す
+    (ctx) => `アイテム数: ${ctx.items.length}`,
+    
+    // 文字列配列を直接返す（可変長データ）
+    (ctx) => ctx.items.map(item => `- ${item}`),
+    
+    // 条件付きコンテンツ
+    (ctx) => ctx.items.length > 0 ? '処理開始' : null
+  ]
+};
+```

@@ -1,7 +1,7 @@
 import { describe, it, expect } from 'vitest';
 import { compile } from './compile.js';
 import { merge } from './merge.js';
-import type { PromptModule, CompiledPrompt } from './types.js';
+import type { PromptModule } from './types.js';
 
 describe('Core Integration Tests', () => {
   describe('Basic Module Definition to Prompt Generation', () => {

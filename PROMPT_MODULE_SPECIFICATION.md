@@ -112,8 +112,14 @@ Element
 コンテキストに基づいて動的にコンテンツを生成:
 
 ```typescript
+// 記述の利便性を重視した拡張型定義
 type DynamicContent<TContext> = (context: TContext) => 
-  DynamicElement[] | DynamicElement | null;
+  | string                    // 単純な文字列
+  | string[]                  // 文字列配列（可変長データに便利）
+  | DynamicElement           // 単一の要素
+  | DynamicElement[]         // 要素の配列
+  | null                     // 何も返さない
+  | undefined;               // 何も返さない
 
 // 生成可能な要素（構造要素は除外）
 type DynamicElement = 
@@ -122,6 +128,8 @@ type DynamicElement =
   | MaterialElement 
   | ChunkElement;
 ```
+
+**利便性の向上**: 文字列や文字列配列を直接返せるため、簡潔な記述が可能
 
 ## 標準セクション
 
@@ -167,6 +175,7 @@ const merged = merge(module1, module2, module3);
 - 同名サブセクションのitemsを結合
 - createContextは全て実行（後の値で上書き）
 - 要素順序: 通常要素 → サブセクション
+- **重複は許容**: mergeは重複チェックを行わない（異なるモジュールが同じ内容を持つことは正当）
 
 ### 2. compile - プロンプトのコンパイル
 
@@ -177,11 +186,32 @@ const compiled = compile(module, context);
 // → { instructions: Element[], data: Element[], output: Element[] }
 ```
 
-**コンパイル処理:**
-1. 標準セクションを自動的にSectionElementに変換
-2. DynamicContentを実行して要素を生成
-3. セクション内の要素を並び替え（通常要素 → サブセクション）
-4. Instructions/Data/Outputカテゴリに分類
+**compileの役割:**
+- **PromptModule（記述の利便性）** を **CompiledPrompt（構造の明快性）** に変換
+- 開発者が書きやすい形式から、システムが処理しやすい形式への橋渡し
+- 動的コンテンツの解決と型変換の実行
+
+**コンパイル処理の詳細:**
+1. **標準セクションの変換**
+   - 各標準セクション（objective, state等）をSectionElementに変換
+   - 適切なタイトルとカテゴリ（instructions/data/output）を付与
+
+2. **DynamicContentの処理**
+   - コンテキストを使用して動的コンテンツを実行
+   - 返却値に応じた変換:
+     - 文字列 → そのまま配置
+     - 文字列配列 → 展開して配置（可変長データ対応）
+     - Element → 文字列に変換して配置
+     - null/undefined → 無視
+
+3. **構造の整理**
+   - セクション内の要素を並び替え（通常要素 → サブセクション）
+   - **重複を許容**: 意図的な重複（セパレータ、強調、マーカー）をサポート
+
+4. **大セクションへの分類**
+   - Instructions: システムへの指示
+   - Data: 処理対象のデータ
+   - Output: 出力の開始位置と形式
 
 ### 3. createContext - コンテキスト生成
 
@@ -190,6 +220,23 @@ const compiled = compile(module, context);
 ```typescript
 const context = createContext(module);
 ```
+
+## 設計の意図
+
+### 重複の許容
+
+プロンプトは自然言語であり、重複は自然で有用な場合が多いため、フレームワークレベルでの重複チェックは行いません。
+
+**重複が有用なケース:**
+- **セパレータ**: `'---'`のような区切り線の繰り返し
+- **強調**: 重要な指示の意図的な繰り返し
+- **マーカー**: 処理の開始/終了を示す同じ文言
+- **テンプレート**: 定型的な文言の繰り返し
+
+**責務の分離:**
+- **フレームワーク**: 制約を課さず、柔軟性を提供
+- **アプリケーション**: 必要に応じて独自のバリデーションを実装
+- **AIモデル**: 最終的に重複を適切に解釈・処理
 
 ## 制約事項
 
@@ -229,10 +276,49 @@ const myModule: PromptModule<MyContext> = {
   ],
   
   state: [
+    // 文字列を直接返す（新機能）
+    (ctx) => `現在の状態: ${ctx.state}`,
+    
+    // 文字列配列を直接返す（新機能）
+    (ctx) => ctx.items.map(item => `- ${item}`),
+    
+    // 従来通りElementも返せる
     (ctx) => ({
-      type: 'text',
-      content: `現在の状態: ${ctx.state}`
+      type: 'material',
+      id: 'ref',
+      title: '参考資料',
+      content: ctx.reference
     })
+  ]
+};
+```
+
+### DynamicContentの活用例
+
+```typescript
+interface Context {
+  users: string[];
+  count: number;
+  verbose: boolean;
+}
+
+const module: PromptModule<Context> = {
+  state: [
+    // 単純な文字列
+    (ctx) => `ユーザー数: ${ctx.count}`,
+    
+    // 文字列配列（可変長データ）
+    (ctx) => ctx.users.map(user => `ユーザー: ${user}`),
+    
+    // 条件付きコンテンツ
+    (ctx) => ctx.verbose ? '詳細モード有効' : null,
+    
+    // 混在した配列
+    (ctx) => [
+      '処理開始',
+      ...ctx.users.slice(0, 3).map(u => `- ${u}`),
+      ctx.users.length > 3 ? `他${ctx.users.length - 3}名` : null
+    ].filter(Boolean) as string[]
   ]
 };
 ```
