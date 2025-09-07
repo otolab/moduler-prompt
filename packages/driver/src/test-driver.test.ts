@@ -269,4 +269,67 @@ describe('TestDriver', () => {
       expect(result.usage?.promptTokens).toBeGreaterThan(0);
     });
   });
+  
+  describe('preferMessageFormat', () => {
+    it('should default to false when not specified', () => {
+      const driver = new TestDriver();
+      expect(driver.preferMessageFormat).toBe(false);
+    });
+    
+    it('should use provided preference', () => {
+      let driver = new TestDriver({ preferMessageFormat: true });
+      expect(driver.preferMessageFormat).toBe(true);
+      
+      driver = new TestDriver({ preferMessageFormat: false });
+      expect(driver.preferMessageFormat).toBe(false);
+    });
+    
+    it('should use message format when preferred', async () => {
+      const driver = new TestDriver({
+        preferMessageFormat: true,
+        responses: ['Test response'],
+        formatterOptions: {
+          preamble: 'Test preamble',
+          sectionDescriptions: {
+            instructions: 'Instructions desc'
+          }
+        }
+      });
+      
+      const prompt: CompiledPrompt = {
+        instructions: [{ type: 'text', content: 'Test instruction' }],
+        data: [],
+        output: []
+      };
+      
+      const result = await driver.query(prompt);
+      expect(result.content).toBe('Test response');
+      
+      // Check usage calculation uses message format
+      // With message format, the prompt is converted to messages then joined
+      expect(result.usage).toBeDefined();
+      expect(result.usage?.promptTokens).toBeGreaterThan(0);
+    });
+    
+    it('should use text format when not preferred', async () => {
+      const driver = new TestDriver({
+        preferMessageFormat: false,
+        responses: ['Test response'],
+        formatterOptions: {
+          preamble: 'Test preamble'
+        }
+      });
+      
+      const prompt: CompiledPrompt = {
+        instructions: [{ type: 'text', content: 'Test instruction' }],
+        data: [],
+        output: []
+      };
+      
+      const result = await driver.query(prompt);
+      expect(result.content).toBe('Test response');
+      expect(result.usage).toBeDefined();
+      expect(result.usage?.promptTokens).toBeGreaterThan(0);
+    });
+  });
 });

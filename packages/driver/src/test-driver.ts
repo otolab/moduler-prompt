@@ -1,6 +1,6 @@
 import type { CompiledPrompt } from '@moduler-prompt/core';
 import type { AIDriver, QueryOptions, QueryResult } from './types.js';
-import { formatPrompt, type FormatterOptions } from '@moduler-prompt/utils';
+import { formatPrompt, formatPromptAsMessages, type FormatterOptions, type ChatMessage } from '@moduler-prompt/utils';
 
 /**
  * Response provider function type
@@ -14,6 +14,7 @@ export interface TestDriverOptions {
   responses?: string[] | ResponseProvider;
   delay?: number;
   formatterOptions?: FormatterOptions;
+  preferMessageFormat?: boolean;
 }
 
 /**
@@ -31,6 +32,7 @@ export class TestDriver implements AIDriver {
   private responseProvider?: ResponseProvider;
   private delay: number;
   private formatterOptions: FormatterOptions;
+  public preferMessageFormat: boolean;
   
   constructor(options: TestDriverOptions = {}) {
     if (typeof options.responses === 'function') {
@@ -42,6 +44,7 @@ export class TestDriver implements AIDriver {
     }
     this.delay = options.delay || 0;
     this.formatterOptions = options.formatterOptions || {};
+    this.preferMessageFormat = options.preferMessageFormat || false;
   }
   
   getFormatterOptions(): FormatterOptions {
@@ -49,8 +52,16 @@ export class TestDriver implements AIDriver {
   }
   
   async query(prompt: CompiledPrompt, options?: QueryOptions): Promise<QueryResult> {
-    // Format the prompt to text using driver's formatter options
-    const formattedPrompt = formatPrompt(prompt, this.getFormatterOptions());
+    // Format the prompt based on driver preference
+    let formattedPrompt: string;
+    if (this.preferMessageFormat) {
+      // Convert to messages then to text for token counting
+      const messages = formatPromptAsMessages(prompt, this.getFormatterOptions());
+      formattedPrompt = messages.map(m => `${m.role}: ${m.content}`).join('\n\n');
+    } else {
+      // Use standard text format
+      formattedPrompt = formatPrompt(prompt, this.getFormatterOptions());
+    }
     
     // If we have a response provider function, use it
     if (this.responseProvider) {

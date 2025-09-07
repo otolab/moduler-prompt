@@ -1,9 +1,22 @@
 import type { Element } from '@moduler-prompt/core';
 
 /**
+ * Chat message format
+ */
+export interface ChatMessage {
+  role: 'system' | 'user' | 'assistant';
+  content: string;
+}
+
+/**
  * Formatter options for converting elements to text
  */
 export interface FormatterOptions {
+  /**
+   * Custom formatter instance to use
+   */
+  formatter?: ElementFormatter;
+  
   /**
    * Preamble text to be added at the beginning of the formatted prompt
    */

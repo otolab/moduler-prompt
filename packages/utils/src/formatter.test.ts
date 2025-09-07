@@ -1,13 +1,12 @@
 import { describe, it, expect } from 'vitest';
-import { DefaultFormatter, formatPrompt } from './formatter.js';
+import { DefaultFormatter } from './formatter.js';
 import type { 
   TextElement, 
   MessageElement, 
   MaterialElement,
   ChunkElement,
   SectionElement,
-  SubSectionElement,
-  CompiledPrompt
+  SubSectionElement
 } from '@moduler-prompt/core';
 
 describe('DefaultFormatter', () => {
@@ -103,17 +102,46 @@ describe('DefaultFormatter', () => {
   });
   
   describe('format chunk elements', () => {
-    it('should format chunk in markdown', () => {
+    it('should format chunk with index and partOf', () => {
       const formatter = new DefaultFormatter();
       const element: ChunkElement = {
         type: 'chunk',
+        partOf: 'document.txt',
         index: 1,
         content: 'First chunk of text'
       };
       
       const result = formatter.format(element);
-      expect(result).toContain('#### Chunk 1');
+      expect(result).toContain('#### Chunk 1 of document.txt');
       expect(result).toContain('First chunk of text');
+    });
+    
+    it('should format chunk with index, total, and partOf', () => {
+      const formatter = new DefaultFormatter();
+      const element: ChunkElement = {
+        type: 'chunk',
+        partOf: 'large-book.pdf',
+        index: 3,
+        total: 10,
+        content: 'Third chunk of ten'
+      };
+      
+      const result = formatter.format(element);
+      expect(result).toContain('#### Chunk 3/10 of large-book.pdf');
+      expect(result).toContain('Third chunk of ten');
+    });
+    
+    it('should format chunk without index', () => {
+      const formatter = new DefaultFormatter();
+      const element: ChunkElement = {
+        type: 'chunk',
+        partOf: 'large-file.md',
+        content: 'Some chunk content'
+      };
+      
+      const result = formatter.format(element);
+      expect(result).toContain('#### Part of large-file.md');
+      expect(result).toContain('Some chunk content');
     });
     
     it('should format chunk with custom markers', () => {
@@ -125,13 +153,15 @@ describe('DefaultFormatter', () => {
       });
       const element: ChunkElement = {
         type: 'chunk',
+        partOf: 'data.json',
         index: 2,
+        total: 5,
         content: 'Second chunk'
       };
       
       const result = formatter.format(element);
       expect(result).toContain('[BEGIN CHUNK]');
-      expect(result).toContain('#### Chunk 2');
+      expect(result).toContain('#### Chunk 2/5 of data.json');
       expect(result).toContain('Second chunk');
       expect(result).toContain('[END CHUNK]');
     });
@@ -219,12 +249,13 @@ describe('markers usage', () => {
     // Test chunk markers
     const chunk: ChunkElement = {
       type: 'chunk',
+      partOf: 'file.txt',
       index: 1,
       content: 'chunk content'
     };
     const chunkResult = formatter.format(chunk);
     expect(chunkResult).toContain('<<<CHUNK>>>');
-    expect(chunkResult).toContain('#### Chunk 1');
+    expect(chunkResult).toContain('#### Chunk 1 of file.txt');
     expect(chunkResult).toContain('<<</CHUNK>>>');
   });
   
@@ -233,7 +264,7 @@ describe('markers usage', () => {
       markers: {
         materialStart: '=== START ===',
         // No materialEnd provided
-        chunkEnd: '=== END ==='
+        chunkEnd: '=== END ===',
         // No chunkStart provided
       }
     });
@@ -253,172 +284,13 @@ describe('markers usage', () => {
     // Chunk with only end marker
     const chunk: ChunkElement = {
       type: 'chunk',
+      partOf: 'data.txt',
       index: 1,
       content: 'chunk'
     };
     const chunkResult = formatter.format(chunk);
     expect(chunkResult).not.toContain('=== START ===');
-    expect(chunkResult).toContain('#### Chunk 1');
+    expect(chunkResult).toContain('#### Chunk 1 of data.txt');
     expect(chunkResult).toContain('=== END ===');
-  });
-});
-
-describe('preamble and section descriptions', () => {
-  it('should add preamble when provided', () => {
-    const prompt: CompiledPrompt = {
-      instructions: [
-        { type: 'text', content: 'Do something' }
-      ],
-      data: [],
-      output: []
-    };
-    
-    const result = formatPrompt(prompt, {
-      preamble: 'This is a custom preamble text.'
-    });
-    
-    expect(result).toContain('This is a custom preamble text.');
-    expect(result.indexOf('This is a custom preamble')).toBeLessThan(
-      result.indexOf('# Instructions')
-    );
-  });
-  
-  it('should add section descriptions when provided', () => {
-    const prompt: CompiledPrompt = {
-      instructions: [
-        { type: 'text', content: 'Instruction content' }
-      ],
-      data: [
-        { type: 'text', content: 'Data content' }
-      ],
-      output: [
-        { type: 'text', content: 'Output content' }
-      ]
-    };
-    
-    const result = formatPrompt(prompt, {
-      sectionDescriptions: {
-        instructions: 'Custom instructions description',
-        data: 'Custom data description',
-        output: 'Custom output description'
-      }
-    });
-    
-    expect(result).toContain('Custom instructions description');
-    expect(result).toContain('Custom data description');
-    expect(result).toContain('Custom output description');
-    
-    // Check order
-    const instructionsIndex = result.indexOf('# Instructions');
-    const instructionsDescIndex = result.indexOf('Custom instructions description');
-    const instructionsContentIndex = result.indexOf('Instruction content');
-    
-    expect(instructionsIndex).toBeLessThan(instructionsDescIndex);
-    expect(instructionsDescIndex).toBeLessThan(instructionsContentIndex);
-  });
-  
-  it('should work with both preamble and section descriptions', () => {
-    const prompt: CompiledPrompt = {
-      instructions: [
-        { type: 'text', content: 'Test' }
-      ],
-      data: [],
-      output: []
-    };
-    
-    const result = formatPrompt(prompt, {
-      preamble: 'Preamble text',
-      sectionDescriptions: {
-        instructions: 'Instructions desc'
-      }
-    });
-    
-    expect(result).toContain('Preamble text');
-    expect(result).toContain('Instructions desc');
-    expect(result.indexOf('Preamble text')).toBeLessThan(
-      result.indexOf('# Instructions')
-    );
-  });
-});
-
-describe('formatPrompt', () => {
-  it('should format complete prompt with all sections', () => {
-    const prompt: CompiledPrompt = {
-      instructions: [
-        {
-          type: 'section',
-          title: 'Objective',
-          items: ['Process the input', 'Generate output']
-        }
-      ],
-      data: [
-        {
-          type: 'material',
-          id: 'ctx-1',
-          title: 'Context',
-          content: 'Some context information'
-        }
-      ],
-      output: [
-        {
-          type: 'text',
-          content: 'Please provide the result.'
-        }
-      ]
-    };
-    
-    const result = formatPrompt(prompt);
-    
-    expect(result).toContain('# Instructions');
-    expect(result).toContain('## Objective');
-    expect(result).toContain('- Process the input');
-    expect(result).toContain('# Data');
-    expect(result).toContain('### Context');
-    expect(result).toContain('# Output');
-    expect(result).toContain('Please provide the result.');
-  });
-  
-  it('should handle empty sections', () => {
-    const prompt: CompiledPrompt = {
-      instructions: [],
-      data: [
-        {
-          type: 'text',
-          content: 'Some data'
-        }
-      ],
-      output: []
-    };
-    
-    const result = formatPrompt(prompt);
-    
-    // Empty sections are not included
-    expect(result).not.toContain('# Instructions');
-    expect(result).toContain('# Data');
-    expect(result).toContain('Some data');
-    expect(result).not.toContain('# Output');
-  });
-  
-  it('should use custom line breaks', () => {
-    const prompt: CompiledPrompt = {
-      instructions: [
-        {
-          type: 'text',
-          content: 'Line 1'
-        },
-        {
-          type: 'text',
-          content: 'Line 2'
-        }
-      ],
-      data: [],
-      output: []
-    };
-    
-    const result = formatPrompt(prompt, { 
-      lineBreak: '\r\n'
-    });
-    
-    expect(result).toContain('Line 1\r\nLine 2');
   });
 });

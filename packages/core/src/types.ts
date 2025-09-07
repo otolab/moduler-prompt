@@ -37,6 +37,7 @@ export interface ChunkElement {
   content: string | Attachment[];
   partOf: string;
   index?: number;
+  total?: number;  // Total number of chunks
   usage?: number;
 }
 

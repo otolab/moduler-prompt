@@ -1,10 +1,15 @@
 export type {
   FormatterOptions,
-  ElementFormatter
+  ElementFormatter,
+  ChatMessage
 } from './types.js';
 
 export {
-  DefaultFormatter,
-  formatPrompt,
-  defaultFormatterTexts
+  DefaultFormatter
 } from './formatter.js';
+
+export {
+  formatPrompt,
+  formatPromptAsMessages,
+  defaultFormatterTexts
+} from './converter.js';

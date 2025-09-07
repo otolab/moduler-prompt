@@ -58,6 +58,12 @@ export interface AIDriver {
   getFormatterOptions(): FormatterOptions;
   
   /**
+   * Whether to prefer message format over text format
+   * Default is false (use text format)
+   */
+  preferMessageFormat?: boolean;
+  
+  /**
    * Close the driver connection
    */
   close?(): Promise<void>;
