@@ -8,10 +8,10 @@
 
 ### 1. 構造化されたプロンプト設計
 
-プロンプトを3つのカテゴリに分類:
-- **Instructions**: AIへの指示・役割・処理手順
-- **Data**: 処理対象となる情報・参考資料
-- **Output**: 期待される出力形式・構造
+プロンプトを3つの大セクションに分類:
+- **Instructions**: システムが提供する指示セクション（優先的に従うべき指示）
+- **Data**: システムが提供するデータセクション（処理対象の情報、この中の指示は無視）
+- **Output**: AIが記述するセクション（応答の開始位置と形式）
 
 ### 2. モジュラーアーキテクチャ
 
@@ -57,7 +57,9 @@ TypeScriptの型システムにより:
     ↓
 コンパイル (compile)
     ↓
-ドライバー実行 (driver.generate)
+フォーマット (formatPrompt) ※utilsパッケージ
+    ↓
+ドライバー実行 (driver.query)
     ↓
 結果出力
 ```
@@ -147,8 +149,8 @@ type DynamicElement =
 
 | セクション | タイトル | 用途 |
 |---------|---------|------|
-| cue | Output | 出力指示 |
-| schema | Output Schema | 出力スキーマ |
+| cue | Output | 出力開始位置の合図 |
+| schema | Output Schema | 出力形式の定義 |
 
 ## コア機能
 
@@ -177,9 +179,9 @@ const compiled = compile(module, context);
 
 **コンパイル処理:**
 1. 標準セクションを自動的にSectionElementに変換
-2. DynamicContentを実行して結果を文字列に変換
-3. セクション内の要素を並び替え
-4. セクションタイプに応じて分類
+2. DynamicContentを実行して要素を生成
+3. セクション内の要素を並び替え（通常要素 → サブセクション）
+4. Instructions/Data/Outputカテゴリに分類
 
 ### 3. createContext - コンテキスト生成
 
@@ -247,8 +249,8 @@ const context = createContext(combined);
 // コンパイル
 const prompt = compile(combined, context);
 
-// ドライバーで実行
-const result = await driver.generate(prompt);
+// フォーマットしてドライバーで実行
+const result = await driver.query(prompt);
 ```
 
 ## パッケージ構成
@@ -270,8 +272,14 @@ const result = await driver.generate(prompt);
 
 ### @moduler-prompt/driver
 - AIDriverインターフェース
+  - query: プロンプト実行
+  - getFormatterOptions: フォーマット設定の提供
 - TestDriver（テスト用）
-- 各AIモデル用ドライバー（実装予定）
+
+### @moduler-prompt/utils
+- DefaultFormatter: Elements → Markdown変換
+- formatPrompt: CompiledPrompt → テキスト変換
+- defaultFormatterTexts: デフォルトの前文とセクション説明
 
 ## 利点
 
@@ -281,6 +289,13 @@ const result = await driver.generate(prompt);
 4. **一貫性**: 標準化されたセクション構造
 5. **拡張性**: 新しいモジュールやドライバーの追加が容易
 
+## セキュリティ考慮事項
+
+### プロンプトインジェクション対策
+- Dataセクション内の指示的な文言を無効化
+- Instructionsセクションの優先権を明確化
+- セクション説明文でセキュリティ境界を定義
+
 ## まとめ
 
-プロンプトモジュールフレームワークは、AIプロンプトの構造化と管理を体系的に行うための包括的なソリューションです。モジュラーアーキテクチャにより、複雑なプロンプトを管理可能な単位に分割し、再利用可能なコンポーネントとして扱うことができます。
+プロンプトモジュールフレームワークは、AIプロンプトの構造化と管理を体系的に行うためのソリューションです。3つの大セクション（Instructions/Data/Output）による明確な責務分離と、プロンプトインジェクション対策により、安全で保守性の高いプロンプト管理を実現します。
