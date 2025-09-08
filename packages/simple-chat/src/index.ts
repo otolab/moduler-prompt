@@ -4,7 +4,6 @@
 
 export { runChat } from './chat.js';
 export { 
-  defaultSystemModule,
   getDefaultProfile, 
   loadDialogProfile
 } from './profile.js';

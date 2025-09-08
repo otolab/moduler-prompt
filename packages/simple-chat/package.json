@@ -17,6 +17,7 @@
   "dependencies": {
     "@moduler-prompt/core": "*",
     "@moduler-prompt/driver": "*",
+    "@moduler-prompt/process": "*",
     "@moduler-prompt/utils": "*",
     "commander": "^12.0.0",
     "js-yaml": "^4.1.0",

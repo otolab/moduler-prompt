@@ -2,7 +2,8 @@
  * AI chat functionality using Moduler Prompt
  */
 
-import { compile, PromptModule, createContext } from '@moduler-prompt/core';
+import { compile, PromptModule, createContext, merge } from '@moduler-prompt/core';
+import { withMaterials, type MaterialContext } from '@moduler-prompt/process';
 import { MlxDriver, type AIDriver } from '@moduler-prompt/driver';
 import { DialogProfile, ChatLog } from './types.js';
 import chalk from 'chalk';
@@ -10,20 +11,18 @@ import chalk from 'chalk';
 /**
  * Chat context interface
  */
-export interface ChatContext {
+export interface ChatContext extends MaterialContext {
   messages: Array<{ role: string; content: string }>;
-  resourceContent?: string;
   userMessage: string;
 }
 
 /**
- * Chat prompt module template (static definition)
+ * Base chat prompt module (without materials)
  */
-export const chatPromptModule: PromptModule<ChatContext> = {
+const baseChatModule: PromptModule<ChatContext> = {
   // Context factory - returns empty typed context
   createContext: (): ChatContext => ({
     messages: [],
-    resourceContent: undefined,
     userMessage: ''
   }),
   
@@ -57,14 +56,6 @@ export const chatPromptModule: PromptModule<ChatContext> = {
     '適切な敬語を使用する'
   ],
   
-  // Materials - 参考資料（もしあれば）
-  materials: [
-    (ctx) => ctx.resourceContent ? [
-      '=== 参考資料 ===',
-      ctx.resourceContent
-    ] : null
-  ],
-  
   // Messages - 会話履歴
   messages: [
     (ctx) => {
@@ -86,6 +77,11 @@ export const chatPromptModule: PromptModule<ChatContext> = {
 };
 
 /**
+ * Chat prompt module with materials support (merged)
+ */
+export const chatPromptModule = merge(baseChatModule, withMaterials);
+
+/**
  * Create MLX driver
  */
 export function createDriver(profile: DialogProfile): AIDriver {
@@ -102,7 +98,7 @@ export async function performAIChat(
   profile: DialogProfile,
   chatLog: ChatLog,
   userMessage: string,
-  resourceContent?: string
+  materials?: MaterialContext['materials']
 ): Promise<{ response: string; driver: AIDriver }> {
   const driver = createDriver(profile);
   
@@ -112,8 +108,8 @@ export async function performAIChat(
     
     // Populate context with actual data
     context.messages = chatLog.messages.filter(m => m.role !== 'system');
-    context.resourceContent = resourceContent;
     context.userMessage = userMessage;
+    context.materials = materials;
     
     // Compile module with populated context
     const compiledPrompt = compile(chatPromptModule, context);

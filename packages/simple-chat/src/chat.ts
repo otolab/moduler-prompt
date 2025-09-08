@@ -26,6 +26,7 @@ import {
   closeDriver,
 } from './ai-chat.js';
 import { loadResourceFiles } from './resource-files.js';
+import type { MaterialContext } from '@moduler-prompt/process';
 
 /**
  * Process user input
@@ -136,15 +137,15 @@ export async function runChat(options: SimpleChatOptions): Promise<void> {
   // Get user message
   const userMessage = await getUserMessage(options);
   
-  // Load resource files
-  let resourceContent = '';
+  // Load resource files as materials
+  let materials: MaterialContext['materials'];
   let loadedFiles: string[] = [];
   if (profile.resourceFiles && profile.resourceFiles.length > 0) {
     const resourceResult = await loadResourceFiles(
       profile.resourceFiles,
       options.profilePath
     );
-    resourceContent = resourceResult.content;
+    materials = resourceResult.materials;
     loadedFiles = resourceResult.loadedFiles;
   }
   
@@ -157,7 +158,7 @@ export async function runChat(options: SimpleChatOptions): Promise<void> {
     profile,
     chatLog,
     userMessage,
-    resourceContent
+    materials
   );
   
   // Add assistant response to log

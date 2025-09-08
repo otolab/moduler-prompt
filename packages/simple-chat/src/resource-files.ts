@@ -4,27 +4,33 @@
 
 import { readFile } from 'fs/promises';
 import { resolve, dirname } from 'path';
+import type { MaterialContext } from '@moduler-prompt/process';
 
 /**
- * Load resource files and combine their content
+ * Load resource files as materials
  */
 export async function loadResourceFiles(
   resourceFiles: string[],
   basePath?: string
-): Promise<{ content: string; loadedFiles: string[] }> {
+): Promise<{ materials: MaterialContext['materials']; loadedFiles: string[] }> {
   if (!resourceFiles || resourceFiles.length === 0) {
-    return { content: '', loadedFiles: [] };
+    return { materials: undefined, loadedFiles: [] };
   }
   
   const loadedFiles: string[] = [];
-  const contents: string[] = [];
+  const materials: NonNullable<MaterialContext['materials']> = [];
   
-  for (const file of resourceFiles) {
+  for (let i = 0; i < resourceFiles.length; i++) {
+    const file = resourceFiles[i];
     try {
       const filePath = basePath ? resolve(dirname(basePath), file) : file;
       const content = await readFile(filePath, 'utf-8');
       
-      contents.push(`--- File: ${file} ---\n${content}\n--- End of ${file} ---`);
+      materials.push({
+        id: `resource-${i + 1}`,
+        title: file,
+        content: content
+      });
       loadedFiles.push(file);
     } catch (error) {
       console.error(`Warning: Could not load resource file ${file}: ${error}`);
@@ -32,7 +38,7 @@ export async function loadResourceFiles(
   }
   
   return {
-    content: contents.join('\n\n'),
+    materials: materials.length > 0 ? materials : undefined,
     loadedFiles,
   };
 }
