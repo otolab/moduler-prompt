@@ -79,7 +79,7 @@ TypeScriptの型システムにより:
 
 1. **モジュール定義**: 静的なPromptModule型のオブジェクトとして、プロンプトの各セクション（objective、instructions等）を定義。動的な部分は関数として記述。
 
-2. **モジュールマージ**: `merge(...modules)`で複数のモジュールを統合。各モジュールのセクションとcreateContextが結合される。
+2. **モジュールマージ**: `merge(...modules)`で複数のモジュールを統合。セクション要素は配列として結合、createContextは1つの統合関数として再構築。
 
 3. **コンテキスト生成**: `createContext(module)`でモジュール（またはマージ済みモジュール）から型付きの空コンテキストを生成。
 
@@ -203,7 +203,7 @@ const merged = merge(module1, module2, module3);
 **マージ戦略:**
 - 同名セクションの要素を結合
 - 同名サブセクションのitemsを結合
-- createContextは全て実行（後の値で上書き）
+- createContextは1つの関数に統合（各モジュールのcreateContextを順次実行し、スプレッド構文で結果をマージ）
 - 要素順序: 通常要素 → サブセクション
 - **重複は許容**: mergeは重複チェックを行わない（異なるモジュールが同じ内容を持つことは正当）
 
