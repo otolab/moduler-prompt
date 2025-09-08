@@ -256,6 +256,8 @@ const context = createContext(module);
 - **型安全**: TContext型で定義された構造のオブジェクトを返す
 - **マージ時の拡張**: mergeした場合、各モジュールのコンテキストが統合される
 
+実装例は[simple-chat/src/ai-chat.ts](../packages/simple-chat/src/ai-chat.ts)を参照。
+
 ## 設計の意図
 
 ### PromptModuleの設計原則
@@ -311,122 +313,51 @@ PromptModuleは以下の原則に従って設計されます：
 
 ## 実装例
 
-### 基本的なモジュール定義
+実際の動作するアプリケーションとして、`@moduler-prompt/simple-chat`パッケージを提供しています。
+
+### Simple Chat - リファレンス実装
+
+[packages/simple-chat](../packages/simple-chat)は、Moduler Promptフレームワークを使用したチャットアプリケーションのサンプル実装です。
+
+**主な実装パターン:**
+- **静的なモジュール定義**: [ai-chat.ts](../packages/simple-chat/src/ai-chat.ts)の`baseChatModule`
+- **モジュールの合成**: `withMaterials`モジュールとの`merge`
+- **コンテキストバインディング**: `createContext` → データ設定 → `compile`の流れ
+- **Materials処理**: リソースファイルをMaterial型として構造化
+- **ドライバー統合**: MLXドライバーを使用したストリーミング対応
+
+### 基本的な使用方法
 
 ```typescript
-interface MyContext {
-  taskName: string;
-  items: string[];
-  state: string;
-  showDetails: boolean;
-  reference?: string;
-}
+import { compile, createContext, merge } from '@moduler-prompt/core';
+import { withMaterials } from '@moduler-prompt/process';
 
+// 1. モジュールを定義（静的）
 const myModule: PromptModule<MyContext> = {
-  createContext: () => ({
-    taskName: 'データ処理',
-    items: ['アイテム1', 'アイテム2'],
-    state: '初期状態',
-    showDetails: true,
-    reference: undefined
-  }),
-  
-  objective: ['タスクを処理する'],
-  
-  methodology: [
-    '入力を検証',
-    '処理を実行',
-    {
-      type: 'subsection',
-      title: '後処理',
-      items: ['結果を検証', 'ログを記録']
-    }
-  ],
-  
-  state: [
-    // createContextで定義したデータを使用
-    (ctx) => `現在の状態: ${ctx.state}`,
-    
-    // 文字列配列を直接返す（可変長データに便利）
-    (ctx) => ctx.items.map(item => `- ${item}`),
-    
-    // 条件付きコンテンツ（nullを返すと除外される）
-    (ctx) => ctx.showDetails ? '詳細モード: ON' : null
-  ],
-  
-  materials: [
-    // MaterialElementを返す場合はmaterialsセクションで
-    (ctx) => ctx.reference ? {
-      type: 'material',
-      id: 'ref',
-      title: '参考資料',
-      content: ctx.reference
-    } : null
-  ]
+  createContext: () => ({ /* 初期値 */ }),
+  objective: ['目的を記述'],
+  instructions: ['指示を記述'],
+  // DynamicContentによる動的生成
+  state: [(ctx) => `状態: ${ctx.currentState}`]
 };
-```
 
-### 完全な実装例
+// 2. 必要に応じてモジュールを合成
+const combined = merge(myModule, withMaterials);
 
-```typescript
-interface UserContext {
-  users: string[];
-  maxDisplay: number;
-  showDetails: boolean;
-}
-
-// 静的に定義されたモジュール
-const userModule: PromptModule<UserContext> = {
-  // コンテキストファクトリ - 必要なデータを全て定義
-  createContext: () => ({
-    users: ['ユーザーA', 'ユーザーB', 'ユーザーC'],
-    maxDisplay: 3,
-    showDetails: true
-  }),
-  
-  objective: ['ユーザーデータを処理する'],
-  
-  state: [
-    // createContextで定義したデータのみを使用
-    (ctx) => `ユーザー数: ${ctx.users.length}`,
-    (ctx) => ctx.users.slice(0, ctx.maxDisplay).map(u => `- ${u}`),
-    (ctx) => ctx.showDetails ? '詳細モード: ON' : null
-  ]
-};
-```
-
-### 正しい使用方法
-
-```typescript
-// 1. 静的に定義されたモジュールを使用
-const module = userModule;
-
-// 2. モジュールから型付きコンテキストを生成
-const context = createContext(module);
-
-// 3. 必要に応じてコンテキストにデータを設定
-context.users = ['実際のユーザーA', '実際のユーザーB'];
-context.showDetails = false;
-
-// 4. モジュールとコンテキストをバインドしてコンパイル
-const compiledPrompt = compile(module, context);
-
-// 5. ドライバーで実行
-const result = await driver.query(compiledPrompt);
-```
-
-### モジュールの合成
-
-```typescript
-// 複数のモジュールを合成する場合
-const combined = merge(baseModule, extensionModule);
-
-// 合成されたモジュールからコンテキストを生成
-// 各モジュールのcreateContextが実行され、統合される
+// 3. コンテキストを生成してデータを設定
 const context = createContext(combined);
+context.currentState = '処理中';
+context.materials = [{ id: 'doc1', title: '資料', content: '...' }];
 
-const compiledPrompt = compile(combined, context);
+// 4. コンパイルして実行
+const compiled = compile(combined, context);
+const result = await driver.query(compiled);
 ```
+
+詳細な実装例については、[simple-chatのソースコード](../packages/simple-chat/src)を参照してください。特に以下のファイルが参考になります：
+- [ai-chat.ts](../packages/simple-chat/src/ai-chat.ts): PromptModuleの定義と使用
+- [resource-files.ts](../packages/simple-chat/src/resource-files.ts): Materials型の活用
+- [chat.ts](../packages/simple-chat/src/chat.ts): アプリケーション層での統合
 
 ## パッケージ構成
 
@@ -441,7 +372,7 @@ const compiledPrompt = compile(combined, context);
   - concatProcess: 独立したチャンク処理と結合
 - サポートモジュール
   - streamProcessing: ストリーム処理
-  - withMaterials: 資料管理
+  - withMaterials: 資料管理（[simple-chatでの使用例](../packages/simple-chat/src/ai-chat.ts)）
   - dialogue系: 対話処理
   - summarize系: 要約処理
 
