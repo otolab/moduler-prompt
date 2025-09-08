@@ -318,13 +318,17 @@ interface MyContext {
   taskName: string;
   items: string[];
   state: string;
+  showDetails: boolean;
+  reference?: string;
 }
 
 const myModule: PromptModule<MyContext> = {
   createContext: () => ({
     taskName: 'データ処理',
     items: ['アイテム1', 'アイテム2'],
-    state: '初期状態'
+    state: '初期状態',
+    showDetails: true,
+    reference: undefined
   }),
   
   objective: ['タスクを処理する'],
@@ -343,16 +347,21 @@ const myModule: PromptModule<MyContext> = {
     // createContextで定義したデータを使用
     (ctx) => `現在の状態: ${ctx.state}`,
     
-    // 文字列配列を直接返す（新機能）
+    // 文字列配列を直接返す（可変長データに便利）
     (ctx) => ctx.items.map(item => `- ${item}`),
     
-    // 従来通りElementも返せる
-    (ctx) => ({
+    // 条件付きコンテンツ（nullを返すと除外される）
+    (ctx) => ctx.showDetails ? '詳細モード: ON' : null
+  ],
+  
+  materials: [
+    // MaterialElementを返す場合はmaterialsセクションで
+    (ctx) => ctx.reference ? {
       type: 'material',
       id: 'ref',
       title: '参考資料',
       content: ctx.reference
-    })
+    } : null
   ]
 };
 ```
