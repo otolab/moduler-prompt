@@ -2,7 +2,7 @@
  * AI chat functionality using Moduler Prompt
  */
 
-import { compile, PromptModule } from '@moduler-prompt/core';
+import { compile, PromptModule, createContext } from '@moduler-prompt/core';
 import { MlxDriver, type AIDriver } from '@moduler-prompt/driver';
 import { DialogProfile, ChatLog } from './types.js';
 import chalk from 'chalk';
@@ -20,6 +20,13 @@ export interface ChatContext {
  * Chat prompt module template (static definition)
  */
 export const chatPromptModule: PromptModule<ChatContext> = {
+  // Context factory - returns empty typed context
+  createContext: (): ChatContext => ({
+    messages: [],
+    resourceContent: undefined,
+    userMessage: ''
+  }),
+  
   // Objective and Role
   objective: [
     'チャットアシスタントとして、ユーザーとの対話を行う',
@@ -100,14 +107,15 @@ export async function performAIChat(
   const driver = createDriver(profile);
   
   try {
-    // Create context - シンプルに必要なデータのみ
-    const context: ChatContext = {
-      messages: chatLog.messages.filter(m => m.role !== 'system'),
-      resourceContent,
-      userMessage
-    };
+    // Create empty typed context from module
+    const context = createContext(chatPromptModule);
     
-    // Compile static module with context
+    // Populate context with actual data
+    context.messages = chatLog.messages.filter(m => m.role !== 'system');
+    context.resourceContent = resourceContent;
+    context.userMessage = userMessage;
+    
+    // Compile module with populated context
     const compiledPrompt = compile(chatPromptModule, context);
     
     // Query AI with streaming
