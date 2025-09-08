@@ -2,7 +2,7 @@
  * AI chat functionality using Moduler Prompt
  */
 
-import { compile, PromptModule, createContext } from '@moduler-prompt/core';
+import { compile, PromptModule } from '@moduler-prompt/core';
 import { MlxDriver, type AIDriver } from '@moduler-prompt/driver';
 import { DialogProfile, ChatLog } from './types.js';
 import chalk from 'chalk';
@@ -13,58 +13,66 @@ import chalk from 'chalk';
 export interface ChatContext {
   messages: Array<{ role: string; content: string }>;
   resourceContent?: string;
-  systemPrompt: string;
-  currentUserMessage: string;
+  userMessage: string;
 }
 
 /**
  * Chat prompt module template (static definition)
  */
 export const chatPromptModule: PromptModule<ChatContext> = {
-  // System instructions
+  // Objective and Role
   objective: [
-    (ctx) => ctx.systemPrompt
+    'チャットアシスタントとして、ユーザーとの対話を行う',
+    'ユーザーの質問や要求に対して、適切で有用な応答を提供する'
   ],
   
-  guidelines: [
-    '日本語で応答する',
-    '簡潔で明確な説明を心がける',
-    '必要に応じて具体例を提示する',
+  // Instructions - 具体的な指示
+  instructions: [
+    '日本語で応答してください',
+    'ユーザーの質問の意図を理解し、的確に回答してください',
+    '必要に応じて具体例を提示してください',
     {
       type: 'subsection',
       content: '',
-      title: '応答スタイル',
+      title: '応答形式',
       items: [
-        '専門用語は分かりやすく解説',
-        '段階的に説明する',
-        'ユーザーの理解度に合わせる'
+        '簡潔で明確な説明を心がける',
+        '専門用語は分かりやすく解説する',
+        '段階的に説明する'
       ]
     }
   ],
   
-  // Materials (if provided)
+  // Guidelines - 制約や注意事項
+  guidelines: [
+    'ユーザーの理解度に合わせて説明のレベルを調整する',
+    '不確実な情報は明確に伝える',
+    '適切な敬語を使用する'
+  ],
+  
+  // Materials - 参考資料（もしあれば）
   materials: [
     (ctx) => ctx.resourceContent ? [
-      '参考資料:',
-      ...ctx.resourceContent.split('\n---\n')
+      '=== 参考資料 ===',
+      ctx.resourceContent
     ] : null
   ],
   
-  // Chat history
+  // Messages - 会話履歴
   messages: [
     (ctx) => {
       if (ctx.messages.length === 0) {
         return null;
       }
-      // Take last 10 messages for context window
+      // 最新10件の会話履歴を含める
       const recentMessages = ctx.messages.slice(-10);
       return recentMessages.map(m => `${m.role}: ${m.content}`);
     }
   ],
   
-  // Output cue
+  // Cue - 出力の開始
   cue: [
-    (ctx) => `user: ${ctx.currentUserMessage}`,
+    (ctx) => `user: ${ctx.userMessage}`,
     '',
     'assistant:'
   ]
@@ -81,23 +89,6 @@ export function createDriver(profile: DialogProfile): AIDriver {
 }
 
 /**
- * Create chat context
- */
-export function createChatContext(
-  profile: DialogProfile,
-  chatLog: ChatLog,
-  userMessage: string,
-  resourceContent?: string
-): ChatContext {
-  return {
-    messages: chatLog.messages.filter(m => m.role !== 'system'),
-    resourceContent,
-    systemPrompt: profile.systemPrompt,
-    currentUserMessage: userMessage
-  };
-}
-
-/**
  * Perform AI chat
  */
 export async function performAIChat(
@@ -109,10 +100,14 @@ export async function performAIChat(
   const driver = createDriver(profile);
   
   try {
-    // Create context
-    const context = createChatContext(profile, chatLog, userMessage, resourceContent);
+    // Create context - シンプルに必要なデータのみ
+    const context: ChatContext = {
+      messages: chatLog.messages.filter(m => m.role !== 'system'),
+      resourceContent,
+      userMessage
+    };
     
-    // Compile static module with context to get structured prompt
+    // Compile static module with context
     const compiledPrompt = compile(chatPromptModule, context);
     
     // Query AI with streaming

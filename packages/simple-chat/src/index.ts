@@ -18,7 +18,6 @@ export {
 export {
   chatPromptModule,
   createDriver,
-  createChatContext,
   performAIChat,
   closeDriver,
 } from './ai-chat.js';
