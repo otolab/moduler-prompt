@@ -1,10 +1,36 @@
 /**
- * Dialog profile management
+ * Dialog profile management using PromptModule
  */
 
 import { readFile } from 'fs/promises';
 import yaml from 'js-yaml';
+import { PromptModule } from '@moduler-prompt/core';
 import { DialogProfile } from './types.js';
+
+/**
+ * Get default prompt module for system setup
+ */
+export function getDefaultSystemModule(): PromptModule {
+  return {
+    objective: [
+      'あなたは親切で知識豊富なAIアシスタントです。',
+      'ユーザーの質問に対して、正確で分かりやすい回答を提供してください。',
+    ],
+    guidelines: [
+      '日本語で応答してください',
+      {
+        type: 'subsection',
+        content: '',
+        title: '応答スタイル',
+        items: [
+          '簡潔で明確な説明',
+          '必要に応じて具体例を提示',
+          '専門用語は分かりやすく解説'
+        ]
+      }
+    ]
+  };
+}
 
 /**
  * Get default profile
@@ -42,10 +68,10 @@ export function generateProfileTemplate(): string {
   return `# Dialog Profile Configuration
 # Settings for simple-chat application
 
-# Model name to use
+# Model name to use (MLX models)
 model: "mlx-community/gemma-3-270m-it-qat-4bit"
 
-# Driver type (openai, anthropic, vertexai, ollama, mlx)
+# Driver type (currently only mlx is supported)
 driver: "mlx"
 
 # System prompt

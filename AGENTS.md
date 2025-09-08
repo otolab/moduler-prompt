@@ -1,6 +1,6 @@
-# Claude向けインデックス
+# AI Agent向けインデックス
 
-このドキュメントは、Claudeが効率的にコードベースを理解・操作するためのインデックスです。
+このドキュメントは、AI Agentが効率的にコードベースを理解・操作するためのインデックスです。
 
 ## プロジェクト概要
 
@@ -67,7 +67,7 @@
 
 ## 主要ドキュメント
 
-- [仕様書](./PROMPT_MODULE_SPECIFICATION.md)
+- [仕様書](./docs/PROMPT_MODULE_SPECIFICATION.md)
 
 ## DynamicContentの使用例
 

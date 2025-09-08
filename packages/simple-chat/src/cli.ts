@@ -21,13 +21,13 @@ const packageJson = JSON.parse(
 
 program
   .name('simple-chat')
-  .description('Simple chat application using Moduler Prompt')
+  .description('Simple chat application using Moduler Prompt with MLX models')
   .version(packageJson.version)
   .argument('[message...]', 'User message (use "-" for stdin)')
   .option('-p, --profile <path>', 'Dialog profile file path (YAML)')
   .option('-l, --log [path]', 'Chat log file path (JSON), show log if no message')
   .option('-m, --model <model>', 'Override model name')
-  .option('-d, --driver <driver>', 'Driver type (openai, anthropic, vertexai, ollama, mlx)')
+  .option('-d, --driver <driver>', 'Driver type (currently only mlx)', 'mlx')
   .option('--temperature <value>', 'Temperature (0.0-2.0)', parseFloat)
   .option('--max-tokens <value>', 'Maximum tokens', parseInt)
   .option('--stdin', 'Read user message from stdin')
