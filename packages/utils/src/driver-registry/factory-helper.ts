@@ -28,6 +28,7 @@ export interface DriverClasses {
   AnthropicDriver?: any;
   VertexAIDriver?: any;
   EchoDriver?: any;
+  TestDriver?: any;
   [key: string]: any;
 }
 
@@ -89,7 +90,20 @@ export function registerDriverFactories(
         format: config.options?.format || 'text',
         includeMetadata: config.options?.includeMetadata,
         simulateUsage: config.options?.simulateUsage,
-        formatterOptions: config.options?.formatterOptions
+        formatterOptions: config.options?.formatterOptions,
+        streamChunkSize: config.options?.streamChunkSize
+      });
+    });
+  }
+
+  // Test Driver (for unit testing)
+  if (drivers.TestDriver) {
+    registry.registerFactory('test' as any, (config: DriverConfig) => {
+      return new drivers.TestDriver({
+        responses: config.options?.responses as any,
+        delay: config.options?.delay as number,
+        formatterOptions: config.options?.formatterOptions as any,
+        preferMessageFormat: config.options?.preferMessageFormat as boolean
       });
     });
   }

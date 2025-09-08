@@ -6,14 +6,7 @@
 import { readFile } from 'fs/promises';
 import * as yaml from 'js-yaml';
 import type { AIDriver } from '@moduler-prompt/driver';
-import {
-  OpenAIDriver,
-  AnthropicDriver,
-  VertexAIDriver,
-  MlxDriver,
-  TestDriver,
-  EchoDriver
-} from '@moduler-prompt/driver';
+import * as Drivers from '@moduler-prompt/driver';
 
 import type {
   DriverProvider,
@@ -26,6 +19,7 @@ import type {
   IDriverRegistry,
   DriverFactory
 } from './types.js';
+import { registerDriverFactories } from './factory-helper.js';
 
 /**
  * ドライバレジストリクラス
@@ -45,75 +39,8 @@ export class DriverRegistry implements IDriverRegistry {
    * デフォルトのドライバファクトリを登録
    */
   private registerDefaultFactories(): void {
-    // OpenAI
-    this.factories.set('openai', (config: DriverConfig) => {
-      const apiKey = config.credentials?.apiKey || process.env.OPENAI_API_KEY;
-      if (!apiKey) {
-        throw new Error('OpenAI API key not provided');
-      }
-      return new OpenAIDriver({
-        apiKey,
-        model: config.model.model,
-        baseURL: config.options?.baseURL as string,
-        defaultOptions: config.options?.defaultOptions as any
-      });
-    });
-
-    // Anthropic
-    this.factories.set('anthropic', (config: DriverConfig) => {
-      const apiKey = config.credentials?.apiKey || process.env.ANTHROPIC_API_KEY;
-      if (!apiKey) {
-        throw new Error('Anthropic API key not provided');
-      }
-      return new AnthropicDriver({
-        apiKey,
-        model: config.model.model,
-        defaultOptions: config.options?.defaultOptions as any
-      });
-    });
-
-    // VertexAI
-    this.factories.set('vertexai', (config: DriverConfig) => {
-      const project = config.credentials?.project || process.env.VERTEX_AI_PROJECT;
-      if (!project) {
-        throw new Error('VertexAI project not provided');
-      }
-      return new VertexAIDriver({
-        project,
-        location: config.credentials?.location || 'us-central1',
-        model: config.model.model,
-        defaultOptions: config.options?.defaultOptions as any
-      });
-    });
-
-    // MLX
-    this.factories.set('mlx', (config: DriverConfig) => {
-      return new MlxDriver({
-        model: config.model.model,
-        defaultOptions: config.options?.defaultOptions as any
-      });
-    });
-
-    // Test Driver
-    this.factories.set('test' as DriverProvider, (config: DriverConfig) => {
-      return new TestDriver({
-        responses: config.options?.responses as any,
-        delay: config.options?.delay as number,
-        formatterOptions: config.options?.formatterOptions as any,
-        preferMessageFormat: config.options?.preferMessageFormat as boolean
-      });
-    });
-
-    // Echo Driver
-    this.factories.set('echo' as DriverProvider, (config: DriverConfig) => {
-      return new EchoDriver({
-        format: config.options?.format as any,
-        includeMetadata: config.options?.includeMetadata as boolean,
-        formatterOptions: config.options?.formatterOptions as any,
-        simulateUsage: config.options?.simulateUsage as boolean,
-        streamChunkSize: config.options?.streamChunkSize as number
-      });
-    });
+    // ヘルパー関数を使用してデフォルトドライバを登録
+    registerDriverFactories(this, Drivers);
   }
 
   /**
