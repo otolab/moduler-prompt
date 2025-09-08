@@ -15,9 +15,10 @@
 
 ### 2. モジュラーアーキテクチャ
 
-- 独立したモジュールとして定義
-- モジュール同士の合成が可能
-- コンテキストベースの動的コンテンツ生成
+- **自己完結性**: 各モジュールは独立して動作可能
+- **完全性**: モジュールはcreateContextで必要なデータを全て定義
+- **合成可能性**: 複数モジュールをmergeして拡張可能
+- **静的定義**: モジュール自体は静的に定義（動的生成しない）
 
 ### 3. 型安全性
 
@@ -49,13 +50,13 @@ TypeScriptの型システムにより:
 ### 処理フロー
 
 ```
-モジュール定義
+モジュール定義（静的）
     ↓
-モジュールマージ (merge)
+モジュールマージ (merge) ※必要に応じて
     ↓
-コンテキスト生成 (createContext)
+コンテキスト生成 (createContext) ※モジュールから型付きオブジェクト生成
     ↓
-コンパイル (compile)
+コンパイル (compile) ※モジュールとコンテキストをバインド
     ↓
 フォーマット (formatPrompt) ※utilsパッケージ
     ↓
@@ -72,7 +73,7 @@ TypeScriptの型システムにより:
 
 ```typescript
 interface PromptModule<TContext = any> {
-  // コンテキスト生成
+  // コンテキスト生成（必要なデータを含む型付きオブジェクトを返す）
   createContext?: () => TContext;
   
   // 標準セクション (Instructions)
@@ -221,7 +222,26 @@ const compiled = compile(module, context);
 const context = createContext(module);
 ```
 
+**重要な原則:**
+- **完全性**: PromptModuleはcreateContextで生成したデータのみを使用
+- **型安全**: TContext型で定義された構造のオブジェクトを返す
+- **マージ時の拡張**: mergeした場合、各モジュールのコンテキストが統合される
+
 ## 設計の意図
+
+### PromptModuleの完全性原則
+
+PromptModuleは**自己完結的**で**完全**である必要があります：
+
+1. **静的定義**: モジュール自体は静的に定義され、動的に生成しない
+2. **データの完全性**: createContextで必要なデータを全て生成
+3. **外部データの非依存**: compile時に外部からデータを注入しない
+4. **型の一貫性**: TContext型で定義された構造のみを使用
+
+この設計により：
+- モジュールの再利用性が向上
+- テスト可能性が確保される
+- 依存関係が明確になる
 
 ### 重複の許容
 
@@ -260,8 +280,18 @@ const context = createContext(module);
 ### 基本的なモジュール定義
 
 ```typescript
+interface MyContext {
+  taskName: string;
+  items: string[];
+  state: string;
+}
+
 const myModule: PromptModule<MyContext> = {
-  createContext: () => ({ /* 初期コンテキスト */ }),
+  createContext: () => ({
+    taskName: 'データ処理',
+    items: ['アイテム1', 'アイテム2'],
+    state: '初期状態'
+  }),
   
   objective: ['タスクを処理する'],
   
@@ -276,7 +306,7 @@ const myModule: PromptModule<MyContext> = {
   ],
   
   state: [
-    // 文字列を直接返す（新機能）
+    // createContextで定義したデータを使用
     (ctx) => `現在の状態: ${ctx.state}`,
     
     // 文字列配列を直接返す（新機能）
@@ -293,50 +323,62 @@ const myModule: PromptModule<MyContext> = {
 };
 ```
 
-### DynamicContentの活用例
+### 完全な実装例
 
 ```typescript
-interface Context {
+interface UserContext {
   users: string[];
-  count: number;
-  verbose: boolean;
+  maxDisplay: number;
+  showDetails: boolean;
 }
 
-const module: PromptModule<Context> = {
+// 静的に定義されたモジュール
+const userModule: PromptModule<UserContext> = {
+  // コンテキストファクトリ - 必要なデータを全て定義
+  createContext: () => ({
+    users: ['ユーザーA', 'ユーザーB', 'ユーザーC'],
+    maxDisplay: 3,
+    showDetails: true
+  }),
+  
+  objective: ['ユーザーデータを処理する'],
+  
   state: [
-    // 単純な文字列
-    (ctx) => `ユーザー数: ${ctx.count}`,
-    
-    // 文字列配列（可変長データ）
-    (ctx) => ctx.users.map(user => `ユーザー: ${user}`),
-    
-    // 条件付きコンテンツ
-    (ctx) => ctx.verbose ? '詳細モード有効' : null,
-    
-    // 混在した配列
-    (ctx) => [
-      '処理開始',
-      ...ctx.users.slice(0, 3).map(u => `- ${u}`),
-      ctx.users.length > 3 ? `他${ctx.users.length - 3}名` : null
-    ].filter(Boolean) as string[]
+    // createContextで定義したデータのみを使用
+    (ctx) => `ユーザー数: ${ctx.users.length}`,
+    (ctx) => ctx.users.slice(0, ctx.maxDisplay).map(u => `- ${u}`),
+    (ctx) => ctx.showDetails ? '詳細モード: ON' : null
   ]
 };
 ```
 
-### モジュールの合成と実行
+### 正しい使用方法
 
 ```typescript
-// モジュールを合成
-const combined = merge(baseModule, featureModule);
+// 1. 静的に定義されたモジュールを使用
+const module = userModule;
 
-// コンテキストを生成
+// 2. モジュールからコンテキストを生成（データが含まれる）
+const context = createContext(module);
+
+// 3. モジュールとコンテキストをバインドしてコンパイル
+const compiledPrompt = compile(module, context);
+
+// 4. ドライバーで実行
+const result = await driver.query(compiledPrompt);
+```
+
+### モジュールの合成
+
+```typescript
+// 複数のモジュールを合成する場合
+const combined = merge(baseModule, extensionModule);
+
+// 合成されたモジュールからコンテキストを生成
+// 各モジュールのcreateContextが実行され、統合される
 const context = createContext(combined);
 
-// コンパイル
-const prompt = compile(combined, context);
-
-// フォーマットしてドライバーで実行
-const result = await driver.query(prompt);
+const compiledPrompt = compile(combined, context);
 ```
 
 ## パッケージ構成
