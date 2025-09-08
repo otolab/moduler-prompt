@@ -14,6 +14,7 @@ import chalk from 'chalk';
 export interface ChatContext extends MaterialContext {
   messages: Array<{ role: string; content: string }>;
   userMessage: string;
+  systemPrompt?: string;
 }
 
 /**
@@ -28,8 +29,13 @@ const baseChatModule: PromptModule<ChatContext> = {
   
   // Objective and Role
   objective: [
-    'チャットアシスタントとして、ユーザーとの対話を行う',
-    'ユーザーの質問や要求に対して、適切で有用な応答を提供する'
+    (ctx) => ctx.systemPrompt ? [
+      ctx.systemPrompt,
+      ''  // 空行で区切る
+    ] : [
+      'チャットアシスタントとして、ユーザーとの対話を行う',
+      'ユーザーの質問や要求に対して、適切で有用な応答を提供する'
+    ]
   ],
   
   // Instructions - 具体的な指示
@@ -110,6 +116,7 @@ export async function performAIChat(
     context.messages = chatLog.messages.filter(m => m.role !== 'system');
     context.userMessage = userMessage;
     context.materials = materials;
+    context.systemPrompt = profile.systemPrompt;
     
     // Compile module with populated context
     const compiledPrompt = compile(chatPromptModule, context);
