@@ -229,19 +229,24 @@ const context = createContext(module);
 
 ## 設計の意図
 
-### PromptModuleの完全性原則
+### PromptModuleの設計原則
 
-PromptModuleは**自己完結的**で**完全**である必要があります：
+PromptModuleは以下の原則に従って設計されます：
 
 1. **静的定義**: モジュール自体は静的に定義され、動的に生成しない
-2. **データの完全性**: createContextで必要なデータを全て生成
-3. **外部データの非依存**: compile時に外部からデータを注入しない
+2. **型付きコンテキスト**: createContextで型付きの初期コンテキストを生成
+3. **データバインディング**: compile時にコンテキストとバインドされて動的な内容を生成
 4. **型の一貫性**: TContext型で定義された構造のみを使用
+
+**重要**: 
+- createContextは初期の型付きコンテキストを提供
+- アプリケーション層でコンテキストにデータを設定可能
+- compile時にモジュールとコンテキストがバインドされる
 
 この設計により：
 - モジュールの再利用性が向上
-- テスト可能性が確保される
-- 依存関係が明確になる
+- 型安全性が保証される
+- 柔軟なデータバインディングが可能
 
 ### 重複の許容
 
@@ -358,13 +363,17 @@ const userModule: PromptModule<UserContext> = {
 // 1. 静的に定義されたモジュールを使用
 const module = userModule;
 
-// 2. モジュールからコンテキストを生成（データが含まれる）
+// 2. モジュールから型付きコンテキストを生成
 const context = createContext(module);
 
-// 3. モジュールとコンテキストをバインドしてコンパイル
+// 3. 必要に応じてコンテキストにデータを設定
+context.users = ['実際のユーザーA', '実際のユーザーB'];
+context.showDetails = false;
+
+// 4. モジュールとコンテキストをバインドしてコンパイル
 const compiledPrompt = compile(module, context);
 
-// 4. ドライバーで実行
+// 5. ドライバーで実行
 const result = await driver.query(compiledPrompt);
 ```
 
