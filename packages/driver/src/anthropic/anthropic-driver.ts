@@ -1,6 +1,6 @@
 import Anthropic from '@anthropic-ai/sdk';
 import { BaseDriver } from '../base/base-driver.js';
-import type { ChatMessage } from '../formatter/index.js';
+import type { ChatMessage } from '../formatter/types.js';
 import type { QueryOptions, QueryResult } from '../types.js';
 
 /**
@@ -183,4 +183,4 @@ export class AnthropicDriver extends BaseDriver {
 }
 
 // Re-import for proper typing
-import { formatPromptAsMessages } from '../formatter/index.js';
+import { formatPromptAsMessages } from '../formatter/converter.js';

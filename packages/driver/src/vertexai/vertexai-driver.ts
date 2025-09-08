@@ -9,7 +9,7 @@ import {
   SchemaType
 } from '@google-cloud/vertexai';
 import { BaseDriver } from '../base/base-driver.js';
-import type { ChatMessage } from '../formatter/index.js';
+import type { ChatMessage } from '../formatter/types.js';
 import type { QueryOptions, QueryResult } from '../types.js';
 
 /**
@@ -325,4 +325,4 @@ export class VertexAIDriver extends BaseDriver {
 }
 
 // Re-import for proper typing
-import { formatPromptAsMessages } from '../formatter/index.js';
+import { formatPromptAsMessages } from '../formatter/converter.js';

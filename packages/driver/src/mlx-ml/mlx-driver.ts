@@ -1,6 +1,6 @@
 import { Readable } from 'stream';
 import { BaseDriver } from '../base/base-driver.js';
-import type { ChatMessage } from '../formatter/index.js';
+import type { ChatMessage } from '../formatter/types.js';
 import type { QueryOptions, QueryResult } from '../types.js';
 import { MlxProcess } from './process/index.js';
 import type { MlxMessage, MlxMlModelOptions } from './types.js';
@@ -181,4 +181,4 @@ export class MlxDriver extends BaseDriver {
 }
 
 // Re-import for proper typing
-import { formatPromptAsMessages } from '../formatter/index.js';
+import { formatPromptAsMessages } from '../formatter/converter.js';

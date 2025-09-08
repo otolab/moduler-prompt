@@ -1,6 +1,6 @@
 import { BaseDriver } from './base/base-driver.js';
-import type { FormatterOptions, ChatMessage } from './formatter/index.js';
-import { formatPrompt, formatPromptAsMessages } from './formatter/index.js';
+import type { FormatterOptions, ChatMessage } from './formatter/types.js';
+import { formatPrompt, formatPromptAsMessages } from './formatter/converter.js';
 import type { CompiledPrompt } from '@moduler-prompt/core';
 import type { QueryOptions, QueryResult } from './types.js';
 

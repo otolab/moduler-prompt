@@ -1,6 +1,6 @@
 import type { CompiledPrompt } from '@moduler-prompt/core';
-import type { FormatterOptions, ChatMessage } from '../formatter/index.js';
-import { formatPrompt, formatPromptAsMessages } from '../formatter/index.js';
+import type { FormatterOptions, ChatMessage } from '../formatter/types.js';
+import { formatPrompt, formatPromptAsMessages } from '../formatter/converter.js';
 import type { AIDriver, QueryOptions, QueryResult } from '../types.js';
 
 /**
