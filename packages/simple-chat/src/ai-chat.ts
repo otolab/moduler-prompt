@@ -2,7 +2,7 @@
  * AI chat functionality using Moduler Prompt
  */
 
-import { compile, merge, PromptModule, createContext } from '@moduler-prompt/core';
+import { compile, PromptModule, createContext } from '@moduler-prompt/core';
 import { MlxDriver, type AIDriver } from '@moduler-prompt/driver';
 import { DialogProfile, ChatLog } from './types.js';
 import chalk from 'chalk';
@@ -10,10 +10,65 @@ import chalk from 'chalk';
 /**
  * Chat context interface
  */
-interface ChatContext {
+export interface ChatContext {
   messages: Array<{ role: string; content: string }>;
   resourceContent?: string;
+  systemPrompt: string;
+  currentUserMessage: string;
 }
+
+/**
+ * Chat prompt module template (static definition)
+ */
+export const chatPromptModule: PromptModule<ChatContext> = {
+  // System instructions
+  objective: [
+    (ctx) => ctx.systemPrompt
+  ],
+  
+  guidelines: [
+    '日本語で応答する',
+    '簡潔で明確な説明を心がける',
+    '必要に応じて具体例を提示する',
+    {
+      type: 'subsection',
+      content: '',
+      title: '応答スタイル',
+      items: [
+        '専門用語は分かりやすく解説',
+        '段階的に説明する',
+        'ユーザーの理解度に合わせる'
+      ]
+    }
+  ],
+  
+  // Materials (if provided)
+  materials: [
+    (ctx) => ctx.resourceContent ? [
+      '参考資料:',
+      ...ctx.resourceContent.split('\n---\n')
+    ] : null
+  ],
+  
+  // Chat history
+  messages: [
+    (ctx) => {
+      if (ctx.messages.length === 0) {
+        return null;
+      }
+      // Take last 10 messages for context window
+      const recentMessages = ctx.messages.slice(-10);
+      return recentMessages.map(m => `${m.role}: ${m.content}`);
+    }
+  ],
+  
+  // Output cue
+  cue: [
+    (ctx) => `user: ${ctx.currentUserMessage}`,
+    '',
+    'assistant:'
+  ]
+};
 
 /**
  * Create MLX driver
@@ -26,89 +81,20 @@ export function createDriver(profile: DialogProfile): AIDriver {
 }
 
 /**
- * Build prompt module from profile and user message
+ * Create chat context
  */
-export function buildPromptModule(
+export function createChatContext(
   profile: DialogProfile,
   chatLog: ChatLog,
   userMessage: string,
   resourceContent?: string
-): PromptModule<ChatContext> {
-  // Create context with chat history and resources
-  const contextModule: PromptModule<ChatContext> = {
-    createContext: () => ({
-      messages: [
-        ...chatLog.messages.filter(m => m.role !== 'system'),
-        { role: 'user', content: userMessage }
-      ],
-      resourceContent
-    })
+): ChatContext {
+  return {
+    messages: chatLog.messages.filter(m => m.role !== 'system'),
+    resourceContent,
+    systemPrompt: profile.systemPrompt,
+    currentUserMessage: userMessage
   };
-  
-  // System instructions module
-  const systemModule: PromptModule<ChatContext> = {
-    objective: [
-      'AIアシスタントとしてユーザーをサポートする',
-      profile.systemPrompt,
-    ],
-    guidelines: [
-      '日本語で応答する',
-      '簡潔で明確な説明を心がける',
-      '必要に応じて具体例を提示する',
-      {
-        type: 'subsection',
-        content: '',
-        title: '応答スタイル',
-        items: [
-          '専門用語は分かりやすく解説',
-          '段階的に説明する',
-          'ユーザーの理解度に合わせる'
-        ]
-      }
-    ],
-  };
-  
-  // Materials module (if resources provided)
-  const materialsModule: PromptModule<ChatContext> = resourceContent ? {
-    materials: [
-      (ctx) => ctx.resourceContent ? [
-        '参考資料:',
-        ...ctx.resourceContent.split('\n---\n')
-      ] : null
-    ]
-  } : {};
-  
-  // Chat history module using DynamicContent
-  const historyModule: PromptModule<ChatContext> = {
-    messages: [
-      // Use DynamicContent to inject messages from context
-      (ctx) => {
-        if (ctx.messages.length === 0) {
-          return null;
-        }
-        // Take last 10 messages for context window
-        const recentMessages = ctx.messages.slice(-10);
-        return recentMessages.map(m => `${m.role}: ${m.content}`);
-      }
-    ],
-  };
-  
-  // Output cue module
-  const outputModule: PromptModule<ChatContext> = {
-    cue: [
-      '', // Empty line for spacing
-      'assistant:' // Prompt for assistant response
-    ]
-  };
-  
-  // Merge all modules with context first
-  return merge(
-    contextModule,
-    systemModule,
-    materialsModule,
-    historyModule,
-    outputModule
-  );
 }
 
 /**
@@ -123,14 +109,11 @@ export async function performAIChat(
   const driver = createDriver(profile);
   
   try {
-    // Build prompt module
-    const promptModule = buildPromptModule(profile, chatLog, userMessage, resourceContent);
+    // Create context
+    const context = createChatContext(profile, chatLog, userMessage, resourceContent);
     
-    // Create context from module
-    const context = createContext(promptModule);
-    
-    // Compile module with context to get structured prompt
-    const compiledPrompt = compile(promptModule, context);
+    // Compile static module with context to get structured prompt
+    const compiledPrompt = compile(chatPromptModule, context);
     
     // Query AI with streaming
     if (driver.streamQuery) {

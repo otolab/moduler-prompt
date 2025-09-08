@@ -16,11 +16,13 @@ export {
   getChatLogStats,
 } from './chat-log.js';
 export {
+  chatPromptModule,
   createDriver,
-  buildPromptModule,
+  createChatContext,
   performAIChat,
   closeDriver,
 } from './ai-chat.js';
+export type { ChatContext } from './ai-chat.js';
 export { loadResourceFiles } from './resource-files.js';
 export type {
   DialogProfile,
