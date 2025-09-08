@@ -9,8 +9,6 @@ import { readFileSync } from 'fs';
 import { join, dirname } from 'path';
 import { fileURLToPath } from 'url';
 import { runChat } from './chat.js';
-import { generateProfileTemplate } from './profile.js';
-import { writeFileSync } from 'fs';
 import type { SimpleChatOptions } from './types.js';
 
 // Get package.json for version
@@ -31,21 +29,8 @@ program
   .option('--temperature <value>', 'Temperature (0.0-2.0)', parseFloat)
   .option('--max-tokens <value>', 'Maximum tokens', parseInt)
   .option('--stdin', 'Read user message from stdin')
-  .option('--generate-template [output]', 'Generate profile template')
   .action(async (messageArgs: string[], options) => {
     try {
-      // Generate template mode
-      if (options.generateTemplate !== undefined) {
-        const outputPath = typeof options.generateTemplate === 'string'
-          ? options.generateTemplate
-          : 'dialog-profile.yaml';
-        
-        const template = generateProfileTemplate();
-        writeFileSync(outputPath, template, 'utf-8');
-        console.log(`✅ Profile template generated: ${outputPath}`);
-        return;
-      }
-      
       // Check for stdin flag in message args
       const hasStdinFlag = messageArgs.includes('-');
       const userMessage = hasStdinFlag

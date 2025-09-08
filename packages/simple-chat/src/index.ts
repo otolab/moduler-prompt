@@ -4,9 +4,9 @@
 
 export { runChat } from './chat.js';
 export { 
+  defaultSystemModule,
   getDefaultProfile, 
-  loadDialogProfile, 
-  generateProfileTemplate 
+  loadDialogProfile
 } from './profile.js';
 export {
   createChatLog,
