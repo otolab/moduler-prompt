@@ -7,8 +7,8 @@ import type {
   SubSectionElement,
   DynamicElement,
   SectionType
-} from './types';
-import { STANDARD_SECTIONS } from './types';
+} from './types.js';
+import { STANDARD_SECTIONS } from './types.js';
 
 /**
  * モジュールとコンテキストからプロンプトをコンパイル
@@ -51,19 +51,14 @@ function compileSectionToElement<TContext>(
   content: SectionContent<TContext>,
   title: string,
   category: SectionType,
-  sectionName: string,
+  _sectionName: string,
   context: TContext
 ): SectionElement {
   const plainItems: string[] = [];
   const subsections: SubSectionElement[] = [];
 
-  // contentが関数の場合は実行して配列に変換
-  const resolvedContent = typeof content === 'function' 
-    ? content(context) || []
-    : content;
-  
-  // 配列でない場合は配列に変換
-  const contentItems = Array.isArray(resolvedContent) ? resolvedContent : [resolvedContent];
+  // contentは既に配列型
+  const contentItems = content;
 
   for (const item of contentItems) {
     if (typeof item === 'function') {

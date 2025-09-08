@@ -13,7 +13,13 @@
     "clean": "npm run clean --workspaces",
     "dev": "npm run dev --workspace=@moduler-prompt/core",
     "lint": "npm run lint --workspaces",
-    "typecheck": "npm run typecheck --workspaces"
+    "typecheck": "npm run typecheck --workspaces",
+    "chat": "node packages/simple-chat/dist/cli.js",
+    "chat:help": "node packages/simple-chat/dist/cli.js --help",
+    "chat:template": "node packages/simple-chat/dist/cli.js --generate-template",
+    "mlx:setup": "cd packages/driver/src/mlx-ml/python && uv sync",
+    "mlx:test": "cd packages/driver/src/mlx-ml/python && uv run python test_api_spec.py",
+    "postinstall": "npm run mlx:setup || echo 'MLX setup failed, you can run it manually with: npm run mlx:setup'"
   },
   "devDependencies": {
     "@types/node": "^20.0.0",

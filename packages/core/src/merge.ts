@@ -4,8 +4,8 @@ import type {
   SubSectionElement,
   DynamicContent,
   StandardSectionName
-} from './types';
-import { STANDARD_SECTIONS } from './types';
+} from './types.js';
+import { STANDARD_SECTIONS } from './types.js';
 
 /**
  * 2つのPromptModuleをマージ

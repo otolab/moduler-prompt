@@ -4,6 +4,7 @@ import type { ChatMessage } from '@moduler-prompt/utils';
 import type { QueryOptions, QueryResult } from '../types.js';
 import { MlxProcess } from './process/index.js';
 import type { MlxMessage, MlxMlModelOptions } from './types.js';
+import type { MlxCapabilities } from './process/types.js';
 
 /**
  * MLX ML driver configuration

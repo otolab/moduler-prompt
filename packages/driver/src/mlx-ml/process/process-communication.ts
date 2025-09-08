@@ -17,10 +17,15 @@ const logger = {
   error: (...args: any[]) => console.error(...args)
 };
 
-const mlxDriverDir = path.join(
+// Get the project root directory (5 levels up from dist/mlx-ml/process/)
+const projectRoot = path.resolve(
   path.dirname(fileURLToPath(import.meta.url)),
-  '..',
-  'python'
+  '..', '..', '..', '..', '..'
+);
+
+const mlxDriverDir = path.join(
+  projectRoot,
+  'packages', 'driver', 'src', 'mlx-ml', 'python'
 );
 
 export interface ProcessCommunicationCallbacks {
@@ -40,12 +45,15 @@ export class ProcessCommunication {
     this.decoder = new StringDecoder('utf8');
 
     this.process = spawn('uv', [
-      '--directory',
+      '--project',
       mlxDriverDir,
       'run',
-      '.',
+      'python',
+      '__main__.py',
       modelName
-    ]);
+    ], {
+      cwd: mlxDriverDir
+    });
 
     this.setupProcessHandlers();
   }
