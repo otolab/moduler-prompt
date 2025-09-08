@@ -79,6 +79,31 @@ export function formatPrompt(
 }
 
 /**
+ * Format messages directly without CompiledPrompt structure
+ * Used for MLX completion API when chat template is not available
+ */
+export function formatMessagesAsPrompt(
+  messages: ChatMessage[],
+  options: FormatterOptions = {}
+): string {
+  const formatter = options.formatter || new DefaultFormatter(options);
+  const { lineBreak = '\n' } = options;
+  const sections: string[] = [];
+  
+  for (const msg of messages) {
+    // Use formatter's message formatting with role-based markers
+    const element: MessageElement = {
+      type: 'message',
+      role: msg.role,
+      content: msg.content
+    };
+    sections.push(formatter.format(element));
+  }
+  
+  return sections.join(lineBreak + lineBreak);
+}
+
+/**
  * Format a compiled prompt as chat messages
  */
 export function formatPromptAsMessages(

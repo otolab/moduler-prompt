@@ -10,6 +10,8 @@ import { mergeWithPreset } from './presets.js';
 import { ModelCapabilityDetector } from './detector.js';
 import { MessageValidator } from './validator.js';
 import type { MlxProcess } from '../process/index.js';
+import { formatMessagesAsPrompt } from '../../formatter/converter.js';
+import type { FormatterOptions, ChatMessage } from '../../formatter/types.js';
 
 /**
  * ModelSpec管理クラス
@@ -182,25 +184,20 @@ export class ModelSpecManager {
       return this.spec.customProcessor.generatePrompt(messages);
     }
     
-    // デフォルトのプロンプト生成
-    const parts: string[] = [];
-    for (const msg of messages) {
-      if (msg.role === 'system') {
-        parts.push(
-          '<!-- begin of SYSTEM -->',
-          msg.content.trim(),
-          '<!-- end of SYSTEM -->'
-        );
-      } else {
-        parts.push(
-          `<!-- begin of ${msg.role} -->`,
-          msg.content.trim(),
-          `<!-- end of ${msg.role} -->`
-        );
-      }
-    }
+    // formatterを使用してプロンプト生成
+    const chatMessages: ChatMessage[] = messages.map(msg => ({
+      role: msg.role,
+      content: msg.content
+    }));
     
-    return parts.join('\n');
+    // ModelSpecに基づいたFormatterOptionsを構築
+    const formatterOptions: FormatterOptions = {
+      // モデルに応じたspecial tokensがあれば設定
+      specialTokens: this.spec.capabilities?.specialTokens,
+      // MLXモデル用のデフォルトマーカー設定は既にDefaultFormatterで処理される
+    };
+    
+    return formatMessagesAsPrompt(chatMessages, formatterOptions);
   }
   
   /**

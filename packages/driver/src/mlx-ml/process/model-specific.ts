@@ -6,6 +6,8 @@
  */
 
 import type { MlxMessage } from './types.js';
+import { formatMessagesAsPrompt } from '../../formatter/converter.js';
+import type { ChatMessage } from '../../formatter/types.js';
 
 export interface ModelSpecificProcessor {
   applyModelSpecificProcessing(messages: MlxMessage[]): MlxMessage[];
@@ -108,24 +110,13 @@ export class DefaultModelSpecificProcessor implements ModelSpecificProcessor {
   generateMergedPrompt(messages: MlxMessage[]): string {
     const mergedMessages = mergeSystemMessages(messages);
     
-    const promptParts: string[] = [];
-    for (const msg of mergedMessages) {
-      if (msg.role === 'system') {
-        promptParts.push(
-          '<!-- begin of SYSTEM -->',
-          msg.content.trim(),
-          '<!-- end of SYSTEM -->'
-        );
-      } else {
-        promptParts.push(
-          `<!-- begin of ${msg.role} -->`,
-          msg.content.trim(),
-          `<!-- end of ${msg.role} -->`
-        );
-      }
-    }
+    // formatterを使用してプロンプト生成
+    const chatMessages: ChatMessage[] = mergedMessages.map(msg => ({
+      role: msg.role,
+      content: msg.content
+    }));
     
-    return promptParts.join('\\n');
+    return formatMessagesAsPrompt(chatMessages);
   }
 }
 

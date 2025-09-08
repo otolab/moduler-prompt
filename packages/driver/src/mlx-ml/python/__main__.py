@@ -148,23 +148,20 @@ def handle_chat(messages, primer=None, options=None):
 def generate_merged_prompt(messages):
     """apply_chat_templateがない場合のプロンプト生成"""
     # messagesはTypeScript側で既にmergeSystemMessages処理済み
+    # TypeScript側のformatterと同じフォーマットを維持
     
     prompt_parts = []
     for msg in messages:
-        if msg['role'] == 'system':
-            prompt_parts.extend([
-                '<!-- begin of SYSTEM -->',
-                msg['content'].strip(),
-                '<!-- end of SYSTEM -->'
-            ])
-        else:
-            prompt_parts.extend([
-                f'<!-- begin of {msg["role"]} -->',
-                msg['content'].strip(),
-                f'<!-- end of {msg["role"]} -->',
-            ])
+        role = msg['role'].upper()
+        prompt_parts.extend([
+            f'<!-- begin of {role} -->',
+            msg['content'].strip(),
+            f'<!-- end of {role} -->',
+            ''  # 空行で区切る
+        ])
     
-    return '\n'.join(prompt_parts)
+    # 最後の空行を削除して、ダブル改行で結合
+    return '\n'.join(prompt_parts[:-1])
 
 
 def handle_completion(prompt, options=None):

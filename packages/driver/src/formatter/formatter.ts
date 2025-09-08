@@ -111,7 +111,31 @@ export class DefaultFormatter implements ElementFormatter {
   }
   
   private formatMessage(element: MessageElement): string {
-    return `**${element.role}**: ${element.content}`;
+    const { markers } = this.options;
+    const role = element.role.toUpperCase();
+    
+    // Convert content to string if it's an Attachment array
+    const contentStr = typeof element.content === 'string' 
+      ? element.content 
+      : JSON.stringify(element.content);
+    
+    // Use special tokens or custom markers if available
+    if (this.specialTokens && this.specialTokens[element.role]) {
+      const token = this.specialTokens[element.role];
+      if (this.isTokenPair(token)) {
+        return `${token.start.text}${contentStr}${token.end.text}`;
+      }
+    }
+    
+    // Use role-specific markers if configured
+    if (markers.messageRole && markers.messageContent) {
+      const roleMarker = markers.messageRole.replace('{role}', role);
+      const contentMarker = markers.messageContent.replace('{content}', contentStr);
+      return roleMarker + contentMarker;
+    }
+    
+    // Default formatting with XML-like tags for MLX models
+    return `<!-- begin of ${role} -->\n${contentStr.trim()}\n<!-- end of ${role} -->`;
   }
   
   private formatMaterial(element: MaterialElement): string {
