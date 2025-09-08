@@ -5,16 +5,17 @@ import type {
   StandardSectionName,
   SectionElement,
   SubSectionElement,
-  DynamicElement
-} from './types';
-import { STANDARD_SECTIONS } from './types';
+  DynamicElement,
+  SectionType
+} from './types.js';
+import { STANDARD_SECTIONS } from './types.js';
 
 /**
  * モジュールとコンテキストからプロンプトをコンパイル
  */
 export function compile<TContext = any>(
   module: PromptModule<TContext>,
-  context: TContext
+  context: TContext = {} as TContext
 ): CompiledPrompt {
   const compiled: CompiledPrompt = {
     instructions: [],
@@ -31,6 +32,8 @@ export function compile<TContext = any>(
     const sectionElement = compileSectionToElement(
       sectionContent,
       sectionDef.title,
+      sectionDef.type,
+      sectionName,
       context
     );
 
@@ -47,27 +50,31 @@ export function compile<TContext = any>(
 function compileSectionToElement<TContext>(
   content: SectionContent<TContext>,
   title: string,
+  category: SectionType,
+  _sectionName: string,
   context: TContext
 ): SectionElement {
   const plainItems: string[] = [];
   const subsections: SubSectionElement[] = [];
 
-  for (const item of content) {
+  // contentは既に配列型
+  const contentItems = content;
+
+  for (const item of contentItems) {
     if (typeof item === 'function') {
       // DynamicContentを実行
       const dynamicResult = item(context);
-      if (dynamicResult) {
-        // DynamicElementを文字列に変換して追加
-        const dynamicElements = Array.isArray(dynamicResult) ? dynamicResult : [dynamicResult];
-        for (const element of dynamicElements) {
-          plainItems.push(formatDynamicElementAsString(element));
-        }
+      const processedStrings = processDynamicContent(dynamicResult);
+      
+      // 変換された文字列を追加
+      for (const str of processedStrings) {
+        plainItems.push(str);
       }
     } else if (typeof item === 'string') {
-      // 文字列はそのまま追加
+      // 文字列をそのまま追加
       plainItems.push(item);
     } else if (item.type === 'subsection') {
-      // SubSectionElementは別に保持
+      // サブセクションを追加
       subsections.push(item);
     }
   }
@@ -80,10 +87,43 @@ function compileSectionToElement<TContext>(
 
   return {
     type: 'section',
+    category,
     content: '',
     title,
     items
   };
+}
+
+/**
+ * DynamicContentの結果を文字列配列に変換
+ * 文字列や文字列配列を直接返すことができるように拡張
+ */
+function processDynamicContent(
+  result: string | string[] | DynamicElement | DynamicElement[] | null | undefined
+): string[] {
+  // null/undefinedの場合は空配列
+  if (result === null || result === undefined) {
+    return [];
+  }
+  
+  // 文字列の場合
+  if (typeof result === 'string') {
+    return [result];
+  }
+  
+  // 配列の場合
+  if (Array.isArray(result)) {
+    return result.flatMap(item => {
+      if (typeof item === 'string') {
+        return item;  // 文字列はそのまま
+      } else {
+        return formatDynamicElementAsString(item);  // Elementは変換
+      }
+    });
+  }
+  
+  // 単一のElementの場合
+  return [formatDynamicElementAsString(result)];
 }
 
 /**
@@ -122,6 +162,7 @@ function formatDynamicElementAsString(element: DynamicElement): string {
       return '';
   }
 }
+
 
 /**
  * コンテキストを作成するヘルパー関数

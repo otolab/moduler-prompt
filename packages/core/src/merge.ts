@@ -4,8 +4,8 @@ import type {
   SubSectionElement,
   DynamicContent,
   StandardSectionName
-} from './types';
-import { STANDARD_SECTIONS } from './types';
+} from './types.js';
+import { STANDARD_SECTIONS } from './types.js';
 
 /**
  * 2つのPromptModuleをマージ
@@ -99,7 +99,16 @@ function mergeSectionContents<TContext = any>(
 
   // 全てのコンテンツを分類
   for (const content of contents) {
-    for (const item of content) {
+    // contentが関数の場合はそのまま保持（実行はコンパイル時）
+    if (typeof content === 'function') {
+      plainItems.push(content);
+      continue;
+    }
+    
+    // 配列でない場合は配列に変換
+    const items = Array.isArray(content) ? content : [content];
+    
+    for (const item of items) {
       if (typeof item === 'function') {
         // DynamicContentはそのまま保持
         plainItems.push(item);

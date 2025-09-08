@@ -34,12 +34,14 @@ describe('compile', () => {
       expect(result.instructions).toHaveLength(2);
       expect(result.instructions[0]).toEqual({
         type: 'section',
+        category: 'instructions',
         content: '',
         title: 'Objective and Role',
         items: ['AIアシスタントとして動作する']
       });
       expect(result.instructions[1]).toEqual({
         type: 'section',
+        category: 'instructions',
         content: '',
         title: 'Processing Methodology',
         items: ['データを分析', '結果を生成']
@@ -65,6 +67,7 @@ describe('compile', () => {
       expect(result.instructions).toHaveLength(1);
       expect(result.instructions[0]).toEqual({
         type: 'section',
+        category: 'instructions',
         content: '',
         title: 'Processing Methodology',
         items: [
@@ -97,6 +100,7 @@ describe('compile', () => {
       expect(result.data).toHaveLength(1);
       expect(result.data[0]).toEqual({
         type: 'section',
+        category: 'data',
         content: '',
         title: 'Current State',
         items: ['Value: test123']
@@ -119,6 +123,7 @@ describe('compile', () => {
       expect(result.data).toHaveLength(1);
       expect(result.data[0]).toEqual({
         type: 'section',
+        category: 'data',
         content: '',
         title: 'Messages',
         items: ['[User]: Hello, AI!']
@@ -148,6 +153,7 @@ describe('compile', () => {
       expect(result.data).toHaveLength(1);
       expect(result.data[0]).toEqual({
         type: 'section',
+        category: 'data',
         content: '',
         title: 'Prepared Materials',
         items: ['[Material: API Guide]\nAPI documentation content']
@@ -175,6 +181,7 @@ describe('compile', () => {
       expect(result.data).toHaveLength(1);
       expect(result.data[0]).toEqual({
         type: 'section',
+        category: 'data',
         content: '',
         title: 'Input Chunks',
         items: [
@@ -197,6 +204,7 @@ describe('compile', () => {
       const result1 = compile(module, { includeState: true });
       expect(result1.data[0]).toEqual({
         type: 'section',
+        category: 'data',
         content: '',
         title: 'Current State',
         items: ['固定の状態', '動的な状態']
@@ -205,6 +213,7 @@ describe('compile', () => {
       const result2 = compile(module, { includeState: false });
       expect(result2.data[0]).toEqual({
         type: 'section',
+        category: 'data',
         content: '',
         title: 'Current State',
         items: ['固定の状態']
@@ -290,6 +299,7 @@ describe('compile', () => {
       expect(result.instructions).toHaveLength(1);
       expect(result.instructions[0]).toEqual({
         type: 'section',
+        category: 'instructions',
         content: '',
         title: 'Processing Methodology',
         items: [
@@ -306,6 +316,259 @@ describe('compile', () => {
           }
         ]
       });
+    });
+  });
+
+  describe('標準セクションの文字列処理', () => {
+    it('標準セクションに文字列を直接設定できる', () => {
+      const module: PromptModule = {
+        instructions: 'Direct instruction',  // instructions標準セクション
+        state: 'Current state',              // dataカテゴリの標準セクション
+        cue: 'Output cue'                    // outputカテゴリの標準セクション
+      };
+      const context = {};
+      const result = compile(module, context);
+      
+      // instructionsセクションを確認
+      expect(result.instructions).toHaveLength(1);
+      expect(result.instructions[0]).toMatchObject({
+        type: 'section',
+        category: 'instructions',
+        title: 'Instructions',
+        content: '',
+        items: ['Direct instruction']
+      });
+      
+      // dataセクションを確認
+      expect(result.data).toHaveLength(1);
+      expect(result.data[0]).toMatchObject({
+        type: 'section',
+        category: 'data',
+        title: 'Current State',
+        content: '',
+        items: ['Current state']
+      });
+      
+      // outputセクションを確認
+      expect(result.output).toHaveLength(1);
+      expect(result.output[0]).toMatchObject({
+        type: 'section',
+        category: 'output',
+        title: 'Output',
+        content: '',
+        items: ['Output cue']
+      });
+    });
+
+    it('標準セクションにsubsectionを含めることができる', () => {
+      const subsection: SubSectionElement = {
+        type: 'subsection',
+        title: 'Sub Instructions',
+        content: '',
+        items: ['Sub item']
+      };
+      
+      const module: PromptModule = {
+        instructions: [
+          'Direct instruction string',
+          subsection
+        ]
+      };
+      const context = {};
+      const result = compile(module, context);
+      
+      expect(result.instructions[0]).toMatchObject({
+        type: 'section',
+        category: 'instructions',
+        title: 'Instructions',
+        content: '',
+        items: [
+          'Direct instruction string',
+          {
+            type: 'subsection',
+            title: 'Sub Instructions',
+            content: '',
+            items: ['Sub item']
+          }
+        ]
+      });
+    });
+
+    it('重複する文字列を許容する', () => {
+      const module: PromptModule = {
+        instructions: [
+          'Same instruction',
+          'Same instruction'
+        ]
+      };
+      const context = {};
+      const result = compile(module, context);
+      
+      // 重複が許容されることを確認
+      expect(result.instructions[0].items).toEqual([
+        'Same instruction',
+        'Same instruction'
+      ]);
+    });
+
+    it('重複するsubsectionを許容する', () => {
+      const subsection1: SubSectionElement = {
+        type: 'subsection',
+        title: 'Same Subsection',
+        content: '',
+        items: ['Item 1']
+      };
+      
+      const subsection2: SubSectionElement = {
+        type: 'subsection',
+        title: 'Same Subsection',
+        content: '',
+        items: ['Item 2']
+      };
+      
+      const module: PromptModule = {
+        state: [  // dataカテゴリの標準セクション
+          subsection1,
+          subsection2
+        ]
+      };
+      const context = {};
+      const result = compile(module, context);
+      
+      // 同名のサブセクションが両方存在することを確認
+      const subsections = result.data[0].items.filter(
+        (item): item is SubSectionElement => 
+          typeof item === 'object' && item.type === 'subsection'
+      );
+      expect(subsections).toHaveLength(2);
+      expect(subsections[0].title).toBe('Same Subsection');
+      expect(subsections[1].title).toBe('Same Subsection');
+      expect(subsections[0].items).toEqual(['Item 1']);
+      expect(subsections[1].items).toEqual(['Item 2']);
+    });
+  });
+
+  describe('意図的な重複の使用例', () => {
+    it('セパレータとしての重複を許容', () => {
+      const module: PromptModule = {
+        methodology: [
+          'ステップ1: 初期化',
+          '---',
+          'ステップ2: 処理',
+          '---',
+          'ステップ3: 完了',
+          '---'
+        ]
+      };
+      const context = {};
+      const result = compile(module, context);
+      
+      const items = result.instructions[0].items;
+      expect(items.filter(item => item === '---')).toHaveLength(3);
+    });
+    
+    it('強調のための意図的な繰り返し', () => {
+      const module: PromptModule = {
+        guidelines: [
+          '重要: 必ずエラーハンドリングを行う',
+          'データを検証する',
+          'ログを記録する',
+          '重要: 必ずエラーハンドリングを行う'  // 意図的な繰り返し
+        ]
+      };
+      const context = {};
+      const result = compile(module, context);
+      
+      const items = result.instructions[0].items;
+      expect(items[0]).toBe('重要: 必ずエラーハンドリングを行う');
+      expect(items[3]).toBe('重要: 必ずエラーハンドリングを行う');
+    });
+  });
+
+  describe('DynamicContentの拡張機能', () => {
+    it('DynamicContentで文字列を直接返せる', () => {
+      interface Context {
+        name: string;
+      }
+      
+      const module: PromptModule<Context> = {
+        state: [
+          (ctx) => `ユーザー名: ${ctx.name}`  // 文字列を直接返す
+        ]
+      };
+      
+      const context = { name: 'Alice' };
+      const result = compile(module, context);
+      
+      expect(result.data[0].items).toEqual(['ユーザー名: Alice']);
+    });
+    
+    it('DynamicContentで文字列配列を直接返せる', () => {
+      interface Context {
+        items: string[];
+      }
+      
+      const module: PromptModule<Context> = {
+        state: [
+          (ctx) => ctx.items.map(item => `- ${item}`)  // 文字列配列を直接返す
+        ]
+      };
+      
+      const context = { items: ['item1', 'item2', 'item3'] };
+      const result = compile(module, context);
+      
+      expect(result.data[0].items).toEqual([
+        '- item1',
+        '- item2',
+        '- item3'
+      ]);
+    });
+    
+    it('DynamicContentで混在した配列を返せる', () => {
+      interface Context {
+        count: number;
+      }
+      
+      const module: PromptModule<Context> = {
+        methodology: [
+          (ctx) => [
+            'プロセス開始',  // 文字列
+            `合計: ${ctx.count}件`,  // 文字列
+            { type: 'text', content: '詳細情報' } as TextElement  // Element
+          ]
+        ]
+      };
+      
+      const context = { count: 5 };
+      const result = compile(module, context);
+      
+      expect(result.instructions[0].items).toEqual([
+        'プロセス開始',
+        '合計: 5件',
+        '詳細情報'
+      ]);
+    });
+    
+    it('DynamicContentでnull/undefinedを返すと無視される', () => {
+      interface Context {
+        showOptional: boolean;
+      }
+      
+      const module: PromptModule<Context> = {
+        guidelines: [
+          '必須ガイドライン',
+          (ctx) => ctx.showOptional ? 'オプションガイドライン' : null,
+          (ctx) => ctx.showOptional ? undefined : '代替ガイドライン'
+        ]
+      };
+      
+      const context = { showOptional: false };
+      const result = compile(module, context);
+      
+      expect(result.instructions[0].items).toEqual([
+        '必須ガイドライン',
+        '代替ガイドライン'
+      ]);
     });
   });
 

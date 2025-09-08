@@ -8,6 +8,7 @@ import type {
   SectionElement,
   SubSectionElement
 } from '@moduler-prompt/core';
+import type { SpecialToken, SpecialTokenPair } from './types.js';
 
 describe('DefaultFormatter', () => {
   describe('format text elements', () => {
@@ -292,5 +293,154 @@ describe('markers usage', () => {
     expect(chunkResult).not.toContain('=== START ===');
     expect(chunkResult).toContain('#### Chunk 1 of data.txt');
     expect(chunkResult).toContain('=== END ===');
+  });
+});
+
+describe('DefaultFormatter with Special Tokens', () => {
+  describe('setSpecialTokens', () => {
+    it('should update markers based on special tokens', () => {
+      const formatter = new DefaultFormatter();
+      
+      const specialTokens = {
+        system: {
+          start: { text: '<|system|>', id: 1 },
+          end: { text: '<|/system|>', id: 2 }
+        } as SpecialTokenPair,
+        code: {
+          start: { text: '<|code_start|>', id: 7 },
+          end: { text: '<|code_end|>', id: 8 }
+        } as SpecialTokenPair,
+        thinking: {
+          start: { text: '<|thinking|>', id: 9 },
+          end: { text: '</thinking>', id: 10 }
+        } as SpecialTokenPair
+      };
+
+      formatter.setSpecialTokens(specialTokens);
+
+      // Test that markers are updated
+      const section: SectionElement = {
+        type: 'section',
+        title: 'Test Section',
+        items: ['Item 1', 'Item 2']
+      };
+
+      const formatted = formatter.format(section);
+      expect(formatted).toContain('## Test Section');
+    });
+  });
+
+  describe('formatting with special tokens', () => {
+    it('should use code tokens for material elements', () => {
+      const formatter = new DefaultFormatter({
+        markers: {
+          materialStart: '',
+          materialEnd: ''
+        }
+      });
+
+      const specialTokens = {
+        code: {
+          start: { text: '<|code_start|>', id: 7 },
+          end: { text: '<|code_end|>', id: 8 }
+        } as SpecialTokenPair
+      };
+
+      formatter.setSpecialTokens(specialTokens);
+
+      const material: MaterialElement = {
+        type: 'material',
+        title: 'Code Example',
+        content: 'console.log("Hello");'
+      };
+
+      const formatted = formatter.format(material);
+      expect(formatted).toContain('<|code_start|>');
+      expect(formatted).toContain('<|code_end|>');
+      expect(formatted).toContain('console.log("Hello");');
+    });
+
+    it('should use thinking tokens for subsections', () => {
+      const formatter = new DefaultFormatter({
+        markers: {
+          subsectionStart: '',
+          subsectionEnd: ''
+        }
+      });
+
+      const specialTokens = {
+        thinking: {
+          start: { text: '<|thinking|>', id: 9 },
+          end: { text: '</thinking>', id: 10 }
+        } as SpecialTokenPair
+      };
+
+      formatter.setSpecialTokens(specialTokens);
+
+      const subsection: SubSectionElement = {
+        type: 'subsection',
+        title: 'Analysis',
+        items: ['Point 1', 'Point 2']
+      };
+
+      const formatted = formatter.format(subsection);
+      expect(formatted).toContain('<|thinking|>');
+      expect(formatted).toContain('</thinking>');
+      expect(formatted).toContain('Point 1');
+      expect(formatted).toContain('Point 2');
+    });
+
+    it('should handle mixed single and paired tokens', () => {
+      const formatter = new DefaultFormatter();
+
+      const specialTokens = {
+        eod: { text: '<|endoftext|>', id: 0 } as SpecialToken,
+        system: {
+          start: { text: '<|system|>', id: 1 },
+          end: { text: '<|/system|>', id: 2 }
+        } as SpecialTokenPair
+      };
+
+      formatter.setSpecialTokens(specialTokens);
+
+      const section: SectionElement = {
+        type: 'section',
+        title: 'Instructions',
+        items: ['Do this', 'Do that']
+      };
+
+      const formatted = formatter.format(section);
+      expect(formatted).toBeDefined();
+      expect(formatted).toContain('## Instructions');
+    });
+
+    it('should preserve existing markers if special tokens are not provided', () => {
+      const formatter = new DefaultFormatter({
+        markers: {
+          materialStart: '<custom-start>',
+          materialEnd: '<custom-end>'
+        }
+      });
+
+      const specialTokens = {
+        thinking: {
+          start: { text: '<|thinking|>', id: 9 },
+          end: { text: '</thinking>', id: 10 }
+        } as SpecialTokenPair
+      };
+
+      formatter.setSpecialTokens(specialTokens);
+
+      const material: MaterialElement = {
+        type: 'material',
+        title: 'Data',
+        content: 'Some data'
+      };
+
+      const formatted = formatter.format(material);
+      // Should keep custom markers since code tokens were not provided
+      expect(formatted).toContain('<custom-start>');
+      expect(formatted).toContain('<custom-end>');
+    });
   });
 });
