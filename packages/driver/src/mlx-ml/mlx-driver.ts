@@ -5,6 +5,7 @@ import type { QueryOptions, QueryResult } from '../types.js';
 import { MlxProcess } from './process/index.js';
 import type { MlxMessage, MlxMlModelOptions } from './types.js';
 import type { MlxCapabilities } from './process/types.js';
+import type { ModelSpec, ModelCustomProcessor } from './model-spec/types.js';
 
 /**
  * MLX ML driver configuration
@@ -12,6 +13,8 @@ import type { MlxCapabilities } from './process/types.js';
 export interface MlxDriverConfig {
   model: string;
   defaultOptions?: Partial<MlxMlModelOptions>;
+  modelSpec?: Partial<ModelSpec>;
+  customProcessor?: ModelCustomProcessor;
 }
 
 /**
@@ -71,7 +74,7 @@ export class MlxDriver extends BaseDriver {
     
     this.model = config.model;
     this.defaultOptions = config.defaultOptions || {};
-    this.process = new MlxProcess(config.model);
+    this.process = new MlxProcess(config.model, config.modelSpec, config.customProcessor);
     this.preferMessageFormat = true; // MLX uses message format
   }
   

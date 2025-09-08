@@ -111,9 +111,12 @@ def handle_chat(messages, primer=None, options=None):
     # チャットテンプレートが利用可能かチェック
     if not supports_chat_template():
         # チャットテンプレートがない場合はcompletionフォーマットに変換
+        # 注意: TypeScript側でAPIを決定するため、ここに来る場合は
+        # TypeScript側でchatが選択されたが、実際にはテンプレートがないケース
         prompt = generate_merged_prompt(messages)
+        # primerはTypeScript側で既に追加されている場合があるので追加しない
+        # （TypeScript側でcompletion APIへの変換時に追加済み）
         if primer is not None:
-            prompt += primer
             print(primer, end='', flush=True)
         generate_text(prompt, options)
         return
