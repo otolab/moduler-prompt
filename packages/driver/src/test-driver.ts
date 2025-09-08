@@ -1,6 +1,6 @@
 import type { CompiledPrompt } from '@moduler-prompt/core';
 import type { AIDriver, QueryOptions, QueryResult } from './types.js';
-import { formatPrompt, formatPromptAsMessages, type FormatterOptions } from '@moduler-prompt/utils';
+import { formatPrompt, formatPromptAsMessages, type FormatterOptions } from './formatter/index.js';
 
 /**
  * Response provider function type
@@ -57,7 +57,7 @@ export class TestDriver implements AIDriver {
     if (this.preferMessageFormat) {
       // Convert to messages then to text for token counting
       const messages = formatPromptAsMessages(prompt, this.getFormatterOptions());
-      formattedPrompt = messages.map(m => `${m.role}: ${m.content}`).join('\n\n');
+      formattedPrompt = messages.map((m: any) => `${m.role}: ${m.content}`).join('\n\n');
     } else {
       // Use standard text format
       formattedPrompt = formatPrompt(prompt, this.getFormatterOptions());

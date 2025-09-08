@@ -58,3 +58,6 @@ export {
   type VertexAIDriverConfig,
   type VertexAIQueryOptions
 } from './vertexai/vertexai-driver.js';
+
+// Formatter exports (moved from utils to avoid circular dependency)
+export * from './formatter/index.js';

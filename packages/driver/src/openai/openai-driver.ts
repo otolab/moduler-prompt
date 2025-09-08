@@ -1,6 +1,6 @@
 import OpenAI from 'openai';
 import { BaseDriver } from '../base/base-driver.js';
-import type { ChatMessage } from '@moduler-prompt/utils';
+import type { ChatMessage } from '../formatter/index.js';
 import type { QueryOptions, QueryResult } from '../types.js';
 import type { 
   ChatCompletionCreateParams,
@@ -198,4 +198,4 @@ export class OpenAIDriver extends BaseDriver {
 }
 
 // Re-import for proper typing
-import { formatPrompt, formatPromptAsMessages } from '@moduler-prompt/utils';
+import { formatPrompt, formatPromptAsMessages } from '../formatter/index.js';

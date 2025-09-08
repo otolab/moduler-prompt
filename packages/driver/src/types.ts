@@ -1,5 +1,5 @@
 import type { CompiledPrompt } from '@moduler-prompt/core';
-import type { FormatterOptions } from '@moduler-prompt/utils';
+import type { FormatterOptions } from './formatter/index.js';
 
 /**
  * Chat message role

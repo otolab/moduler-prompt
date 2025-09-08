@@ -1,15 +1,18 @@
+// Driver Registry exports
+export {
+  DriverRegistry,
+  registerDriverFactories
+} from './driver-registry/index.js';
+
 export type {
-  FormatterOptions,
-  ElementFormatter,
-  ChatMessage
-} from './types.js';
-
-export {
-  DefaultFormatter
-} from './formatter.js';
-
-export {
-  formatPrompt,
-  formatPromptAsMessages,
-  defaultFormatterTexts
-} from './converter.js';
+  DriverClasses,
+  DriverProvider,
+  DriverCapability,
+  ModelDefinition,
+  DriverConfig,
+  RegistryConfig,
+  DriverSelectionCriteria,
+  DriverSelectionResult,
+  IDriverRegistry,
+  DriverFactory
+} from './driver-registry/index.js';

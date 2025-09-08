@@ -1,0 +1,270 @@
+# Sample Driver Registry Configuration
+# ドライバレジストリ設定のサンプル
+#
+# このファイルは、DriverRegistryで使用する設定ファイルのサンプルです。
+# 実際の使用時は、このファイルをコピーして必要に応じてカスタマイズしてください。
+
+version: "1.0"
+defaultDriver: mlx-gemma-270m
+
+global:
+  temperature: 0.7
+  maxTokens: 2048
+  timeout: 30000
+  retryCount: 3
+  retryDelay: 1000
+
+drivers:
+  # ========================================
+  # MLX Local Models
+  # ========================================
+  
+  - id: mlx-gemma-270m
+    name: MLX Gemma 270M (Quantized)
+    model:
+      model: mlx-community/gemma-3-270m-it-qat-4bit
+      provider: mlx
+      capabilities:
+        - local
+        - fast
+        - streaming
+        - chat
+        - japanese
+      maxInputTokens: 8192
+      maxOutputTokens: 2048
+      priority: 10
+
+  - id: mlx-llama-3b
+    name: MLX Llama 3.2 3B
+    model:
+      model: mlx-community/Llama-3.2-3B-Instruct-4bit
+      provider: mlx
+      capabilities:
+        - local
+        - fast
+        - streaming
+        - chat
+        - tools
+      maxInputTokens: 128000
+      maxOutputTokens: 8192
+      priority: 8
+
+  - id: mlx-gemma-27b
+    name: MLX Gemma 3 27B
+    model:
+      model: mlx-community/gemma-3-27b-it-qat-4bit
+      provider: mlx
+      capabilities:
+        - local
+        - streaming
+        - chat
+        - japanese
+        - tools
+        - reasoning
+      maxInputTokens: 8192
+      maxOutputTokens: 4096
+      priority: 7
+
+  - id: mlx-qwq-32b
+    name: MLX QWQ Bakeneko 32B
+    model:
+      model: mlx-community/qwq-bakeneko-32b-4bit
+      provider: mlx
+      capabilities:
+        - local
+        - streaming
+        - reasoning
+        - coding
+        - japanese
+        - tools
+      maxInputTokens: 32768
+      maxOutputTokens: 8192
+      priority: 6
+
+  - id: mlx-tanuki-8b
+    name: MLX Tanuki 8B DPO
+    model:
+      model: mlx-community/Tanuki-8B-dpo-v1.0-4bit
+      provider: mlx
+      capabilities:
+        - local
+        - streaming
+        - japanese
+        - chat
+      maxInputTokens: 8192
+      maxOutputTokens: 2048
+      priority: 9
+
+  # ========================================
+  # OpenAI Models
+  # ========================================
+  
+  - id: gpt-4o
+    name: GPT-4o
+    model:
+      model: gpt-4o
+      provider: openai
+      capabilities:
+        - streaming
+        - tools
+        - vision
+        - audio
+        - multilingual
+        - japanese
+        - coding
+        - reasoning
+        - structured
+        - json
+        - function-calling
+        - large-context
+      maxInputTokens: 128000
+      maxOutputTokens: 16384
+      tokensPerMinute: 30000
+      requestsPerMinute: 500
+      cost:
+        input: 0.0025
+        output: 0.01
+      priority: 20
+
+  - id: gpt-4o-mini
+    name: GPT-4o Mini
+    model:
+      model: gpt-4o-mini
+      provider: openai
+      capabilities:
+        - streaming
+        - fast
+        - tools
+        - vision
+        - multilingual
+        - japanese
+        - structured
+        - json
+        - function-calling
+      maxInputTokens: 128000
+      maxOutputTokens: 16384
+      tokensPerMinute: 200000
+      requestsPerMinute: 500
+      cost:
+        input: 0.00015
+        output: 0.0006
+      priority: 15
+
+  # ========================================
+  # Anthropic Models
+  # ========================================
+  
+  - id: claude-3-5-sonnet
+    name: Claude 3.5 Sonnet
+    model:
+      model: claude-3-5-sonnet-20241022
+      provider: anthropic
+      capabilities:
+        - streaming
+        - tools
+        - vision
+        - multilingual
+        - japanese
+        - coding
+        - reasoning
+        - structured
+        - large-context
+        - function-calling
+      maxInputTokens: 200000
+      maxOutputTokens: 8192
+      tokensPerMinute: 40000
+      requestsPerMinute: 50
+      cost:
+        input: 0.003
+        output: 0.015
+      priority: 18
+
+  - id: claude-3-5-haiku
+    name: Claude 3.5 Haiku
+    model:
+      model: claude-3-5-haiku-20241022
+      provider: anthropic
+      capabilities:
+        - streaming
+        - fast
+        - tools
+        - vision
+        - multilingual
+        - japanese
+        - structured
+        - function-calling
+      maxInputTokens: 200000
+      maxOutputTokens: 8192
+      tokensPerMinute: 100000
+      requestsPerMinute: 100
+      cost:
+        input: 0.0008
+        output: 0.004
+      priority: 14
+
+  # ========================================
+  # Vertex AI Models
+  # ========================================
+  
+  - id: gemini-2-flash
+    name: Gemini 2.0 Flash
+    model:
+      model: gemini-2.0-flash-001
+      provider: vertexai
+      capabilities:
+        - streaming
+        - fast
+        - tools
+        - vision
+        - audio
+        - multilingual
+        - japanese
+        - structured
+        - json
+        - function-calling
+        - large-context
+      maxInputTokens: 1048576
+      maxOutputTokens: 8192
+      tokensPerMinute: 4000000
+      requestsPerMinute: 2000
+      cost:
+        input: 0.00001875
+        output: 0.000075
+      priority: 16
+
+  - id: gemini-2-flash-thinking
+    name: Gemini 2.0 Flash Thinking
+    model:
+      model: gemini-2.0-flash-thinking
+      provider: vertexai
+      capabilities:
+        - streaming
+        - reasoning
+        - tools
+        - multilingual
+        - japanese
+        - coding
+        - structured
+      maxInputTokens: 32768
+      maxOutputTokens: 8192
+      priority: 12
+
+  # ========================================
+  # Test Models
+  # ========================================
+  
+  - id: echo-test
+    name: Echo Test Driver
+    model:
+      model: echo
+      provider: echo
+      capabilities:
+        - local
+        - fast
+        - streaming
+      priority: 0
+      enabled: false
+    options:
+      format: text
+      includeMetadata: false
+      simulateUsage: true

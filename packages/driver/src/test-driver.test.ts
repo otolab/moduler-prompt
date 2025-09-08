@@ -1,7 +1,7 @@
 import { describe, it, expect, beforeEach } from 'vitest';
 import { TestDriver } from './test-driver.js';
 import type { CompiledPrompt } from '@moduler-prompt/core';
-import type { FormatterOptions } from '@moduler-prompt/utils';
+import type { FormatterOptions } from './formatter/index.js';
 
 describe('TestDriver', () => {
   let driver: TestDriver;
