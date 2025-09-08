@@ -79,9 +79,21 @@ export class MlxDriver extends BaseDriver {
   }
   
   /**
-   * Get special tokens from the MLX process
+   * Initialize spec manager if not already initialized
    */
-  async getSpecialTokens(): Promise<MlxCapabilities['special_tokens'] | null> {
+  private async ensureInitialized(): Promise<void> {
+    // Delegate to process's initialization
+    const status = this.process.getStatus();
+    if (!status.modelSpec) {
+      // Force initialization by calling getCapabilities
+      await this.getCapabilities();
+    }
+  }
+  
+  /**
+   * Get capabilities from the MLX process
+   */
+  async getCapabilities(): Promise<MlxCapabilities | null> {
     if (!this.capabilities) {
       try {
         this.capabilities = await this.process.getCapabilities();
@@ -90,7 +102,15 @@ export class MlxDriver extends BaseDriver {
         return null;
       }
     }
-    return this.capabilities?.special_tokens || null;
+    return this.capabilities;
+  }
+  
+  /**
+   * Get special tokens from the MLX process
+   */
+  async getSpecialTokens(): Promise<MlxCapabilities['special_tokens'] | null> {
+    const capabilities = await this.getCapabilities();
+    return capabilities?.special_tokens || null;
   }
   
   /**
@@ -111,6 +131,8 @@ export class MlxDriver extends BaseDriver {
     options: QueryOptions = {}
   ): Promise<QueryResult> {
     try {
+      await this.ensureInitialized();
+      
       // Convert messages to MLX format
       const mlxMessages = this.convertMessages(messages);
       
@@ -122,8 +144,20 @@ export class MlxDriver extends BaseDriver {
         top_p: options.topP
       };
       
-      // Get stream from process
-      const stream = await this.process.chat(mlxMessages, undefined, mlxOptions);
+      // ドライバーレベルでAPIを選択
+      const specManager = this.process.getSpecManager();
+      const processedMessages = specManager.preprocessMessages(mlxMessages);
+      const api = specManager.determineApi(processedMessages);
+      
+      let stream: Readable;
+      if (api === 'completion') {
+        // completion APIを使用
+        const prompt = specManager.generatePrompt(processedMessages);
+        stream = await this.process.completion(prompt, mlxOptions);
+      } else {
+        // chat APIを使用
+        stream = await this.process.chatDirect(processedMessages, undefined, mlxOptions);
+      }
       
       // Collect all chunks
       let content = '';
@@ -156,6 +190,8 @@ export class MlxDriver extends BaseDriver {
     prompt: import('@moduler-prompt/core').CompiledPrompt, 
     options?: QueryOptions
   ): AsyncIterable<string> {
+    await this.ensureInitialized();
+    
     const messages = formatPromptAsMessages(prompt, this.getFormatterOptions());
     const mlxMessages = this.convertMessages(messages);
     
@@ -167,8 +203,20 @@ export class MlxDriver extends BaseDriver {
       top_p: options?.topP
     };
     
-    // Get stream from process
-    const stream = await this.process.chat(mlxMessages, undefined, mlxOptions);
+    // ドライバーレベルでAPIを選択
+    const specManager = this.process.getSpecManager();
+    const processedMessages = specManager.preprocessMessages(mlxMessages);
+    const api = specManager.determineApi(processedMessages);
+    
+    let stream: Readable;
+    if (api === 'completion') {
+      // completion APIを使用
+      const prompt = specManager.generatePrompt(processedMessages);
+      stream = await this.process.completion(prompt, mlxOptions);
+    } else {
+      // chat APIを使用
+      stream = await this.process.chatDirect(processedMessages, undefined, mlxOptions);
+    }
     
     // Convert stream to async iterable
     const iterable = new StreamToAsyncIterable(stream);

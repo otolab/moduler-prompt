@@ -84,7 +84,7 @@ export class MlxProcess {
     return this.queueManager.addFormatTestRequest(processedMessages, options);
   }
 
-  // API v2.0 Chat - TypeScript側でモデル固有処理を実行
+  // API v2.0 Chat - 自動的にchat/completionを選択（後方互換性のため残す）
   async chat(messages: MlxMessage[], primer?: string, options?: MlxMlModelOptions): Promise<Readable> {
     await this.ensureInitialized();
     
@@ -107,6 +107,15 @@ export class MlxProcess {
     }
     
     // chat APIを使用（primerはPython側で処理される）
+    return this.queueManager.addChatRequest(processedMessages, primer, options);
+  }
+  
+  // API v2.0 Chat Direct - chat APIを直接使用（ドライバーが選択済み）
+  async chatDirect(messages: MlxMessage[], primer?: string, options?: MlxMlModelOptions): Promise<Readable> {
+    // レガシーモデル固有処理
+    const processedMessages = this.modelProcessor.applyModelSpecificProcessing(messages);
+    
+    // chat APIを直接使用
     return this.queueManager.addChatRequest(processedMessages, primer, options);
   }
 
