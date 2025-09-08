@@ -16,7 +16,6 @@ import type { ModelSpec, ModelCustomProcessor } from '../model-spec/types.js';
 import { ModelSpecManager } from '../model-spec/manager.js';
 import { QueueManager, QueueManagerCallbacks } from './queue.js';
 import { ProcessCommunication, ProcessCommunicationCallbacks } from './process-communication.js';
-import { createModelSpecificProcessor, ModelSpecificProcessor } from './model-specific.js';
 
 // API v2.0 型をエクスポート
 export type { 
@@ -31,7 +30,6 @@ export class MlxProcess {
   
   private queueManager: QueueManager;
   private processComm: ProcessCommunication;
-  private modelProcessor: ModelSpecificProcessor;
   private specManager: ModelSpecManager;
   private initialized = false;
 
@@ -41,7 +39,6 @@ export class MlxProcess {
     customProcessor?: ModelCustomProcessor
   ) {
     this.modelName = modelName;
-    this.modelProcessor = createModelSpecificProcessor(modelName);
 
     // コールバック設定
     const processCallbacks: ProcessCommunicationCallbacks = {
@@ -65,7 +62,7 @@ export class MlxProcess {
   /**
    * 初期化（動的検出）
    */
-  private async ensureInitialized(): Promise<void> {
+  async ensureInitialized(): Promise<void> {
     if (!this.initialized) {
       await this.specManager.initialize();
       this.initialized = true;
@@ -77,59 +74,21 @@ export class MlxProcess {
     return this.queueManager.addCapabilitiesRequest();
   }
 
-  // API v2.0 Format Test - TypeScript側でモデル固有処理を実行
+  // API v2.0 Format Test
   async formatTest(messages: MlxMessage[], options?: { primer?: string }): Promise<MlxFormatTestResult> {
-    // TypeScript側でモデル固有処理を実行してからPython側に送信
-    const processedMessages = this.modelProcessor.applyModelSpecificProcessing(messages);
-    return this.queueManager.addFormatTestRequest(processedMessages, options);
+    return this.queueManager.addFormatTestRequest(messages, options);
   }
 
-  // API v2.0 Chat - 自動的にchat/completionを選択（後方互換性のため残す）
+  // API v2.0 Chat - chat APIを直接使用
   async chat(messages: MlxMessage[], primer?: string, options?: MlxMlModelOptions): Promise<Readable> {
-    await this.ensureInitialized();
-    
-    // ModelSpecManagerで前処理
-    let processedMessages = this.specManager.preprocessMessages(messages);
-    
-    // レガシーモデル固有処理（後方互換性のため残す）
-    processedMessages = this.modelProcessor.applyModelSpecificProcessing(processedMessages);
-    
-    // 使用するAPIを決定
-    const api = this.specManager.determineApi(processedMessages);
-    
-    if (api === 'completion') {
-      // completion APIを使用
-      const prompt = this.specManager.generatePrompt(processedMessages);
-      const processedPrompt = this.modelProcessor.applyCompletionSpecificProcessing(prompt);
-      // primerはcompletion時にここで追加（Python側では追加しない）
-      const finalPrompt = primer ? processedPrompt + primer : processedPrompt;
-      return this.queueManager.addCompletionRequest(finalPrompt, options);
-    }
-    
-    // chat APIを使用（primerはPython側で処理される）
-    return this.queueManager.addChatRequest(processedMessages, primer, options);
-  }
-  
-  // API v2.0 Chat Direct - chat APIを直接使用（ドライバーが選択済み）
-  async chatDirect(messages: MlxMessage[], primer?: string, options?: MlxMlModelOptions): Promise<Readable> {
-    // レガシーモデル固有処理
-    const processedMessages = this.modelProcessor.applyModelSpecificProcessing(messages);
-    
-    // chat APIを直接使用
-    return this.queueManager.addChatRequest(processedMessages, primer, options);
+    // chat APIを直接使用（前処理はドライバーで実施済み）
+    return this.queueManager.addChatRequest(messages, primer, options);
   }
 
-  // API v2.0 Completion - TypeScript側でモデル固有処理を実行
+  // API v2.0 Completion - completion APIを直接使用
   async completion(prompt: string, options?: MlxMlModelOptions): Promise<Readable> {
-    await this.ensureInitialized();
-    
-    // ModelSpecManagerで前処理
-    let processedPrompt = this.specManager.preprocessCompletion(prompt);
-    
-    // レガシーcompletion固有処理（後方互換性のため残す）
-    processedPrompt = this.modelProcessor.applyCompletionSpecificProcessing(processedPrompt);
-    
-    return this.queueManager.addCompletionRequest(processedPrompt, options);
+    // completion APIを直接使用（前処理はドライバーで実施済み）
+    return this.queueManager.addCompletionRequest(prompt, options);
   }
 
 
