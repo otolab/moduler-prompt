@@ -4,9 +4,8 @@
 
 import { compile, PromptModule, createContext, merge } from '@moduler-prompt/core';
 import { withMaterials, type MaterialContext } from '@moduler-prompt/process';
-import { type AIDriver } from '@moduler-prompt/driver';
-import * as Drivers from '@moduler-prompt/driver';
-import { DriverRegistry, registerDriverFactories } from '@moduler-prompt/utils';
+import { type AIDriver, MlxDriver } from '@moduler-prompt/driver';
+import { DriverRegistry } from '@moduler-prompt/utils';
 import { DialogProfile, ChatLog } from './types.js';
 import chalk from 'chalk';
 import { readFile } from 'fs/promises';
@@ -104,7 +103,6 @@ async function initializeRegistry(): Promise<DriverRegistry> {
   }
   
   driverRegistry = new DriverRegistry();
-  registerDriverFactories(driverRegistry, Drivers);
   
   // デフォルト設定ファイルを読み込み
   const __filename = fileURLToPath(import.meta.url);
@@ -149,7 +147,7 @@ export async function createDriver(profile: DialogProfile): Promise<AIDriver> {
     
     // 見つからない場合は、MLXドライバとして直接作成を試みる
     console.warn(chalk.yellow(`Model ${profile.model} not found in registry, attempting direct creation`));
-    return new Drivers.MlxDriver({
+    return new MlxDriver({
       model: profile.model,
       defaultOptions: profile.options
     });
