@@ -132,8 +132,8 @@ async function initializeRegistry(): Promise<DriverRegistry> {
 /**
  * Create driver from profile
  */
-export async function createDriver(profile: DialogProfile): Promise<AIDriver> {
-  const registry = await initializeRegistry();
+export async function createDriver(profile: DialogProfile, customRegistry?: DriverRegistry): Promise<AIDriver> {
+  const registry = customRegistry || await initializeRegistry();
   
   // プロファイルで明示的にモデルが指定されている場合
   if (profile.model) {
@@ -169,9 +169,10 @@ export async function performAIChat(
   profile: DialogProfile,
   chatLog: ChatLog,
   userMessage: string,
-  materials?: MaterialContext['materials']
+  materials?: MaterialContext['materials'],
+  customRegistry?: DriverRegistry
 ): Promise<{ response: string; driver: AIDriver }> {
-  const driver = await createDriver(profile);
+  const driver = await createDriver(profile, customRegistry);
   
   try {
     // Create empty typed context from module
