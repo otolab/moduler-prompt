@@ -143,7 +143,7 @@ export class OpenAIDriver extends BaseDriver {
         } : undefined,
         finishReason
       };
-    } catch (error) {
+    } catch {
       return {
         content: '',
         finishReason: 'error'

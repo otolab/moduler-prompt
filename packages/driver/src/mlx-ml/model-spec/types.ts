@@ -34,6 +34,7 @@ export interface ValidationResult {
   errors?: string[];
   warnings?: string[];
   suggestedFixes?: MlxMessage[];
+  appliedFixes?: string[];  // 適用された修正の説明
 }
 
 /**

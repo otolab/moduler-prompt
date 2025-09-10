@@ -268,7 +268,7 @@ export class VertexAIDriver extends BaseDriver {
           totalTokens: response.usageMetadata.totalTokenCount || 0
         } : undefined
       };
-    } catch (error) {
+    } catch {
       return {
         content: '',
         finishReason: 'error'

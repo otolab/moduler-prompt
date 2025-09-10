@@ -1,11 +1,6 @@
 import type { 
   Element, 
-  TextElement, 
   MessageElement, 
-  MaterialElement,
-  ChunkElement,
-  SectionElement,
-  SubSectionElement,
   CompiledPrompt
 } from '@moduler-prompt/core';
 import type { ChatMessage, FormatterOptions, ElementFormatter } from './types.js';
@@ -230,7 +225,7 @@ function elementToMessages(element: Element, formatter: ElementFormatter): ChatM
         content: materialLines.join('\n')
       }];
       
-    case 'chunk':
+    case 'chunk': {
       // Format chunk with partOf, index, and total
       const chunkContent = typeof element.content === 'string' 
         ? element.content 
@@ -250,6 +245,7 @@ function elementToMessages(element: Element, formatter: ElementFormatter): ChatM
         role: 'system',
         content: `${chunkHeader}\n\n${chunkContent}`
       }];
+    }
       
     default:
       // Type guard exhaustive check

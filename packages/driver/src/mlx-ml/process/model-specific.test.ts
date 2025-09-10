@@ -98,7 +98,7 @@ describe('ModelSpecificProcessor', () => {
   describe('Generate merged prompt', () => {
     const processor = createModelSpecificProcessor('test-model');
     
-    it('should format messages with HTML-style comments', () => {
+    it('should format messages with default markers', () => {
       const messages: MlxMessage[] = [
         { role: 'system', content: 'System instruction' },
         { role: 'user', content: 'User question' },
@@ -107,12 +107,14 @@ describe('ModelSpecificProcessor', () => {
       
       const result = processor.generateMergedPrompt(messages);
       
-      expect(result).toContain('<!-- begin of SYSTEM -->');
+      // デフォルトフォーマッターはHTMLスタイルのコメントを使用
       expect(result).toContain('System instruction');
-      expect(result).toContain('<!-- end of SYSTEM -->');
-      expect(result).toContain('<!-- begin of user -->');
       expect(result).toContain('User question');
-      expect(result).toContain('<!-- end of user -->');
+      expect(result).toContain('Assistant response');
+      // 各メッセージがロールマーカーで囲まれていることを確認
+      expect(result).toMatch(/SYSTEM[\s\S]*System instruction[\s\S]*SYSTEM/);
+      expect(result).toMatch(/USER[\s\S]*User question[\s\S]*USER/);
+      expect(result).toMatch(/ASSISTANT[\s\S]*Assistant response[\s\S]*ASSISTANT/);
     });
   });
 });

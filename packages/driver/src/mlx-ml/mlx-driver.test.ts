@@ -1,6 +1,5 @@
 import { describe, it, expect, vi } from 'vitest';
 import { MlxDriver } from './mlx-driver.js';
-import type { MlxCapabilities } from './types.js';
 
 // Mock the MlxProcess
 vi.mock('./process/index.js', () => ({

@@ -160,7 +160,31 @@ export class ModelSpecManager {
     // バリデーション結果に基づいて修正
     const validation = this.validateMessages(messages);
     if (!validation.valid && validation.suggestedFixes) {
+      // 自動修正を適用したことを警告
+      console.warn('[MLX Driver] メッセージを自動修正しました:');
+      
+      // エラーを表示
+      if (validation.errors) {
+        validation.errors.forEach(error => {
+          console.warn(`  エラー: ${error}`);
+        });
+      }
+      
+      // 適用された修正を表示
+      if (validation.appliedFixes) {
+        validation.appliedFixes.forEach(fix => {
+          console.warn(`  修正: ${fix}`);
+        });
+      }
+      
       return validation.suggestedFixes;
+    }
+    
+    // 警告のみの場合も表示
+    if (validation.warnings) {
+      validation.warnings.forEach(warning => {
+        console.warn(`[MLX Driver] 警告: ${warning}`);
+      });
     }
     
     return messages;

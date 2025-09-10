@@ -75,15 +75,19 @@ export class MessageValidator {
     
     // 修正案の生成
     let suggestedFixes: MlxMessage[] | undefined;
+    let appliedFixes: string[] | undefined;
     if (errors.length > 0) {
-      suggestedFixes = this.generateSuggestedFixes(messages, restrictions);
+      const fixResult = this.generateSuggestedFixes(messages, restrictions);
+      suggestedFixes = fixResult.messages;
+      appliedFixes = fixResult.appliedFixes;
     }
     
     return {
       valid: errors.length === 0,
       errors: errors.length > 0 ? errors : undefined,
       warnings: warnings.length > 0 ? warnings : undefined,
-      suggestedFixes
+      suggestedFixes,
+      appliedFixes
     };
   }
   
@@ -93,8 +97,9 @@ export class MessageValidator {
   private static generateSuggestedFixes(
     messages: MlxMessage[], 
     restrictions: ChatRestrictions
-  ): MlxMessage[] {
+  ): { messages: MlxMessage[], appliedFixes: string[] } {
     let fixed = [...messages];
+    const appliedFixes: string[] = [];
     
     // システムメッセージの修正
     if (restrictions.singleSystemAtStart) {
@@ -108,9 +113,11 @@ export class MessageValidator {
           content: systemMessages.map(m => m.content).join('\n\n')
         };
         fixed = [mergedSystem, ...nonSystemMessages];
+        appliedFixes.push(`複数のシステムメッセージ(${systemMessages.length}個)を1つに結合しました`);
       } else if (systemMessages.length === 1 && fixed[0].role !== 'system') {
         // システムメッセージを先頭に移動
         fixed = [...systemMessages, ...nonSystemMessages];
+        appliedFixes.push('システムメッセージを先頭に移動しました');
       }
     }
     
@@ -123,30 +130,67 @@ export class MessageValidator {
           role: 'user',
           content: 'Please proceed with the task.'
         });
+        appliedFixes.push(`最後にユーザーメッセージを追加しました(元の最後: ${lastMessage.role})`);
       }
     }
     
-    // 交互発言の修正（簡易版）
+    // 交互発言の修正（連続するメッセージを結合）
     if (restrictions.alternatingTurns) {
+      let mergeCount = 0;
       const conversationStart = restrictions.singleSystemAtStart && fixed[0].role === 'system' ? 1 : 0;
       const result: MlxMessage[] = conversationStart > 0 ? [fixed[0]] : [];
-      let lastRole: string | null = null;
+      let currentMessages: MlxMessage[] = [];
+      let currentRole: string | null = null;
       
       for (let i = conversationStart; i < fixed.length; i++) {
         const msg = fixed[i];
-        if (msg.role === 'system') continue;
-        
-        if (lastRole !== msg.role) {
+        if (msg.role === 'system') {
+          // システムメッセージはそのまま追加
+          if (currentMessages.length > 0) {
+            // 現在蓄積中のメッセージを結合して追加
+            result.push({
+              role: currentRole as any,
+              content: currentMessages.map(m => m.content).join('\n\n')
+            });
+            currentMessages = [];
+          }
           result.push(msg);
-          lastRole = msg.role;
+          currentRole = null;
+        } else if (currentRole === msg.role) {
+          // 同じロールが連続する場合は蓄積
+          currentMessages.push(msg);
+          mergeCount++;
+        } else {
+          // ロールが変わった場合
+          if (currentMessages.length > 0) {
+            // 前のロールのメッセージを結合して追加
+            result.push({
+              role: currentRole as any,
+              content: currentMessages.map(m => m.content).join('\n\n')
+            });
+          }
+          // 新しいロールのメッセージを開始
+          currentRole = msg.role;
+          currentMessages = [msg];
         }
-        // 同じロールが連続する場合はスキップ（内容をマージする選択肢もある）
+      }
+      
+      // 最後に残ったメッセージを追加
+      if (currentMessages.length > 0) {
+        result.push({
+          role: currentRole as any,
+          content: currentMessages.map(m => m.content).join('\n\n')
+        });
+      }
+      
+      if (mergeCount > 0) {
+        appliedFixes.push(`連続する同じロールのメッセージを結合しました(${mergeCount}箇所)`);
       }
       
       fixed = result;
     }
     
-    return fixed;
+    return { messages: fixed, appliedFixes };
   }
   
   /**
