@@ -106,7 +106,7 @@ npm run lint
 
 #### セクション分類
 - instructions: objective, terms, methodology, instructions, guidelines, preparationNote
-- data: state, materials, chunks, messages
+- data: state, inputs, materials, chunks, messages
 - output: cue, schema
 
 ## 重要な制約とルール

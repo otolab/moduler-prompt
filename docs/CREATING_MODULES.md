@@ -171,10 +171,12 @@ type DynamicElement =
 const module: PromptModule<{ data: any[] }> = {
   state: [
     // 文字列を返す
-    (ctx) => ctx.data.length > 0 ? 'データあり' : 'データなし',
-    
-    // 文字列配列を返す（自動展開される）
-    (ctx) => ctx.data.map((d, i) => `${i + 1}. ${d.name}`)
+    (ctx) => ctx.data.length > 0 ? 'データあり' : 'データなし'
+  ],
+  
+  // シンプルな入力データはinputsセクションへ
+  inputs: [
+    (ctx) => ctx.data ? JSON.stringify(ctx.data) : null
   ],
   
   // MaterialElementを返す
@@ -231,8 +233,9 @@ const module: PromptModule<{ data: any[] }> = {
 | セクション | 用途 |
 |---------|------|
 | state | 現在の状態 |
+| inputs | シンプルな入力データ |
 | materials | 参考資料 |
-| chunks | 入力データ |
+| chunks | 分割された入力データ |
 | messages | 対話履歴 |
 
 ### Output（出力）セクション

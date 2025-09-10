@@ -113,6 +113,7 @@ export interface PromptModule<TContext = any> {
   
   // Data セクション
   state?: SectionContent<TContext>;
+  inputs?: SectionContent<TContext>;
   materials?: SectionContent<TContext>;
   chunks?: SectionContent<TContext>;
   messages?: SectionContent<TContext>;
@@ -137,6 +138,7 @@ export const STANDARD_SECTIONS = {
   
   // Data
   state: { type: 'data' as const, title: 'Current State' },
+  inputs: { type: 'data' as const, title: 'Input Data' },
   materials: { type: 'data' as const, title: 'Prepared Materials' },
   chunks: { type: 'data' as const, title: 'Input Chunks' },
   messages: { type: 'data' as const, title: 'Messages' },

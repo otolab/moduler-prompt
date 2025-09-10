@@ -43,13 +43,9 @@ const module: PromptModule = {
   instructions: ['重要な点を抽出'],
   state: [(ctx) => `処理中: ${ctx.currentItem}`],  // 動的部分は関数として定義
   
-  // データをchunksとして出力
-  chunks: [
-    (ctx) => ctx.userData ? {
-      type: 'chunk' as const,
-      content: JSON.stringify(ctx.userData),
-      partOf: 'user-input'
-    } : null
+  // データをinputsセクションにシンプルに出力
+  inputs: [
+    (ctx) => ctx.userData ? JSON.stringify(ctx.userData) : null
   ]
 };
 
