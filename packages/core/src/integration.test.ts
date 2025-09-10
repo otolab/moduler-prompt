@@ -11,10 +11,10 @@ describe('Core Integration Tests', () => {
           'You are a helpful assistant.',
           'Be concise and accurate.'
         ],
-        data: [
+        state: [
           'User input: Hello, world!'
         ],
-        output: [
+        cue: [
           'Generate a friendly response.'
         ]
       };
@@ -34,9 +34,19 @@ describe('Core Integration Tests', () => {
       
       expect(compiled.data).toHaveLength(1);
       expect(compiled.data[0].type).toBe('section');
+      expect(compiled.data[0]).toMatchObject({
+        type: 'section',
+        title: 'Current State',
+        items: ['User input: Hello, world!']
+      });
       
       expect(compiled.output).toHaveLength(1);
       expect(compiled.output[0].type).toBe('section');
+      expect(compiled.output[0]).toMatchObject({
+        type: 'section',
+        title: 'Output',
+        items: ['Generate a friendly response.']
+      });
     });
     
     it('should handle modules with context', () => {
@@ -46,17 +56,17 @@ describe('Core Integration Tests', () => {
       }
       
       const module: PromptModule<MyContext> = {
-        instructions: (ctx) => [
-          `You are assisting ${ctx.userName}.`,
+        instructions: [
+          (ctx) => `You are assisting ${ctx.userName}.`,
           {
             type: 'subsection',
             title: 'Task',
-            items: [`Perform ${ctx.taskType} task`]
+            items: [(ctx: MyContext) => `Perform ${ctx.taskType} task`]
           }
         ],
-        data: (ctx) => [
-          `User: ${ctx.userName}`,
-          `Request: ${ctx.taskType}`
+        state: [
+          (ctx) => `User: ${ctx.userName}`,
+          (ctx) => `Request: ${ctx.taskType}`
         ]
       };
       
@@ -86,66 +96,80 @@ describe('Core Integration Tests', () => {
   });
   
   describe('Complex Module with Elements', () => {
-    it('should handle various element types', () => {
+    it('should handle various element types via DynamicContent', () => {
       const module: PromptModule = {
         instructions: [
-          { type: 'text', content: 'System instruction' },
+          'System instruction',
           {
-            type: 'section',
+            type: 'subsection',
             title: 'Rules',
             items: ['Rule 1', 'Rule 2']
           }
         ],
-        data: [
-          {
+        state: [
+          () => ({
             type: 'material',
             id: 'doc-1',
             title: 'Documentation',
             content: 'API documentation content',
             usage: 100
-          },
-          {
+          }),
+          () => ({
             type: 'message',
             role: 'user',
             content: 'What is the weather?'
-          },
-          {
+          }),
+          () => ({
             type: 'message',
             role: 'assistant',
             content: 'I can help with weather information.'
-          }
+          })
         ],
-        output: [
-          {
+        cue: [
+          () => ({
             type: 'chunk',
             partOf: 'response.txt',
             index: 1,
             total: 3,
             content: 'First part of response'
-          }
+          })
         ]
       };
       
       const compiled = compile(module);
       
-      // Check instructions
-      expect(compiled.instructions).toHaveLength(2);
-      expect(compiled.instructions[0].type).toBe('text');
-      expect(compiled.instructions[1].type).toBe('section');
+      // Check instructions - should have 1 section with instruction and subsection
+      expect(compiled.instructions).toHaveLength(1);
+      expect(compiled.instructions[0].type).toBe('section');
+      const instructionSection = compiled.instructions[0];
+      if (instructionSection.type === 'section') {
+        expect(instructionSection.items).toContain('System instruction');
+        const rulesSubsection = instructionSection.items.find(
+          item => typeof item === 'object' && item.type === 'subsection' && item.title === 'Rules'
+        );
+        expect(rulesSubsection).toBeDefined();
+      }
       
-      // Check data
-      expect(compiled.data).toHaveLength(3);
-      expect(compiled.data[0].type).toBe('material');
-      expect(compiled.data[1].type).toBe('message');
-      expect(compiled.data[2].type).toBe('message');
+      // Check data - should have 1 section with formatted elements
+      expect(compiled.data).toHaveLength(1);
+      expect(compiled.data[0].type).toBe('section');
+      const dataSection = compiled.data[0];
+      if (dataSection.type === 'section') {
+        // DynamicContentが文字列に変換されているか確認
+        const items = dataSection.items as string[];
+        expect(items.some(item => item.includes('[Material: Documentation]'))).toBe(true);
+        expect(items.some(item => item.includes('[User]: What is the weather?'))).toBe(true);
+        expect(items.some(item => item.includes('[Assistant]: I can help with weather information.'))).toBe(true);
+      }
       
-      // Check output
+      // Check output - should have 1 section with formatted chunk
       expect(compiled.output).toHaveLength(1);
-      expect(compiled.output[0].type).toBe('chunk');
-      if (compiled.output[0].type === 'chunk') {
-        expect(compiled.output[0].partOf).toBe('response.txt');
-        expect(compiled.output[0].index).toBe(1);
-        expect(compiled.output[0].total).toBe(3);
+      expect(compiled.output[0].type).toBe('section');
+      const outputSection = compiled.output[0];
+      if (outputSection.type === 'section') {
+        const items = outputSection.items as string[];
+        expect(items.some(item => item.includes('[Chunk from response.txt]'))).toBe(true);
+        expect(items.some(item => item.includes('First part of response'))).toBe(true);
       }
     });
   });
@@ -157,15 +181,15 @@ describe('Core Integration Tests', () => {
           'Base instruction 1',
           'Base instruction 2'
         ],
-        data: ['Base data']
+        state: ['Base data']
       };
       
       const extensionModule: PromptModule = {
         instructions: [
           'Extension instruction'
         ],
-        data: ['Extension data'],
-        output: ['Generate output']
+        state: ['Extension data'],
+        cue: ['Generate output']
       };
       
       const merged = merge(baseModule, extensionModule);
@@ -273,7 +297,7 @@ describe('Core Integration Tests', () => {
           value1: 'hello',
           shared: 'from module1'
         }),
-        instructions: (ctx) => [`Value1: ${ctx.value1}, Shared: ${ctx.shared}`]
+        instructions: [(ctx: Context1) => `Value1: ${ctx.value1}, Shared: ${ctx.shared}`]
       };
       
       const module2: PromptModule<Context2> = {
@@ -281,7 +305,7 @@ describe('Core Integration Tests', () => {
           value2: 42,
           shared: 'from module2'
         }),
-        instructions: (ctx) => [`Value2: ${ctx.value2}, Shared: ${ctx.shared}`]
+        instructions: [(ctx: Context2) => `Value2: ${ctx.value2}, Shared: ${ctx.shared}`]
       };
       
       const merged = merge<MergedContext>(module1, module2);
@@ -300,15 +324,15 @@ describe('Core Integration Tests', () => {
   describe('Dynamic Content', () => {
     it('should resolve dynamic content functions', () => {
       const module: PromptModule<{ count: number }> = {
-        instructions: (ctx) => [
+        instructions: [
           'Static instruction',
-          () => `Dynamic instruction with count: ${ctx.count}`,
+          (ctx) => `Dynamic instruction with count: ${ctx.count}`,
           {
             type: 'subsection',
             title: 'Dynamic Subsection',
             items: [
-              () => `Item ${ctx.count}`,
-              () => `Item ${ctx.count + 1}`
+              (ctx) => `Item ${ctx.count}`,
+              (ctx) => `Item ${ctx.count + 1}`
             ]
           }
         ]
@@ -347,7 +371,7 @@ describe('Core Integration Tests', () => {
             items: ['Sub item 1']
           },
           'Regular string 1',
-          { type: 'text', content: 'Text element' },
+          'Text element',
           {
             type: 'subsection',
             title: 'Second Subsection',
@@ -364,8 +388,7 @@ describe('Core Integration Tests', () => {
       if (section.type === 'section') {
         // Check that regular items come before subsections
         const regularItems = section.items.filter(
-          item => typeof item === 'string' || 
-                  (typeof item === 'object' && item.type === 'text')
+          item => typeof item === 'string'
         );
         const subsections = section.items.filter(
           item => typeof item === 'object' && item.type === 'subsection'
@@ -401,8 +424,8 @@ describe('Core Integration Tests', () => {
           null as any,
           'Another valid instruction'
         ].filter(Boolean),
-        data: undefined,
-        output: null as any
+        state: undefined,
+        cue: null as any
       };
       
       const compiled = compile(module);
@@ -446,23 +469,25 @@ describe('Core Integration Tests', () => {
       }
       
       const codeReviewModule: PromptModule<TaskContext> = {
-        instructions: (ctx) => [
-          `Focus on ${ctx.language} best practices.`,
+        instructions: [
+          (ctx: TaskContext) => `Focus on ${ctx.language} best practices.`,
           {
             type: 'subsection',
             title: 'Focus Areas',
-            items: ctx.focusAreas
+            items: [
+              (ctx: TaskContext) => ctx.focusAreas
+            ]
           }
         ],
-        data: (ctx) => [
-          {
+        state: [
+          (ctx: TaskContext) => ({
             type: 'material',
             id: 'code-snippet',
             title: `${ctx.language} Code`,
             content: ctx.codeSnippet
-          }
+          })
         ],
-        output: [
+        cue: [
           'Provide a detailed code review with:',
           {
             type: 'subsection',
