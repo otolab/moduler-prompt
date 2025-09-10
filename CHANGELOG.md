@@ -39,6 +39,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - dialogue（対話処理）
   - summarize（要約処理）
 
+- **Sample Implementation**
+  - simple-chat（サンプル実装、非公開パッケージ）
+
 - **Documentation**
   - コンセプトと設計思想
   - アーキテクチャ詳細
