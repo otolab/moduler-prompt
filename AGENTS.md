@@ -4,18 +4,18 @@ AIアシスタントがコードベースを効率的に理解・操作するた
 
 ## プロジェクト概要
 
-プロンプトモジュールフレームワーク - 再利用可能なプロンプトコンポーネントをTypeScriptで構築
+プロンプトモジュールフレームワーク - 再利用可能なプロンプトコンポーネントをTypeScriptで構築。
 
-## 主要ファイル（クイックアクセス）
+## 主要ファイル
 
 ### コア実装
-- `packages/core/src/types.ts` - 型定義（PromptModule, Element, DynamicContent）
+- `packages/core/src/types.ts` - 型定義（PromptModule、Element、DynamicContent）
 - `packages/core/src/compile.ts` - モジュールのコンパイル処理
 - `packages/core/src/merge.ts` - モジュールのマージ処理
 
 ### ドライバー
 - `packages/driver/src/base-driver.ts` - 基底ドライバークラス
-- `packages/driver/src/*/` - 各AIサービス実装（openai, anthropic, vertexai, mlx等）
+- `packages/driver/src/*/` - 各AIサービス実装（openai、anthropic、vertexai、mlx等）
 
 ### ユーティリティ
 - `packages/utils/src/driver-registry/` - ドライバーレジストリ実装
@@ -37,16 +37,16 @@ npm run typecheck
 npm run lint
 ```
 
-## 主要概念（簡潔版）
+## 主要概念
 
 ### PromptModule
-- 標準セクション（objective, instructions, state, materials等）
+- 標準セクション（objective、instructions、state、materials等）
 - DynamicContent - 実行時のコンテキストベース生成
 - SimpleDynamicContent - SubSection専用の文字列生成
 
 ### Element階層
 - 最大2階層：Section → SubSection → string
-- 6種類の要素：Text, Message, Material, Chunk, Section, SubSection
+- 6種類の要素：Text、Message、Material、Chunk、Section、SubSection
 
 ### 処理フロー
 1. モジュール定義 → 2. マージ（必要に応じて） → 3. コンパイル → 4. AIドライバーで実行
@@ -194,19 +194,21 @@ npm run lint
   - preferMessageFormatフラグで形式選択
 
 ## テスト構成
-- ユニットテスト: `*.test.ts`（実装と同階層）
-- 統合テスト: `integration.test.ts`
-- E2Eテスト: `simple-chat/src/*.e2e.test.ts`
+- ユニットテスト：`*.test.ts`（実装と同階層）
+- 統合テスト：`integration.test.ts`
+- E2Eテスト：`simple-chat/src/*.e2e.test.ts`
 
 ## CI/CD
-- GitHub Actions: `.github/workflows/ci.yml`
+- GitHub Actions：`.github/workflows/ci.yml`
 - Node.js 20.x、自動テスト実行
+
+---
 
 ---
 
 # 詳細仕様
 
-以下、より詳細な仕様情報。通常の作業では上記のクイックアクセス情報で十分。
+通常の作業では上記情報で十分である。以下は詳細仕様。
 
 ## 使用例
 
