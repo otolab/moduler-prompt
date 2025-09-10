@@ -6,18 +6,18 @@ Moduler Promptフレームワークの使用例とサンプル設定ファイル
 
 ### driver-registry-config.yaml
 
-DriverRegistryで使用するドライバ設定ファイルのサンプルです。以下の内容を含みます：
+DriverRegistryで使用するドライバ設定ファイルのサンプル。以下の内容を含む：
 
-- **MLXローカルモデル**: Gemma、Llama、QWQ、Tanukiなどのローカル実行可能なモデル
-- **OpenAI**: GPT-4o、GPT-4o-miniなどのクラウドモデル
-- **Anthropic**: Claude 3.5 Sonnet、Haikuなどのモデル
-- **VertexAI**: Gemini 2.0 Flashなどのモデル
+- **MLXローカルモデル**：Gemma、Llama、QWQ、Tanukiなどのローカル実行可能なモデル
+- **OpenAI**：GPT-4o、GPT-4o-miniなどのクラウドモデル
+- **Anthropic**：Claude 3.5 Sonnet、Haikuなどのモデル
+- **VertexAI**：Gemini 2.0 Flashなどのモデル
 
-各モデルには以下の情報が定義されています：
-- 能力（capabilities）: streaming、local、japanese、codingなど
-- トークン制限: 入力・出力の最大トークン数
-- コスト情報: 1Kトークンあたりのコスト
-- 優先度: 自動選択時の優先順位
+各モデルには以下の情報が定義されている：
+- 能力（capabilities）：streaming、local、japanese、codingなど
+- トークン制限：入力・出力の最大トークン数
+- コスト情報：1Kトークンあたりのコスト
+- 優先度：自動選択時の優先順位
 
 ## 使用方法
 
@@ -81,4 +81,4 @@ drivers:
 
 ## サンプルアプリケーション
 
-実際の動作例は `packages/simple-chat` パッケージを参照してください。
+実際の動作例は `packages/simple-chat` パッケージを参照。

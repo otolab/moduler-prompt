@@ -2,27 +2,27 @@
 
 ## 概要
 
-`refs/`ディレクトリには、モジュラープロンプトフレームワークの既存実装が含まれています。主に`core`と`driver`の2つのパッケージから構成されています。
+`refs/`ディレクトリには、モジュラープロンプトフレームワークの既存実装が含まれている。主に`core`と`driver`の2つのパッケージから構成されている。
 
 ## パッケージ構成
 
 ### @moduler-prompt/core
 
-プロンプトモジュールの定義、マージ、ビルド機能を提供するコアパッケージです。
+プロンプトモジュールの定義、マージ、ビルド機能を提供するコアパッケージである。
 
 #### 主要な型定義（types.ts）
 
 ##### 基本型
-- **Message**: 会話メッセージ（role、content、usage等）
-- **Chunk**: 処理対象データの単位（partOf、content、usage）
-- **Material**: 参考資料（id、title、content、usage）
-- **Context**: 実行時コンテキスト（state、materials、chunks、messages等）
+- **Message**：会話メッセージ（role、content、usage等）
+- **Chunk**：処理対象データの単位（partOf、content、usage）
+- **Material**：参考資料（id、title、content、usage）
+- **Context**：実行時コンテキスト（state、materials、chunks、messages等）
 
 ##### プロンプト構造
-- **PromptModule**: セクション名をキーとしたプロンプト定義
-- **ChunkItem**: 構造化されたコンテンツアイテム
-- **SubSectionPrompt**: サブセクション定義
-- **Prompt**: ビルド済みプロンプト（instructions、data、output）
+- **PromptModule**：セクション名をキーとしたプロンプト定義
+- **ChunkItem**：構造化されたコンテンツアイテム
+- **SubSectionPrompt**：サブセクション定義
+- **Prompt**：ビルド済みプロンプト（instructions、data、output）
 
 #### セクション定義
 

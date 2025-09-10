@@ -1,6 +1,6 @@
-# Driver API リファレンス
+# Driver APIリファレンス
 
-`@moduler-prompt/driver`パッケージの完全なAPIリファレンス。
+`@moduler-prompt/driver`パッケージのAPIリファレンス。
 
 ## 目次
 
@@ -14,7 +14,7 @@
 
 ### AIDriver
 
-全てのドライバーが実装すべき基本インターフェース。
+すべてのドライバーが実装すべき基本インターフェース。
 
 ```typescript
 interface AIDriver {
@@ -30,7 +30,7 @@ interface AIDriver {
 
 | プロパティ | 型 | 説明 |
 |---------|---|------|
-| `preferMessageFormat` | `boolean` | メッセージ形式を優先するか（デフォルト: false） |
+| `preferMessageFormat` | `boolean` | メッセージ形式を優先するか（デフォルト：false） |
 
 #### メソッド
 
@@ -42,12 +42,12 @@ interface AIDriver {
 query(prompt: CompiledPrompt, options?: QueryOptions): Promise<QueryResult>
 ```
 
-**パラメータ:**
-- `prompt`: コンパイル済みのプロンプトモジュール
-- `options`: クエリオプション（温度、最大トークン数など）
+**パラメータ：**
+- `prompt`：コンパイル済みのプロンプトモジュール
+- `options`：クエリオプション（温度、最大トークン数など）
 
-**戻り値:**
-- `QueryResult`: レスポンス内容と使用状況
+**戻り値：**
+- `QueryResult`：レスポンス内容と使用状況
 
 ##### streamQuery()
 
@@ -57,12 +57,12 @@ query(prompt: CompiledPrompt, options?: QueryOptions): Promise<QueryResult>
 streamQuery(prompt: CompiledPrompt, options?: QueryOptions): AsyncIterable<string>
 ```
 
-**パラメータ:**
-- `prompt`: コンパイル済みのプロンプトモジュール
-- `options`: クエリオプション
+**パラメータ：**
+- `prompt`：コンパイル済みのプロンプトモジュール
+- `options`：クエリオプション
 
-**戻り値:**
-- `AsyncIterable<string>`: レスポンスのチャンク
+**戻り値：**
+- `AsyncIterable<string>`：レスポンスのチャンク
 
 ##### getFormatterOptions()
 
@@ -72,8 +72,8 @@ streamQuery(prompt: CompiledPrompt, options?: QueryOptions): AsyncIterable<strin
 getFormatterOptions(): FormatterOptions
 ```
 
-**戻り値:**
-- `FormatterOptions`: フォーマッター設定
+**戻り値：**
+- `FormatterOptions`：フォーマッター設定
 
 ##### close()
 
@@ -87,7 +87,7 @@ close(): Promise<void>
 
 ### BaseDriver
 
-全てのドライバー実装の基底クラス。
+すべてのドライバー実装の基底クラス。
 
 ```typescript
 abstract class BaseDriver implements AIDriver {
@@ -112,8 +112,8 @@ abstract class BaseDriver implements AIDriver {
 constructor(formatterOptions: FormatterOptions = {})
 ```
 
-**パラメータ:**
-- `formatterOptions`: プロンプトフォーマッティングオプション
+**パラメータ：**
+- `formatterOptions`：プロンプトフォーマッティングオプション
 
 #### 保護メソッド
 
@@ -429,7 +429,7 @@ async query(prompt: CompiledPrompt, options?: QueryOptions): Promise<QueryResult
 
 ### エラーハンドリング
 
-全てのドライバーは統一されたエラーハンドリングを実装：
+すべてのドライバーは統一されたエラーハンドリングを実装：
 
 ```typescript
 try {
