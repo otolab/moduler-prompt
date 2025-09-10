@@ -47,7 +47,7 @@ const module: PromptModule = {
   chunks: [
     (ctx) => ctx.userData?.map((data, index) => ({
       type: 'chunk' as const,
-      content: typeof data === 'string' ? data : JSON.stringify(data),
+      content: data,
       partOf: 'user-input',
       index
     }))
