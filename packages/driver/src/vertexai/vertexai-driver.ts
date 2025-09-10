@@ -172,7 +172,7 @@ export class VertexAIDriver extends BaseDriver {
       }
       
       if (s.items) {
-        result.items = convertSchema(s.items);
+        result.items = convertSchema(s.items as Record<string, unknown>);
       }
       
       return result as ResponseSchema;

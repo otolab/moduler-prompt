@@ -11,6 +11,17 @@ export default [
       parserOptions: {
         ecmaVersion: 2020,
         sourceType: 'module'
+      },
+      globals: {
+        console: 'readonly',
+        process: 'readonly',
+        Buffer: 'readonly',
+        __dirname: 'readonly',
+        __filename: 'readonly',
+        exports: 'readonly',
+        module: 'readonly',
+        require: 'readonly',
+        global: 'readonly'
       }
     },
     plugins: {

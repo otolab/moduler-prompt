@@ -11,7 +11,6 @@ import * as Drivers from '@moduler-prompt/driver';
 import type {
   DriverProvider,
   DriverCapability,
-  ModelDefinition,
   DriverConfig,
   RegistryConfig,
   DriverSelectionCriteria,
@@ -97,7 +96,7 @@ export class DriverRegistry implements IDriverRegistry {
   selectDriver(criteria: DriverSelectionCriteria): DriverSelectionResult | null {
     const candidates: DriverSelectionResult[] = [];
 
-    for (const [id, config] of this.drivers) {
+    for (const [, config] of this.drivers) {
       // 無効なドライバはスキップ
       if (!config.model.enabled) {
         continue;

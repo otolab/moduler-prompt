@@ -3,9 +3,8 @@
  */
 
 import { readFileSync } from 'fs';
-import { resolve } from 'path';
 import chalk from 'chalk';
-import { 
+import type { 
   DialogProfile, 
   ChatLog, 
   SimpleChatOptions 
@@ -40,7 +39,7 @@ async function getUserMessage(options: SimpleChatOptions): Promise<string> {
     try {
       const input = readFileSync(0, 'utf-8');
       return input.trim();
-    } catch (error) {
+    } catch {
       throw new Error('Failed to read from stdin');
     }
   }

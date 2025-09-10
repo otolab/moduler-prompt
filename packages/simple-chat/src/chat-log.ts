@@ -3,7 +3,7 @@
  */
 
 import { readFile, writeFile } from 'fs/promises';
-import { ChatLog, ChatLogEntry, DialogProfile } from './types.js';
+import type { ChatLog, ChatLogEntry, DialogProfile } from './types.js';
 
 /**
  * Create new chat log

@@ -2,13 +2,13 @@
  * AI chat functionality using Moduler Prompt
  */
 
-import { compile, PromptModule, createContext, merge } from '@moduler-prompt/core';
+import type { PromptModule} from '@moduler-prompt/core';
+import { compile, createContext, merge } from '@moduler-prompt/core';
 import { withMaterials, type MaterialContext } from '@moduler-prompt/process';
 import { type AIDriver, MlxDriver } from '@moduler-prompt/driver';
 import { DriverRegistry } from '@moduler-prompt/utils';
-import { DialogProfile, ChatLog } from './types.js';
+import type { DialogProfile, ChatLog } from './types.js';
 import chalk from 'chalk';
-import { readFile } from 'fs/promises';
 import { fileURLToPath } from 'url';
 import { dirname, join } from 'path';
 
@@ -111,7 +111,7 @@ async function initializeRegistry(): Promise<DriverRegistry> {
   
   try {
     await driverRegistry.loadConfig(configPath);
-  } catch (error) {
+  } catch {
     console.warn(chalk.yellow('Warning: drivers.yaml not found, using built-in defaults'));
     // デフォルトドライバを手動で登録
     driverRegistry.registerDriver({
