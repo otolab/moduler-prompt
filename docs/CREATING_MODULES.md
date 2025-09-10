@@ -207,7 +207,7 @@ const module: PromptModule<{ data: any[] }> = {
     (ctx) => ({
       type: 'message' as const,
       role: 'user' as const,
-      content: `Process these items: ${ctx.data.join(', ')}`
+      content: `Process these items: ${ctx.data.map(d => d.name).join(', ')}`
     })
   ]
 };

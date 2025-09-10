@@ -41,13 +41,23 @@
 const module: PromptModule = {
   objective: ['データを分析する'],
   instructions: ['重要な点を抽出'],
-  state: [(ctx) => `処理中: ${ctx.currentItem}`]  // 動的部分は関数として定義
+  state: [(ctx) => `処理中: ${ctx.currentItem}`],  // 動的部分は関数として定義
+  
+  // データをchunksとして出力
+  chunks: [
+    (ctx) => ctx.userData?.map((data, index) => ({
+      type: 'chunk' as const,
+      content: typeof data === 'string' ? data : JSON.stringify(data),
+      partOf: 'user-input',
+      index
+    }))
+  ]
 };
 
 // Context: 実行時のデータ（毎回異なる）
 const context = {
   currentItem: 'document.pdf',
-  userData: { ... }
+  userData: ['data1', 'data2', 'data3']
 };
 
 // Compile: ModuleとContextを結合して最終的なプロンプトを生成
