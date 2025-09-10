@@ -235,13 +235,13 @@ describe('DriverRegistry', () => {
         name: 'Test',
         model: {
           model: 'test',
-          provider: 'echo',
+          provider: 'unknown-provider' as any,  // 存在しないプロバイダー
           capabilities: [],
         },
       };
 
       await expect(registry.createDriver(config)).rejects.toThrow(
-        'No factory registered for provider: echo'
+        'No factory registered for provider: unknown-provider'
       );
     });
 
@@ -279,7 +279,7 @@ describe('DriverRegistry', () => {
         name: 'Test Driver',
         model: {
           model: 'test',
-          provider: 'echo',
+          provider: 'unknown-provider' as any,  // 存在しないプロバイダー
           capabilities: ['local', 'fast'],
         },
       });

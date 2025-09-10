@@ -32,7 +32,7 @@ describe('DefaultFormatter', () => {
         content: 'What is the weather?'
       };
       
-      expect(formatter.format(element)).toBe('**user**: What is the weather?');
+      expect(formatter.format(element)).toBe('<!-- begin of USER -->\nWhat is the weather?\n<!-- end of USER -->');
     });
     
     it('should format message with different roles', () => {
@@ -43,21 +43,21 @@ describe('DefaultFormatter', () => {
         role: 'user',
         content: 'Hello'
       };
-      expect(formatter.format(userMsg)).toBe('**user**: Hello');
+      expect(formatter.format(userMsg)).toBe('<!-- begin of USER -->\nHello\n<!-- end of USER -->');
       
       const assistantMsg: MessageElement = {
         type: 'message',
         role: 'assistant',
         content: 'Hi there'
       };
-      expect(formatter.format(assistantMsg)).toBe('**assistant**: Hi there');
+      expect(formatter.format(assistantMsg)).toBe('<!-- begin of ASSISTANT -->\nHi there\n<!-- end of ASSISTANT -->');
       
       const systemMsg: MessageElement = {
         type: 'message',
         role: 'system',
         content: 'You are helpful'
       };
-      expect(formatter.format(systemMsg)).toBe('**system**: You are helpful');
+      expect(formatter.format(systemMsg)).toBe('<!-- begin of SYSTEM -->\nYou are helpful\n<!-- end of SYSTEM -->');
     });
   });
   
