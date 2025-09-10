@@ -139,7 +139,7 @@ export async function createDriver(profile: DialogProfile, customRegistry?: Driv
   if (profile.model) {
     // 指定されたモデルのドライバを探す
     const drivers = registry.getAllDrivers();
-    const driver = drivers.find(d => d.model.model === profile.model);
+    const driver = drivers.find((d: any) => d.model.model === profile.model);
     
     if (driver) {
       return await registry.createDriver(driver);
