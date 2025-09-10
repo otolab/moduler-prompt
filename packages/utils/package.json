@@ -19,18 +19,24 @@
     "test": "vitest",
     "test:run": "vitest run",
     "test:watch": "vitest watch",
+    "lint": "eslint src",
+    "typecheck": "tsc --noEmit",
     "clean": "rm -rf dist"
   },
   "dependencies": {
     "@moduler-prompt/core": "*",
     "@moduler-prompt/driver": "*",
-    "js-yaml": "^4.1.0"
+    "js-yaml": "^4.1.0",
+    "merge-stream": "^2.0.0"
   },
   "devDependencies": {
     "@types/js-yaml": "^4.0.9",
     "@types/node": "^20.0.0",
+    "@typescript-eslint/eslint-plugin": "^8.43.0",
+    "@typescript-eslint/parser": "^8.43.0",
+    "eslint": "^9.35.0",
     "typescript": "^5.0.0",
-    "vitest": "^1.0.0"
+    "vitest": "^3.2.4"
   },
   "engines": {
     "node": ">=16.0.0"

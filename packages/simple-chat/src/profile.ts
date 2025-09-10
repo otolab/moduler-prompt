@@ -4,7 +4,7 @@
 
 import { readFile } from 'fs/promises';
 import yaml from 'js-yaml';
-import { DialogProfile } from './types.js';
+import type { DialogProfile } from './types.js';
 
 /**
  * Get default profile

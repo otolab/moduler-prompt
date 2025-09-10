@@ -51,11 +51,11 @@ export interface SectionElement<TContext = any> {
 }
 
 // サブセクション要素（第2階層）
-export interface SubSectionElement {
+export interface SubSectionElement<TContext = any> {
   type: 'subsection';
   content: string;
   title: string;
-  items: string[];
+  items: (string | SimpleDynamicContent<TContext>)[];
 }
 
 // 統合型
@@ -73,6 +73,15 @@ export type DynamicElement =
   | MessageElement 
   | MaterialElement 
   | ChunkElement;
+
+// シンプルな動的コンテンツ（文字列のみを生成）
+// SubSection内で使用される
+export type SimpleDynamicContent<TContext = any> = 
+  (context: TContext) => 
+    | string                    // 単純な文字列
+    | string[]                  // 文字列配列
+    | null                     // 何も返さない
+    | undefined;               // 何も返さない
 
 // コンテキストに基づいて動的に要素を生成
 // 利便性のため、文字列や文字列配列も直接返せるようにする

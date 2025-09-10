@@ -14,11 +14,11 @@
     "build": "tsc",
     "test": "vitest",
     "test:run": "vitest run",
-    "lint": "eslint src/**/*.ts"
+    "lint": "eslint src/**/*.ts",
+    "typecheck": "tsc --noEmit"
   },
   "dependencies": {
     "@moduler-prompt/core": "*",
-    "@moduler-prompt/utils": "*",
     "openai": "^5.19.1",
     "@anthropic-ai/sdk": "^0.61.0",
     "@google-cloud/vertexai": "^1.10.0",

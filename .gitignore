@@ -41,7 +41,6 @@ lerna-debug.log*
 .env.production.local
 
 # npm
-package-lock.json
 npm-debug.log
 
 # Yarn
