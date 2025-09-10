@@ -14,7 +14,8 @@
     "build": "tsc",
     "test": "vitest",
     "test:run": "vitest run",
-    "lint": "eslint src/**/*.ts"
+    "lint": "eslint src/**/*.ts",
+    "typecheck": "tsc --noEmit"
   },
   "dependencies": {
     "@moduler-prompt/core": "*",
