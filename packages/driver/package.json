@@ -15,7 +15,9 @@
     "test": "vitest",
     "test:run": "vitest run",
     "lint": "eslint src/**/*.ts",
-    "typecheck": "tsc --noEmit"
+    "typecheck": "tsc --noEmit",
+    "postinstall": "node scripts/setup-mlx.js || true",
+    "setup-mlx": "node scripts/setup-mlx.js"
   },
   "dependencies": {
     "@moduler-prompt/core": "*",
