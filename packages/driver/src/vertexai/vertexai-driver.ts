@@ -33,7 +33,7 @@ export interface VertexAIQueryOptions extends QueryOptions {
   topP?: number;
   topK?: number;
   responseFormat?: 'json' | 'text';
-  jsonSchema?: any;
+  jsonSchema?: unknown;
 }
 
 /**
@@ -145,7 +145,7 @@ export class VertexAIDriver extends BaseDriver {
   /**
    * Convert JSON Schema to VertexAI ResponseSchema
    */
-  private convertJsonSchema(schema: any): ResponseSchema | undefined {
+  private convertJsonSchema(schema: unknown): ResponseSchema | undefined {
     if (!schema) return undefined;
     
     const typeMap: Record<string, SchemaType> = {
@@ -157,17 +157,17 @@ export class VertexAIDriver extends BaseDriver {
       object: SchemaType.OBJECT
     };
     
-    const convertSchema = (s: any): ResponseSchema => {
-      const result: any = { ...s };
+    const convertSchema = (s: Record<string, any>): ResponseSchema => {
+      const result: Record<string, any> = { ...s };
       
-      if (s.type) {
+      if (s.type && typeof s.type === 'string') {
         result.type = typeMap[s.type] || SchemaType.STRING;
       }
       
       if (s.properties) {
         result.properties = Object.fromEntries(
           Object.entries(s.properties)
-            .map(([k, v]) => [k, convertSchema(v as any)])
+            .map(([k, v]) => [k, convertSchema(v as Record<string, any>)])
         );
       }
       
@@ -178,7 +178,7 @@ export class VertexAIDriver extends BaseDriver {
       return result as ResponseSchema;
     };
     
-    return convertSchema(schema);
+    return convertSchema(schema as Record<string, any>);
   }
   
   /**

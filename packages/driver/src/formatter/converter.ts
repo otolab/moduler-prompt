@@ -176,13 +176,14 @@ export function formatPromptAsMessages(
  */
 function elementToMessages(element: Element, formatter: ElementFormatter): ChatMessage[] {
   switch (element.type) {
-    case 'text':
+    case 'text': {
       return [{
         role: 'system',
         content: element.content
       }];
+    }
       
-    case 'message':
+    case 'message': {
       // Preserve original role
       const messageContent = typeof element.content === 'string' 
         ? element.content 
@@ -191,22 +192,25 @@ function elementToMessages(element: Element, formatter: ElementFormatter): ChatM
         role: element.role as 'system' | 'user' | 'assistant',
         content: messageContent
       }];
+    }
       
-    case 'section':
+    case 'section': {
       // Format section as markdown in a single message
       return [{
         role: 'system',
         content: formatter.format(element)
       }];
+    }
       
-    case 'subsection':
+    case 'subsection': {
       // Format subsection as markdown in a single message
       return [{
         role: 'system',
         content: formatter.format(element)
       }];
+    }
       
-    case 'material':
+    case 'material': {
       // Format material with clear structure
       const materialContent = typeof element.content === 'string' 
         ? element.content 
@@ -224,6 +228,7 @@ function elementToMessages(element: Element, formatter: ElementFormatter): ChatM
         role: 'system',
         content: materialLines.join('\n')
       }];
+    }
       
     case 'chunk': {
       // Format chunk with partOf, index, and total
@@ -247,9 +252,10 @@ function elementToMessages(element: Element, formatter: ElementFormatter): ChatM
       }];
     }
       
-    default:
+    default: {
       // Type guard exhaustive check
       const _exhaustive: never = element;
-      throw new Error(`Unknown element type: ${(_exhaustive as any).type}`);
+      throw new Error(`Unknown element type: ${(_exhaustive as unknown as { type: string }).type}`);
+    }
   }
 }

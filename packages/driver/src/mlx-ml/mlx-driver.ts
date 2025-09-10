@@ -79,7 +79,7 @@ export class MlxDriver extends BaseDriver {
     const checkElements = (elements: unknown[]): boolean => {
       if (!elements) return false;
       return elements.some(element => {
-        if (typeof element === 'object' && element !== null && element.type === 'message') {
+        if (typeof element === 'object' && element !== null && 'type' in element && element.type === 'message') {
           return true;
         }
         return false;

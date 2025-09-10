@@ -30,7 +30,7 @@ vi.mock('./process/index.js', () => ({
 // Mock model-specific processor
 vi.mock('./process/model-specific.js', () => ({
   createModelSpecificProcessor: vi.fn().mockReturnValue({
-    applyModelSpecificProcessing: (messages: any) => messages,
+    applyModelSpecificProcessing: (messages: unknown) => messages,
     applyCompletionSpecificProcessing: (prompt: string) => prompt
   })
 }));

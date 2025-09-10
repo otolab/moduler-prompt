@@ -76,7 +76,7 @@ describe('MlxDriver', () => {
 
       expect(tokens1).toBe(tokens2);
       // Verify getCapabilities was only called once
-      const process = (driver as any).process;
+      const process = (driver as unknown as { process: { getCapabilities: ReturnType<typeof vi.fn> } }).process;
       expect(process.getCapabilities).toHaveBeenCalledTimes(1);
     });
 
@@ -86,7 +86,7 @@ describe('MlxDriver', () => {
       });
 
       // Mock error
-      const process = (driver as any).process;
+      const process = (driver as unknown as { process: { getCapabilities: ReturnType<typeof vi.fn> } }).process;
       process.getCapabilities.mockRejectedValueOnce(new Error('Process error'));
 
       const consoleSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
@@ -111,7 +111,7 @@ describe('MlxDriver', () => {
         expect(tokens.eod).toHaveProperty('id');
 
         // Check paired token structure  
-        const systemToken = tokens.system as any;
+        const systemToken = tokens.system as { start: { text: string; id: number }; end: { text: string; id: number } };
         expect(systemToken).toHaveProperty('start');
         expect(systemToken).toHaveProperty('end');
         expect(systemToken.start).toHaveProperty('text');

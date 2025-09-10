@@ -1,5 +1,5 @@
 import type { CompiledPrompt } from '@moduler-prompt/core';
-import type { FormatterOptions, ChatMessage } from '../formatter/types.js';
+import type { FormatterOptions, ChatMessage, SpecialToken, SpecialTokenPair } from '../formatter/types.js';
 import { formatPrompt, formatPromptAsMessages } from '../formatter/converter.js';
 import type { AIDriver, QueryOptions, QueryResult } from '../types.js';
 
@@ -73,7 +73,7 @@ export abstract class BaseDriver implements AIDriver {
    * Get special tokens for this model
    * Default implementation returns null
    */
-  async getSpecialTokens(): Promise<Record<string, any> | null> {
+  async getSpecialTokens(): Promise<Record<string, SpecialToken | SpecialTokenPair> | null> {
     return null;
   }
   

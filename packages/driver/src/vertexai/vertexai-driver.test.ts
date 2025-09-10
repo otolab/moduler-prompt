@@ -158,7 +158,7 @@ describe('VertexAIDriver', () => {
   
   it('should handle errors gracefully', async () => {
     // Create a driver that will throw an error
-    const VertexAI = (await import('@google-cloud/vertexai')).VertexAI as any;
+    const VertexAI = (await import('@google-cloud/vertexai')).VertexAI as unknown as ReturnType<typeof vi.fn>;
     VertexAI.mockImplementationOnce(() => ({
       getGenerativeModel: vi.fn().mockReturnValue({
         generateContent: vi.fn().mockRejectedValue(new Error('API Error'))

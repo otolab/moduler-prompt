@@ -59,10 +59,11 @@ export class DefaultFormatter implements ElementFormatter {
         return this.formatSection(element);
       case 'subsection':
         return this.formatSubSection(element);
-      default:
+      default: {
         // Type guard exhaustive check
         const _exhaustive: never = element;
-        throw new Error(`Unknown element type: ${(_exhaustive as any).type}`);
+        throw new Error(`Unknown element type: ${(_exhaustive as unknown as { type: string }).type}`);
+      }
     }
   }
   

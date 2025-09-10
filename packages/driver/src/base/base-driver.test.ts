@@ -1,7 +1,7 @@
 import { describe, it, expect } from 'vitest';
 import { BaseDriver } from './base-driver.js';
 import type { CompiledPrompt } from '@moduler-prompt/core';
-import type { QueryOptions, QueryResult } from '../types.js';
+import type { QueryResult } from '../types.js';
 
 // Mock implementation for testing
 class MockDriver extends BaseDriver {
