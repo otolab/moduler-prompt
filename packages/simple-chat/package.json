@@ -34,5 +34,6 @@
     "eslint": "^9.35.0",
     "typescript": "^5.4.2",
     "vitest": "^3.2.4"
-  }
+  },
+  "private": true
 }

@@ -36,14 +36,17 @@
 ## ドキュメント
 
 ### ユーザー向けドキュメント
-- [プロンプトモジュール仕様](./docs/PROMPT_MODULE_SPECIFICATION.md) - モジュール仕様の詳細
+- [コンセプトと設計思想](./docs/CONCEPTS.md) - フレームワークの理念と課題解決アプローチ
+- [アーキテクチャ](./docs/ARCHITECTURE.md) - システム構成と技術詳細
+- [モジュールの作り方](./docs/CREATING_MODULES.md) - プロンプトモジュールの作成方法
+- [モジュールの使い方](./docs/USING_MODULES.md) - モジュールの実行とドライバー連携
+- [動作確認手順](./docs/VERIFYING_MODULES.md) - モジュールのテストとデバッグ
 - [ドライバーAPI](./docs/DRIVER_API.md) - AIモデルドライバーのAPI仕様
-- [コンセプトと設計思想](./docs/IDEAS.md) - フレームワークの理念
-- [使用例](./docs/examples/README.md) - 設定ファイルとサンプル
 
 ### 開発者向けドキュメント
-- [AGENTS.md](./AGENTS.md) - AIアシスタント向けの統合ガイド
+- [CLAUDE.md](./CLAUDE.md) - Claude Code向けのインデックス
 - [ドキュメント同期ガイド](./prompts/document-code-sync.md) - ドキュメントとコードの同期管理
+- [校正ガイド](./prompts/DOCUMENT_PROOFREADING_GUIDE.md) - ドキュメント校正の指針
 
 ## クイックスタート
 

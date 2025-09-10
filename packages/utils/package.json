@@ -46,5 +46,9 @@
     "url": "https://github.com/otolab/moduler-prompt.git",
     "directory": "packages/utils"
   },
-  "license": "MIT"
+  "license": "MIT",
+  "publishConfig": {
+    "access": "public",
+    "registry": "https://registry.npmjs.org/"
+  }
 }
