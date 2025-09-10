@@ -3,12 +3,10 @@
  */
 
 export interface DialogProfile {
-  /** Model name to use */
-  model: string;
+  /** Model name to use (optional, uses default if not specified) */
+  model?: string;
   /** System prompt */
   systemPrompt: string;
-  /** Driver type (default: mlx) */
-  driver?: string;
   /** Pre-message from assistant after system prompt */
   preMessage?: string;
   /** Resource files to include in system prompt (relative paths from profile) */
@@ -59,8 +57,6 @@ export interface SimpleChatOptions {
   showLogOnly?: boolean;
   /** Override model */
   model?: string;
-  /** Override driver */
-  driver?: string;
   /** Override temperature */
   temperature?: number;
   /** Override max tokens */

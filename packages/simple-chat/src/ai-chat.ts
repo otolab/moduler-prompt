@@ -4,9 +4,13 @@
 
 import { compile, PromptModule, createContext, merge } from '@moduler-prompt/core';
 import { withMaterials, type MaterialContext } from '@moduler-prompt/process';
-import { MlxDriver, type AIDriver } from '@moduler-prompt/driver';
+import { type AIDriver, MlxDriver } from '@moduler-prompt/driver';
+import { DriverRegistry } from '@moduler-prompt/utils';
 import { DialogProfile, ChatLog } from './types.js';
 import chalk from 'chalk';
+import { readFile } from 'fs/promises';
+import { fileURLToPath } from 'url';
+import { dirname, join } from 'path';
 
 /**
  * Chat context interface
@@ -87,14 +91,75 @@ const baseChatModule: PromptModule<ChatContext> = {
  */
 export const chatPromptModule = merge(baseChatModule, withMaterials);
 
+// ドライバレジストリのシングルトンインスタンス
+let driverRegistry: DriverRegistry | null = null;
+
 /**
- * Create MLX driver
+ * Initialize driver registry
  */
-export function createDriver(profile: DialogProfile): AIDriver {
-  return new MlxDriver({
-    model: profile.model,
-    defaultOptions: profile.options,
-  });
+async function initializeRegistry(): Promise<DriverRegistry> {
+  if (driverRegistry) {
+    return driverRegistry;
+  }
+  
+  driverRegistry = new DriverRegistry();
+  
+  // デフォルト設定ファイルを読み込み
+  const __filename = fileURLToPath(import.meta.url);
+  const __dirname = dirname(__filename);
+  const configPath = join(__dirname, '..', 'drivers.yaml');
+  
+  try {
+    await driverRegistry.loadConfig(configPath);
+  } catch (error) {
+    console.warn(chalk.yellow('Warning: drivers.yaml not found, using built-in defaults'));
+    // デフォルトドライバを手動で登録
+    driverRegistry.registerDriver({
+      id: 'mlx-default',
+      name: 'MLX Default',
+      model: {
+        model: 'mlx-community/gemma-3-270m-it-qat-4bit',
+        provider: 'mlx',
+        capabilities: ['local', 'streaming', 'chat'],
+        enabled: true
+      }
+    });
+  }
+  
+  return driverRegistry;
+}
+
+/**
+ * Create driver from profile
+ */
+export async function createDriver(profile: DialogProfile, customRegistry?: DriverRegistry): Promise<AIDriver> {
+  const registry = customRegistry || await initializeRegistry();
+  
+  // プロファイルで明示的にモデルが指定されている場合
+  if (profile.model) {
+    // 指定されたモデルのドライバを探す
+    const drivers = registry.getAllDrivers();
+    const driver = drivers.find(d => d.model.model === profile.model);
+    
+    if (driver) {
+      return await registry.createDriver(driver);
+    }
+    
+    // 見つからない場合は、MLXドライバとして直接作成を試みる
+    console.warn(chalk.yellow(`Model ${profile.model} not found in registry, attempting direct creation`));
+    return new MlxDriver({
+      model: profile.model,
+      defaultOptions: profile.options
+    });
+  }
+  
+  // モデルが指定されていない場合、デフォルトドライバを使用
+  const defaultDriver = registry.getDefaultDriver();
+  if (!defaultDriver) {
+    throw new Error('No default driver configured');
+  }
+  
+  return await registry.createDriver(defaultDriver);
 }
 
 /**
@@ -104,9 +169,10 @@ export async function performAIChat(
   profile: DialogProfile,
   chatLog: ChatLog,
   userMessage: string,
-  materials?: MaterialContext['materials']
+  materials?: MaterialContext['materials'],
+  customRegistry?: DriverRegistry
 ): Promise<{ response: string; driver: AIDriver }> {
-  const driver = createDriver(profile);
+  const driver = await createDriver(profile, customRegistry);
   
   try {
     // Create empty typed context from module

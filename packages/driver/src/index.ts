@@ -58,3 +58,20 @@ export {
   type VertexAIDriverConfig,
   type VertexAIQueryOptions
 } from './vertexai/vertexai-driver.js';
+
+// Formatter exports (moved from utils to avoid circular dependency)
+export type {
+  FormatterOptions,
+  ElementFormatter,
+  ChatMessage as FormatterChatMessage
+} from './formatter/types.js';
+
+export {
+  DefaultFormatter
+} from './formatter/formatter.js';
+
+export {
+  formatPrompt,
+  formatPromptAsMessages,
+  defaultFormatterTexts
+} from './formatter/converter.js';

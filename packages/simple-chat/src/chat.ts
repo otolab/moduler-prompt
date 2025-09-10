@@ -98,7 +98,6 @@ export async function runChat(options: SimpleChatOptions): Promise<void> {
   
   // Apply overrides
   if (options.model) profile.model = options.model;
-  if (options.driver) profile.driver = options.driver;
   if (options.temperature !== undefined) {
     profile.options = profile.options || {};
     profile.options.temperature = options.temperature;

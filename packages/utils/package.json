@@ -22,9 +22,12 @@
     "clean": "rm -rf dist"
   },
   "dependencies": {
-    "@moduler-prompt/core": "*"
+    "@moduler-prompt/core": "*",
+    "@moduler-prompt/driver": "*",
+    "js-yaml": "^4.1.0"
   },
   "devDependencies": {
+    "@types/js-yaml": "^4.0.9",
     "@types/node": "^20.0.0",
     "typescript": "^5.0.0",
     "vitest": "^1.0.0"

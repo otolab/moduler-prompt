@@ -79,7 +79,7 @@ describe('OpenAIDriver', () => {
   
   it('should handle errors gracefully', async () => {
     // Create a driver that will throw an error
-    const OpenAI = (await import('openai')).default as any;
+    const OpenAI = (await import('openai')).default as unknown as ReturnType<typeof vi.fn>;
     OpenAI.mockImplementationOnce(() => ({
       chat: {
         completions: {

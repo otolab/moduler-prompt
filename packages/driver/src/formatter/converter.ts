@@ -1,11 +1,6 @@
 import type { 
   Element, 
-  TextElement, 
   MessageElement, 
-  MaterialElement,
-  ChunkElement,
-  SectionElement,
-  SubSectionElement,
   CompiledPrompt
 } from '@moduler-prompt/core';
 import type { ChatMessage, FormatterOptions, ElementFormatter } from './types.js';
@@ -76,6 +71,31 @@ export function formatPrompt(
   }
   
   return sections.join(lineBreak);
+}
+
+/**
+ * Format messages directly without CompiledPrompt structure
+ * Used for MLX completion API when chat template is not available
+ */
+export function formatMessagesAsPrompt(
+  messages: ChatMessage[],
+  options: FormatterOptions = {}
+): string {
+  const formatter = options.formatter || new DefaultFormatter(options);
+  const { lineBreak = '\n' } = options;
+  const sections: string[] = [];
+  
+  for (const msg of messages) {
+    // Use formatter's message formatting with role-based markers
+    const element: MessageElement = {
+      type: 'message',
+      role: msg.role,
+      content: msg.content
+    };
+    sections.push(formatter.format(element));
+  }
+  
+  return sections.join(lineBreak + lineBreak);
 }
 
 /**
@@ -156,13 +176,14 @@ export function formatPromptAsMessages(
  */
 function elementToMessages(element: Element, formatter: ElementFormatter): ChatMessage[] {
   switch (element.type) {
-    case 'text':
+    case 'text': {
       return [{
         role: 'system',
         content: element.content
       }];
+    }
       
-    case 'message':
+    case 'message': {
       // Preserve original role
       const messageContent = typeof element.content === 'string' 
         ? element.content 
@@ -171,22 +192,25 @@ function elementToMessages(element: Element, formatter: ElementFormatter): ChatM
         role: element.role as 'system' | 'user' | 'assistant',
         content: messageContent
       }];
+    }
       
-    case 'section':
+    case 'section': {
       // Format section as markdown in a single message
       return [{
         role: 'system',
         content: formatter.format(element)
       }];
+    }
       
-    case 'subsection':
+    case 'subsection': {
       // Format subsection as markdown in a single message
       return [{
         role: 'system',
         content: formatter.format(element)
       }];
+    }
       
-    case 'material':
+    case 'material': {
       // Format material with clear structure
       const materialContent = typeof element.content === 'string' 
         ? element.content 
@@ -204,8 +228,9 @@ function elementToMessages(element: Element, formatter: ElementFormatter): ChatM
         role: 'system',
         content: materialLines.join('\n')
       }];
+    }
       
-    case 'chunk':
+    case 'chunk': {
       // Format chunk with partOf, index, and total
       const chunkContent = typeof element.content === 'string' 
         ? element.content 
@@ -225,10 +250,12 @@ function elementToMessages(element: Element, formatter: ElementFormatter): ChatM
         role: 'system',
         content: `${chunkHeader}\n\n${chunkContent}`
       }];
+    }
       
-    default:
+    default: {
       // Type guard exhaustive check
       const _exhaustive: never = element;
-      throw new Error(`Unknown element type: ${(_exhaustive as any).type}`);
+      throw new Error(`Unknown element type: ${(_exhaustive as unknown as { type: string }).type}`);
+    }
   }
 }

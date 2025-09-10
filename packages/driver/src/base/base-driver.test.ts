@@ -1,11 +1,11 @@
-import { describe, it, expect, vi } from 'vitest';
+import { describe, it, expect } from 'vitest';
 import { BaseDriver } from './base-driver.js';
 import type { CompiledPrompt } from '@moduler-prompt/core';
-import type { QueryOptions, QueryResult } from '../types.js';
+import type { QueryResult } from '../types.js';
 
 // Mock implementation for testing
 class MockDriver extends BaseDriver {
-  async queryWithText(text: string, options?: QueryOptions): Promise<QueryResult> {
+  async queryWithText(text: string): Promise<QueryResult> {
     return {
       content: `Response to: ${text}`,
       finishReason: 'stop'
@@ -34,7 +34,7 @@ describe('BaseDriver', () => {
     class MessageMockDriver extends BaseDriver {
       preferMessageFormat = true;
       
-      async queryWithMessages(messages: any[], options?: QueryOptions): Promise<QueryResult> {
+      async queryWithMessages(messages: unknown[]): Promise<QueryResult> {
         return {
           content: `Messages: ${messages.length}`,
           finishReason: 'stop'
