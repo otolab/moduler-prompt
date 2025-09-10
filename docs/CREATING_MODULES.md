@@ -89,6 +89,58 @@ const myModule: PromptModule<MyContext> = {
 };
 ```
 
+## コンパイルプロセス
+
+### PromptModuleからCompiledPromptへの変換
+
+モジュールは`compile`関数により、最終的な構造化プロンプト（CompiledPrompt）に変換される：
+
+```
+PromptModule（定義） → compile(module, context) → CompiledPrompt（Element配列）
+```
+
+CompiledPromptは3つのセクションを持つ：
+```typescript
+interface CompiledPrompt {
+  instructions: Element[];  // 指示要素の配列
+  data: Element[];         // データ要素の配列
+  output: Element[];       // 出力要素の配列
+}
+```
+
+### Element型
+
+Elementは、プロンプトを構成する基本要素：
+
+```typescript
+type Element = 
+  | TextElement        // テキスト: { type: 'text', content: string }
+  | MessageElement     // メッセージ: { type: 'message', role: 'system'|'assistant'|'user', content: string }
+  | MaterialElement    // 資料: { type: 'material', id: string, title: string, content: string }
+  | ChunkElement      // チャンク: { type: 'chunk', content: string, partOf: string, index?: number }
+  | SectionElement    // セクション: { type: 'section', title: string, content: string, items: string[] }
+  | SubSectionElement // サブセクション: { type: 'subsection', title: string, items: string[] }
+```
+
+### 標準セクションの自動処理
+
+標準セクション（objective、instructions等）は、compile時に自動的にSectionElementに変換される：
+
+```typescript
+const module: PromptModule = {
+  objective: ['AIの目的'],  // 文字列として定義
+  instructions: ['処理手順']
+};
+
+// compile後は自動的にSectionElementに
+// {
+//   type: 'section',
+//   title: 'Objective and Role',  // 自動設定
+//   content: '',
+//   items: ['AIの目的']
+// }
+```
+
 ## DynamicContent（動的コンテンツ）
 
 ### 基本的な使い方
@@ -99,10 +151,18 @@ const myModule: PromptModule<MyContext> = {
 type DynamicContent<TContext> = (context: TContext) => 
   | string                    // 単純な文字列
   | string[]                  // 文字列配列
-  | DynamicElement           // Element
+  | DynamicElement           // 動的に生成可能なElement
   | DynamicElement[]         // Element配列
   | null                     // 何も返さない
   | undefined;               // 何も返さない
+
+// DynamicElement: 動的に生成可能な要素（構造要素は除く）
+type DynamicElement = 
+  | TextElement
+  | MessageElement
+  | MaterialElement
+  | ChunkElement;
+  // SectionElementとSubSectionElementは生成不可（構造は静的）
 ```
 
 ### 実装例
@@ -110,21 +170,21 @@ type DynamicContent<TContext> = (context: TContext) =>
 ```typescript
 const module: PromptModule<{ data: any[] }> = {
   state: [
-    // 条件付きコンテンツ
+    // 文字列を返す
     (ctx) => ctx.data.length > 0 ? 'データあり' : 'データなし',
     
-    // 配列の展開
+    // 文字列配列を返す（自動展開される）
     (ctx) => ctx.data.map((d, i) => `${i + 1}. ${d.name}`)
   ],
   
-  // データをmaterialsセクションに含める
+  // MaterialElementを返す
   materials: [
     (ctx) => {
       if (!ctx.data || ctx.data.length === 0) return null;
       
-      // Material要素として返す
+      // MaterialElement型のオブジェクトを返す
       return {
-        type: 'material',
+        type: 'material' as const,
         id: 'input-data',
         title: 'Input Data',
         content: JSON.stringify(ctx.data, null, 2)
@@ -132,7 +192,7 @@ const module: PromptModule<{ data: any[] }> = {
     }
   ],
   
-  // データをchunksセクションに含める（別の方法）
+  // ChunkElement配列を返す
   chunks: [
     (ctx) => ctx.data?.map((item, index) => ({
       type: 'chunk' as const,
@@ -140,6 +200,15 @@ const module: PromptModule<{ data: any[] }> = {
       partOf: 'dataset',
       index
     }))
+  ],
+  
+  // MessageElementを使った例
+  messages: [
+    (ctx) => ({
+      type: 'message' as const,
+      role: 'user' as const,
+      content: `Process these items: ${ctx.data.join(', ')}`
+    })
   ]
 };
 ```
@@ -291,11 +360,7 @@ const dbModule = merge(baseDatabaseModule, errorHandlingModule);
 
 - DynamicContentはSection/SubSectionを生成不可
 - 構造は静的に定義する必要がある
-
-### 標準セクションの自動処理
-
-- 標準セクション名を使用すると自動的にSectionElementに変換
-- titleは自動的に設定される
+- 生成可能なのは、TextElement、MessageElement、MaterialElement、ChunkElementのみ
 
 ## 次のステップ
 
