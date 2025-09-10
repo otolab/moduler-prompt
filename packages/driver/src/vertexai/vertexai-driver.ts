@@ -157,8 +157,8 @@ export class VertexAIDriver extends BaseDriver {
       object: SchemaType.OBJECT
     };
     
-    const convertSchema = (s: Record<string, any>): ResponseSchema => {
-      const result: Record<string, any> = { ...s };
+    const convertSchema = (s: Record<string, unknown>): ResponseSchema => {
+      const result: Record<string, unknown> = { ...s };
       
       if (s.type && typeof s.type === 'string') {
         result.type = typeMap[s.type] || SchemaType.STRING;
@@ -167,7 +167,7 @@ export class VertexAIDriver extends BaseDriver {
       if (s.properties) {
         result.properties = Object.fromEntries(
           Object.entries(s.properties)
-            .map(([k, v]) => [k, convertSchema(v as Record<string, any>)])
+            .map(([k, v]) => [k, convertSchema(v as Record<string, unknown>)])
         );
       }
       
@@ -178,7 +178,7 @@ export class VertexAIDriver extends BaseDriver {
       return result as ResponseSchema;
     };
     
-    return convertSchema(schema as Record<string, any>);
+    return convertSchema(schema as Record<string, unknown>);
   }
   
   /**
