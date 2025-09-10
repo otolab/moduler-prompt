@@ -23,8 +23,19 @@ jobs:
     - name: Install dependencies
       run: npm ci
     
-    - name: Build all packages
-      run: npm run build
+    - name: Build core package
+      run: npm run build -w @moduler-prompt/core
+    
+    - name: Build driver package
+      run: npm run build -w @moduler-prompt/driver
+    
+    - name: Build utils and process packages
+      run: |
+        npm run build -w @moduler-prompt/utils
+        npm run build -w @moduler-prompt/process
+    
+    - name: Build simple-chat package
+      run: npm run build -w @moduler-prompt/simple-chat
     
     - name: Run linter
       run: npm run lint
