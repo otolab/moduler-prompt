@@ -142,6 +142,29 @@ Ollamaドライバーは内部的にOpenAIドライバーを使用します（Ol
 
 Appleシリコン最適化モデル用のPythonベースのドライバー。
 
+#### セットアップ
+
+MLXドライバーは初回インストール時に自動的にPython環境をセットアップします：
+
+```bash
+npm install @moduler-prompt/driver
+# postinstallスクリプトが自動的にPython環境をセットアップ
+```
+
+手動セットアップが必要な場合：
+
+```bash
+cd node_modules/@moduler-prompt/driver
+npm run setup-mlx
+```
+
+**前提条件:**
+- Python 3.11以上
+- Apple Silicon Mac (M1/M2/M3)
+- uv（Pythonパッケージマネージャー、自動インストールされます）
+
+#### 使用方法
+
 ```typescript
 import { MlxDriver } from '@moduler-prompt/driver';
 
@@ -169,6 +192,7 @@ await driver.close();
 **注意事項:**
 - Pythonサブプロセスを使用するため、Python環境とMLXのインストールが必要
 - 使用後は必ず`close()`を呼び出してプロセスを終了
+- 初回実行時にモデルのダウンロードが発生する場合があります
 
 ### テストドライバー
 
