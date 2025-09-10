@@ -45,12 +45,11 @@ const module: PromptModule = {
   
   // データをchunksとして出力
   chunks: [
-    (ctx) => ctx.userData?.map((data, index) => ({
+    (ctx) => ctx.userData ? {
       type: 'chunk' as const,
-      content: data,
-      partOf: 'user-input',
-      index
-    }))
+      content: JSON.stringify(ctx.userData),
+      partOf: 'user-input'
+    } : null
   ]
 };
 
