@@ -1,78 +1,218 @@
-# AI Agent向けインデックス
+# Moduler Prompt - AI Assistant Guide
 
-このドキュメントは、AI Agentが効率的にコードベースを理解・操作するためのインデックスです。
+AIアシスタントがコードベースを効率的に理解・操作するための統合ガイド。
 
 ## プロジェクト概要
 
-モジュラープロンプトフレームワーク - プロンプトを再利用可能なモジュールとして構築・管理するTypeScriptフレームワーク
+プロンプトモジュールフレームワーク - 再利用可能なプロンプトコンポーネントをTypeScriptで構築
+
+## 主要ファイル（クイックアクセス）
+
+### コア実装
+- `packages/core/src/types.ts` - 型定義（PromptModule, Element, DynamicContent）
+- `packages/core/src/compile.ts` - モジュールのコンパイル処理
+- `packages/core/src/merge.ts` - モジュールのマージ処理
+
+### ドライバー
+- `packages/driver/src/base-driver.ts` - 基底ドライバークラス
+- `packages/driver/src/*/` - 各AIサービス実装（openai, anthropic, vertexai, mlx等）
+
+### ユーティリティ
+- `packages/utils/src/driver-registry/` - ドライバーレジストリ実装
+- `packages/utils/src/formatter/` - プロンプトフォーマッター
+
+## 開発コマンド
+
+```bash
+# ビルド
+npm run build
+
+# テスト
+npm test
+
+# 型チェック
+npm run typecheck
+
+# Lint
+npm run lint
+```
+
+## 主要概念（簡潔版）
+
+### PromptModule
+- 標準セクション（objective, instructions, state, materials等）
+- DynamicContent - 実行時のコンテキストベース生成
+- SimpleDynamicContent - SubSection専用の文字列生成
+
+### Element階層
+- 最大2階層：Section → SubSection → string
+- 6種類の要素：Text, Message, Material, Chunk, Section, SubSection
+
+### 処理フロー
+1. モジュール定義 → 2. マージ（必要に応じて） → 3. コンパイル → 4. AIドライバーで実行
 
 ## コア機能
 
 ### 型定義 (`packages/core/src/types.ts`)
-- `PromptModule<TContext>` - 標準セクションは自動的にSectionElementになる
-- `Element` - 6種類の要素型（Text, Message, Material, Chunk, Section, SubSection）
-- `DynamicContent` - 動的コンテンツ生成（文字列/文字列配列/Element対応、Section/SubSection生成不可）
-- `SectionContent` - 標準セクションの内容型（string | SubSectionElement | DynamicContent）
+
+#### 主要型
+- `PromptModule<TContext>` - プロンプトモジュールの基本型
+- `Element` - 6種類の要素型
+  - `TextElement` - テキスト要素
+  - `MessageElement` - メッセージ要素（role: system/assistant/user）
+  - `MaterialElement` - 資料要素（id, title, content）
+  - `ChunkElement` - 分割データ要素（partOf, index, total）
+  - `SectionElement` - セクション要素（第1階層）
+  - `SubSectionElement` - サブセクション要素（第2階層）
+
+#### 動的コンテンツ
+- `DynamicContent<TContext>` - 動的コンテンツ生成
+  - 文字列/文字列配列/Elementを返す関数
+  - Section/SubSectionは生成不可
+- `SimpleDynamicContent<TContext>` - SubSection専用動的コンテンツ
+  - 文字列/文字列配列のみを返す関数
+- `SectionContent<TContext>` - 標準セクションの内容型
+  - `(string | SubSectionElement | DynamicContent<TContext>)[]`
 
 ### マージ (`packages/core/src/merge.ts`)
-- `merge(...modules)` - 複数モジュールの統合
+
+#### 基本動作
+- `merge<TContext>(...modules)` - 複数モジュールを統合
 - 同名サブセクションのitemsを結合
 - createContextは全て実行して結果をマージ（後の値で上書き）
-- 順序制御: 通常要素 → サブセクション
+
+#### 順序制御
+- セクション内要素の順序: 通常要素 → サブセクション
+- 重複を許容（セパレータ、強調、マーカーなどの意図的な重複）
 
 ### コンパイル (`packages/core/src/compile.ts`)
-- `compile(module, context)` - 標準セクションを自動的にSectionElementに変換
-- DynamicContentを実行して変換:
-  - 文字列 → そのまま使用
-  - 文字列配列 → 展開して使用（可変長データ対応）
-  - Element/Element配列 → 文字列に変換
-- セクション内の要素を並び替え（通常要素 → サブセクション）
-- セクション分類（instructions/data/output）
-- 重複を許容（セパレータ、強調、マーカーなどの意図的な重複をサポート）
 
-## 重要な制約
+#### 基本動作
+- `compile(module, context?)` - モジュールをCompiledPromptに変換
+- context未指定時は`module.createContext()`を自動実行
+- 標準セクションを自動的にSectionElementに変換
 
-1. **階層制限**: 最大2階層（Section → SubSection → string）
-2. **動的コンテンツ制約**: DynamicContentはSection/SubSectionを生成不可
-3. **要素順序**: セクション内でも通常要素 → サブセクションの順序
-4. **標準セクション**: 自動的にSectionElementとして処理される
+#### DynamicContent変換ルール
+- 文字列 → そのまま使用
+- 文字列配列 → 展開して使用（可変長データ対応）  
+- Element → 文字列に変換
+- Element配列 → 各要素を文字列に変換
+- null/undefined → 空配列
 
-## テスト
+#### SimpleDynamicContent変換ルール（SubSection専用）
+- 文字列 → そのまま使用
+- 文字列配列 → 展開して使用
+- null/undefined → 空配列
 
-- `*.test.ts` - 実装と同階層にユニットテスト配置
-- 包括的なマージ・コンパイルテスト実装済み
+#### セクション分類
+- instructions: objective, terms, methodology, instructions, guidelines, preparationNote
+- data: state, materials, chunks, messages
+- output: cue, schema
+
+## 重要な制約とルール
+
+### 階層構造
+1. **最大2階層**: Section → SubSection → string
+2. **Section内要素順序**: 通常要素 → サブセクション
+
+### 動的コンテンツ制約
+1. **DynamicContent**: Section/SubSectionを生成不可
+2. **SimpleDynamicContent**: SubSection内専用、文字列のみ生成
+
+### コンパイル時処理
+1. **標準セクション自動変換**: 標準セクションはSectionElementに自動変換
+2. **重複許容**: 意図的な重複（セパレータ等）をサポート
+
+## 関連ドキュメント
+
+### 仕様書
+- [プロンプトモジュール仕様v2](./docs/PROMPT_MODULE_SPEC_V2.md)
+- [旧実装分析](./docs/EXISTING_IMPLEMENTATION.md)
+
+### ガイド
+- [はじめに](./docs/GETTING_STARTED.md)
+- [APIリファレンス](./docs/API.md)
+- [ドキュメント同期](./prompts/document-code-sync.md)
 
 ## パッケージ構成
 
-- `@moduler-prompt/core` - コア機能（型定義、マージ、コンパイル）
-- `@moduler-prompt/process` - ストリーム処理とマテリアル管理モジュール
-- `@moduler-prompt/utils` - フォーマッターとコンバーター（テキスト/メッセージ形式変換）
-- `@moduler-prompt/driver` - AIモデルドライバー（OpenAI, Anthropic, VertexAI, Ollama, MLX ML）
+### コアパッケージ
+- `@moduler-prompt/core` - コア機能
+  - 型定義（PromptModule, Element, DynamicContent）
+  - マージ機能（モジュール統合）
+  - コンパイル機能（モジュール変換）
 
-## ドライバー機能 (`packages/driver/`)
+### ドライバーパッケージ
+- `@moduler-prompt/driver` - AIモデルドライバー
+  - OpenAI、Anthropic、VertexAI、Ollama、MLX
+  - 統一インターフェースとストリーミングサポート
+
+### ユーティリティパッケージ
+- `@moduler-prompt/utils` - ユーティリティ機能
+  - ドライバーレジストリ（動的ドライバー選択）
+  - フォーマッター（テキスト/メッセージ形式変換）
+
+### 処理パッケージ
+- `@moduler-prompt/process` - ストリーム処理
+  - マテリアル管理モジュール
+  - チャンク処理モジュール
+
+## ドライバーアーキテクチャ
 
 ### 利用可能なドライバー
-- **OpenAIDriver** - OpenAI API（GPT-4, GPT-3.5）
-- **AnthropicDriver** - Anthropic Claude API
-- **VertexAIDriver** - Google Cloud Vertex AI（Gemini）
-- **OllamaDriver** - ローカルLLM（OpenAI互換）
-- **MlxDriver** - Apple Silicon最適化モデル（Pythonサブプロセス）
-- **TestDriver** - テスト用モックドライバー
 
-### ドライバーアーキテクチャ
-- `BaseDriver` - 全ドライバーの基底クラス
-- プロンプト生成責任の統合（formatPrompt/formatPromptAsMessages）
-- 統一されたエラーハンドリングとストリーミングサポート
-- `preferMessageFormat`フラグによる形式選択
+#### クラウドサービス
+- **OpenAIDriver** (`packages/driver/src/openai/`)
+  - GPT-4, GPT-3.5モデル対応
+  - ストリーミングサポート
+- **AnthropicDriver** (`packages/driver/src/anthropic/`)
+  - Claudeモデル対応
+  - ストリーミングサポート
+- **VertexAIDriver** (`packages/driver/src/vertexai/`)
+  - Google Cloud Vertex AI（Gemini）
+  - ストリーミングサポート
 
-## 主要ドキュメント
+#### ローカル実行
+- **OllamaDriver** (`packages/driver/src/ollama/`)
+  - ローカルLLM（OpenAI互換）
+- **MlxDriver** (`packages/driver/src/mlx/`)
+  - Apple Silicon最適化
+  - Pythonサブプロセス経由
+  - ModelSpecシステムによるchat/completion選択
 
-- [仕様書](./docs/PROMPT_MODULE_SPECIFICATION.md)
+#### テスト用
+- **TestDriver** (`packages/driver/src/test-driver.ts`)
+  - モックレスポンス
+  - テスト用途
 
-## DynamicContentの使用例
+### 基底クラス設計
+- **BaseDriver** (`packages/driver/src/base-driver.ts`)
+  - 全ドライバーの基底クラス
+  - プロンプト生成責任の統合
+  - formatPrompt: テキスト形式生成
+  - formatPromptAsMessages: メッセージ形式生成
+  - preferMessageFormatフラグで形式選択
+
+## テスト構成
+- ユニットテスト: `*.test.ts`（実装と同階層）
+- 統合テスト: `integration.test.ts`
+- E2Eテスト: `simple-chat/src/*.e2e.test.ts`
+
+## CI/CD
+- GitHub Actions: `.github/workflows/ci.yml`
+- Node.js 20.x、自動テスト実行
+
+---
+
+# 詳細仕様
+
+以下、より詳細な仕様情報。通常の作業では上記のクイックアクセス情報で十分。
+
+## 使用例
+
+### DynamicContentの基本使用
 
 ```typescript
-// 簡潔な記述が可能
 const module: PromptModule<{ items: string[] }> = {
   state: [
     // 文字列を直接返す
@@ -82,7 +222,35 @@ const module: PromptModule<{ items: string[] }> = {
     (ctx) => ctx.items.map(item => `- ${item}`),
     
     // 条件付きコンテンツ
-    (ctx) => ctx.items.length > 0 ? '処理開始' : null
+    (ctx) => ctx.items.length > 0 ? '処理開始' : null,
+    
+    // Elementを返す
+    (ctx) => ({
+      type: 'material',
+      id: 'data',
+      title: 'Input Data',
+      content: ctx.items.join('\n')
+    })
+  ]
+};
+```
+
+### SimpleDynamicContent（SubSection専用）
+
+```typescript
+const module: PromptModule<{ rules: string[] }> = {
+  instructions: [
+    {
+      type: 'subsection',
+      title: 'Rules',
+      items: [
+        '基本ルール:',
+        // SimpleDynamicContent: 文字列配列を返す
+        (ctx) => ctx.rules,
+        // 条件付きで追加
+        (ctx) => ctx.rules.length > 5 ? '※ ルールが多いため注意' : null
+      ]
+    }
   ]
 };
 ```
