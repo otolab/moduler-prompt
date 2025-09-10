@@ -17,6 +17,13 @@ eslint.config.js
 .gitignore
 .env*
 
+# Python
+.venv/
+venv/
+__pycache__/
+*.pyc
+*.egg-info/
+
 # その他
 *.log
 node_modules/
