@@ -58,6 +58,21 @@ const myModule: PromptModule<MyContext> = {
     (ctx) => ctx.items.length > 0 ? `処理対象: ${ctx.items.length}件` : null
   ],
   
+  // データをchunksセクションに含める
+  chunks: [
+    (ctx) => {
+      if (!ctx.items || ctx.items.length === 0) return null;
+      
+      // 各アイテムをChunkElementとして返す
+      return ctx.items.map((item, index) => ({
+        type: 'chunk' as const,
+        content: item,
+        partOf: 'input-data',
+        index
+      }));
+    }
+  ],
+  
   // サブセクション
   instructions: [
     '以下の手順で処理を実行：',
@@ -65,9 +80,9 @@ const myModule: PromptModule<MyContext> = {
       type: 'subsection',
       title: 'Processing Steps',
       items: [
-        'データの検証',
+        'Input Chunksのデータを検証',
         (ctx) => ctx.options?.verbose ? 'デバッグ情報を出力' : null,
-        '結果の生成'
+        '処理結果を生成'
       ]
     }
   ]
@@ -99,15 +114,32 @@ const module: PromptModule<{ data: any[] }> = {
     (ctx) => ctx.data.length > 0 ? 'データあり' : 'データなし',
     
     // 配列の展開
-    (ctx) => ctx.data.map((d, i) => `${i + 1}. ${d.name}`),
-    
-    // Element生成
-    (ctx) => ({
-      type: 'material',
-      id: 'summary',
-      title: 'データサマリー',
-      content: JSON.stringify(ctx.data, null, 2)
-    })
+    (ctx) => ctx.data.map((d, i) => `${i + 1}. ${d.name}`)
+  ],
+  
+  // データをmaterialsセクションに含める
+  materials: [
+    (ctx) => {
+      if (!ctx.data || ctx.data.length === 0) return null;
+      
+      // Material要素として返す
+      return {
+        type: 'material',
+        id: 'input-data',
+        title: 'Input Data',
+        content: JSON.stringify(ctx.data, null, 2)
+      };
+    }
+  ],
+  
+  // データをchunksセクションに含める（別の方法）
+  chunks: [
+    (ctx) => ctx.data?.map((item, index) => ({
+      type: 'chunk' as const,
+      content: typeof item === 'string' ? item : JSON.stringify(item),
+      partOf: 'dataset',
+      index
+    }))
   ]
 };
 ```
@@ -224,8 +256,27 @@ const errorHandlingModule: PromptModule = {
   ]
 };
 
+// データを扱う汎用モジュール（実際のprocessパッケージのwithMaterialsを参考）
+const withDataModule: PromptModule<{ inputData?: any[] }> = {
+  materials: [
+    (ctx) => {
+      if (!ctx.inputData || ctx.inputData.length === 0) return null;
+      
+      return ctx.inputData.map((data, index) => ({
+        type: 'material' as const,
+        id: `data-${index}`,
+        title: `Data Item ${index + 1}`,
+        content: typeof data === 'string' ? data : JSON.stringify(data)
+      }));
+    }
+  ],
+  instructions: [
+    'Process the data provided in the Prepared Materials section'
+  ]
+};
+
 // 各機能モジュールと組み合わせて使用
-const apiModule = merge(baseApiModule, errorHandlingModule);
+const apiModule = merge(baseApiModule, errorHandlingModule, withDataModule);
 const dbModule = merge(baseDatabaseModule, errorHandlingModule);
 ```
 
