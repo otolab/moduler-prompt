@@ -10,6 +10,11 @@
       "types": "./dist/index.d.ts"
     }
   },
+  "files": [
+    "dist",
+    "scripts",
+    "src/mlx-ml/python"
+  ],
   "scripts": {
     "build": "tsc",
     "test": "vitest",

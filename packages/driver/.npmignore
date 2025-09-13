@@ -1,30 +1,35 @@
-# ソースファイル（型定義は除く）
+# Python cache and virtual environments
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+.venv/
+venv/
+*.egg-info/
+.Python
+
+# Test files
+*.test.ts
+*.test.js
+*.spec.ts
+*.spec.js
+**/__tests__/
+
+# Source TypeScript files (keep Python files)
 src/**/*.ts
 !src/**/*.d.ts
 
-# テストファイル
-src/**/*.test.ts
-src/**/*.spec.ts
-**/__tests__/**
-
-# 設定ファイル
+# Configuration files
 tsconfig.json
 tsconfig.tsbuildinfo
 vitest.config.ts
 eslint.config.js
 
-# 開発用ファイル
+# Development files
 .gitignore
 .env*
 
-# Python
-.venv/
-venv/
-__pycache__/
-*.pyc
-*.egg-info/
-
-# その他
+# Other
 *.log
 node_modules/
 coverage/
