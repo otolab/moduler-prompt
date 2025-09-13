@@ -5,6 +5,12 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.1.2] - 2025-09-10
+
+### Fixed
+- **Driver Package**
+  - npmパッケージの内容を修正（不要なファイル除外）
+
 ## [0.1.1] - 2025-09-10
 
 ### Added
@@ -12,6 +18,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - postinstallスクリプトによるMLXドライバーの自動セットアップ
   - setup-mlxコマンドで手動セットアップ可能
   - uvパッケージマネージャーの自動インストール
+
+### Fixed
+- **All Packages**
+  - npmパッケージにsrcディレクトリが含まれる問題を修正
+  - distディレクトリのみを含むように修正
+  - Python仮想環境（.venv）をignoreに追加
 
 ## [0.1.0] - 2025-09-10
 
