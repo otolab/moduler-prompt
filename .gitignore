@@ -80,6 +80,9 @@ __pycache__/
 *.pyc
 *.pyo
 *.pyd
+.venv/
+venv/
+*.egg-info/
 
 # Analysis results
 .code-bugs/
