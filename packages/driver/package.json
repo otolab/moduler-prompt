@@ -1,6 +1,6 @@
 {
   "name": "@moduler-prompt/driver",
-  "version": "0.1.1",
+  "version": "0.1.2",
   "type": "module",
   "main": "./dist/index.js",
   "types": "./dist/index.d.ts",
@@ -10,6 +10,11 @@
       "types": "./dist/index.d.ts"
     }
   },
+  "files": [
+    "dist",
+    "scripts",
+    "src/mlx-ml/python"
+  ],
   "scripts": {
     "build": "tsc",
     "test": "vitest",
@@ -20,7 +25,7 @@
     "setup-mlx": "node scripts/setup-mlx.js"
   },
   "dependencies": {
-    "@moduler-prompt/core": "*",
+    "@moduler-prompt/core": "^0.1.1",
     "openai": "^5.19.1",
     "@anthropic-ai/sdk": "^0.61.0",
     "@google-cloud/vertexai": "^1.10.0",
