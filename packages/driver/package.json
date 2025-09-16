@@ -21,6 +21,7 @@
     "test:run": "vitest run",
     "lint": "eslint src/**/*.ts",
     "typecheck": "tsc --noEmit",
+    "prepack": "npm run build",
     "postinstall": "node scripts/setup-mlx.js || true",
     "setup-mlx": "node scripts/setup-mlx.js"
   },

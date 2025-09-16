@@ -30,7 +30,8 @@
     "test:run": "vitest run",
     "clean": "rm -rf dist",
     "lint": "eslint src",
-    "typecheck": "tsc --noEmit"
+    "typecheck": "tsc --noEmit",
+    "prepack": "npm run clean && npm run build"
   },
   "dependencies": {
     "@moduler-prompt/core": "^0.1.1",

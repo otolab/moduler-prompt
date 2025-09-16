@@ -17,15 +17,16 @@ const logger = {
   error: (...args: any[]) => console.error(...args)
 };
 
-// Get the project root directory (5 levels up from dist/mlx-ml/process/)
-const projectRoot = path.resolve(
+// Get the mlx-ml/python directory
+// From dist/mlx-ml/process/ -> go up 3 levels to package root, then to src/mlx-ml/python
+const packageRoot = path.resolve(
   path.dirname(fileURLToPath(import.meta.url)),
-  '..', '..', '..', '..', '..'
+  '..', '..', '..'  // dist/mlx-ml/process -> dist/mlx-ml -> dist -> package root
 );
 
 const mlxDriverDir = path.join(
-  projectRoot,
-  'packages', 'driver', 'src', 'mlx-ml', 'python'
+  packageRoot,
+  'src', 'mlx-ml', 'python'
 );
 
 export interface ProcessCommunicationCallbacks {

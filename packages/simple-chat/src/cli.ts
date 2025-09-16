@@ -24,6 +24,7 @@ program
   .argument('[message...]', 'User message (use "-" for stdin)')
   .option('-p, --profile <path>', 'Dialog profile file path (YAML)')
   .option('-l, --log [path]', 'Chat log file path (JSON), show log if no message')
+  .option('-d, --drivers <path>', 'Drivers configuration file path (YAML)')
   .option('-m, --model <model>', 'Override model name')
   .option('--temperature <value>', 'Temperature (0.0-2.0)', parseFloat)
   .option('--max-tokens <value>', 'Maximum tokens', parseInt)
@@ -50,6 +51,7 @@ program
       const chatOptions: SimpleChatOptions = {
         profilePath: options.profile,
         logPath: options.log,
+        driversPath: options.drivers,
         userMessage,
         useStdin: hasStdinFlag || !!options.stdin,
         model: options.model,
