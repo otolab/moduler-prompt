@@ -18,7 +18,9 @@ describe.skipIf(!isMacOS)('MLX Driver Parameters Integration', () => {
 
   beforeAll(async () => {
     // 小さなテスト用モデルを使用
-    driver = new MlxDriver('mlx-community/gemma-3-270m-it-qat-4bit');
+    driver = new MlxDriver({
+      model: 'mlx-community/gemma-3-270m-it-qat-8bit'
+    });
   });
 
   afterAll(async () => {
