@@ -274,9 +274,9 @@ export class MlxDriver extends BaseDriver {
       // Merge options
       const mlxOptions: MlxMlModelOptions = {
         ...this.defaultOptions,
-        max_tokens: options.maxTokens,
+        maxTokens: options.maxTokens,
         temperature: options.temperature,
-        top_p: options.topP
+        topP: options.topP
       };
       
       // ドライバーレベルでAPIを選択
@@ -339,9 +339,9 @@ export class MlxDriver extends BaseDriver {
     // Merge options
     const mlxOptions: MlxMlModelOptions = {
       ...this.defaultOptions,
-      max_tokens: options?.maxTokens,
+      maxTokens: options?.maxTokens,
       temperature: options?.temperature,
-      top_p: options?.topP
+      topP: options?.topP
     };
     
     // ドライバーレベルでAPIを選択
