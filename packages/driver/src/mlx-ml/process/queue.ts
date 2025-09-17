@@ -1,10 +1,11 @@
 /**
  * MLX Driver キュー管理システム
- * 
+ *
  * リクエストキューの管理とプロセッシングロジックを提供
  */
 
 import { Readable } from 'stream';
+import { mapOptionsToPython } from './parameter-mapper.js';
 import type {
   QueueItem,
   CapabilitiesQueueItem,
@@ -63,33 +64,41 @@ export class QueueManager {
   }
 
   addChatRequest(messages: MlxMessage[], primer?: string, options?: MlxMlModelOptions): Promise<Readable> {
-    return new Promise((resolve) => {
-      const request: MlxChatRequest = { 
-        method: 'chat', 
-        messages, 
-        primer, 
-        options 
-      };
-      this.queue.push({ 
-        request, 
-        resolve 
-      } as StreamingQueueItem);
-      this.processNext();
+    return new Promise((resolve, reject) => {
+      try {
+        const request: MlxChatRequest = {
+          method: 'chat',
+          messages,
+          primer,
+          options: mapOptionsToPython(options, true)  // strict mode: true
+        };
+        this.queue.push({
+          request,
+          resolve
+        } as StreamingQueueItem);
+        this.processNext();
+      } catch (error) {
+        reject(error);
+      }
     });
   }
 
   addCompletionRequest(prompt: string, options?: MlxMlModelOptions): Promise<Readable> {
-    return new Promise((resolve) => {
-      const request: MlxCompletionRequest = { 
-        method: 'completion', 
-        prompt, 
-        options 
-      };
-      this.queue.push({ 
-        request, 
-        resolve 
-      } as StreamingQueueItem);
-      this.processNext();
+    return new Promise((resolve, reject) => {
+      try {
+        const request: MlxCompletionRequest = {
+          method: 'completion',
+          prompt,
+          options: mapOptionsToPython(options, true)  // strict mode: true
+        };
+        this.queue.push({
+          request,
+          resolve
+        } as StreamingQueueItem);
+        this.processNext();
+      } catch (error) {
+        reject(error);
+      }
     });
   }
 

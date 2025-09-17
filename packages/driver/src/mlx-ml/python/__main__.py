@@ -175,7 +175,12 @@ def handle_completion(prompt, options=None):
 
 
 def generate_text(prompt, options):
-    """テキスト生成の共通処理"""
+    """テキスト生成の共通処理
+
+    注意: optionsはTypeScript側で事前にバリデーションとパラメータ名変換済み
+    - temperature -> temp への変換はTS側で実施
+    - サポートされていないパラメータはTS側でフィルタリング
+    """
     # デフォルトオプションの設定
     default_options = {'max_tokens': 1000}
     final_options = {**default_options, **options}

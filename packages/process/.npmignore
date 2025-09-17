@@ -1,0 +1,31 @@
+# Test files
+*.test.ts
+*.test.js
+*.spec.ts
+*.spec.js
+**/__tests__/
+
+# Source TypeScript files (keep declaration files)
+src/
+*.ts
+!dist/**/*.d.ts
+
+# Configuration files
+tsconfig.json
+tsconfig.tsbuildinfo
+vitest.config.ts
+eslint.config.js
+
+# Documentation
+docs/
+
+# Development files
+.gitignore
+.env*
+
+# Other
+*.log
+node_modules/
+coverage/
+.vscode/
+.idea/

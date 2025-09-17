@@ -11,14 +11,18 @@ export interface MlxMessage {
 }
 
 /**
- * MLX model options
+ * MLX model options (キャメルケース形式)
+ * Python側へはmapOptionsToPythonで変換される
  */
 export interface MlxMlModelOptions {
-  max_tokens?: number;
+  maxTokens?: number;
   temperature?: number;
-  top_p?: number;
-  repetition_penalty?: number;
-  repetition_context_size?: number;
+  topP?: number;
+  topK?: number;
+  repetitionPenalty?: number;
+  repetitionContextSize?: number;
+  // Allow string indexing for dynamic parameter access
+  [key: string]: number | undefined;
 }
 
 /**

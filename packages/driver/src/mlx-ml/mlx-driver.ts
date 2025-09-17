@@ -173,12 +173,12 @@ export class MlxDriver extends BaseDriver {
       const messages = formatPromptAsMessages(prompt, this.getFormatterOptions());
       const mlxMessages = this.convertMessages(messages);
       
-      // Merge options
+      // Merge options (キャメルケース形式で渡す - mapOptionsToPythonで変換される)
       const mlxOptions: MlxMlModelOptions = {
         ...this.defaultOptions,
-        max_tokens: options?.maxTokens,
+        maxTokens: options?.maxTokens,
         temperature: options?.temperature,
-        top_p: options?.topP
+        topP: options?.topP
       };
       
       // APIを選択

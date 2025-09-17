@@ -1,6 +1,6 @@
 {
   "name": "@moduler-prompt/driver",
-  "version": "0.1.3",
+  "version": "0.1.6",
   "type": "module",
   "main": "./dist/index.js",
   "types": "./dist/index.d.ts",
@@ -21,7 +21,9 @@
     "test:run": "vitest run",
     "lint": "eslint src/**/*.ts",
     "typecheck": "tsc --noEmit",
-    "prepack": "npm run build",
+    "prepack": "npm run clean && npm run build:deps && npm run build",
+    "build:deps": "npm run build -w @moduler-prompt/core",
+    "clean": "rm -rf dist tsconfig.tsbuildinfo",
     "postinstall": "node scripts/setup-mlx.js || true",
     "setup-mlx": "node scripts/setup-mlx.js"
   },
