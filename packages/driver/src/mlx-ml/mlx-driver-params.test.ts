@@ -7,9 +7,13 @@
 
 import { describe, it, expect, beforeAll, afterAll } from 'vitest';
 import { MlxDriver } from './mlx-driver.js';
-import type { ChatMessage } from '@moduler-prompt/core';
+import type { ChatMessage, CompiledPrompt } from '@moduler-prompt/core';
+import { platform } from 'os';
 
-describe('MLX Driver Parameters Integration', () => {
+// MLXはApple Silicon専用なので、他のプラットフォームではスキップ
+const isMacOS = platform() === 'darwin';
+
+describe.skipIf(!isMacOS)('MLX Driver Parameters Integration', () => {
   let driver: MlxDriver | null = null;
 
   beforeAll(async () => {
@@ -19,7 +23,7 @@ describe('MLX Driver Parameters Integration', () => {
 
   afterAll(async () => {
     if (driver) {
-      await driver.cleanup();
+      await driver.close();
     }
   });
 
@@ -42,7 +46,7 @@ describe('MLX Driver Parameters Integration', () => {
     expect(result).toBeDefined();
     expect(result.content).toBeDefined();
     expect(typeof result.content).toBe('string');
-  });
+  }, 30000); // 30秒のタイムアウト
 
   it('should accept multiple parameters without error', async () => {
     if (!driver) {
@@ -63,22 +67,29 @@ describe('MLX Driver Parameters Integration', () => {
     // エラーなく結果が返ることを確認
     expect(result).toBeDefined();
     expect(result.content).toBeDefined();
-  });
+  }, 30000); // 30秒のタイムアウト
 
   it('should work with completion API and temperature', async () => {
     if (!driver) {
       throw new Error('Driver not initialized');
     }
 
-    // completion APIでもtemperatureが動作することを確認
-    const result = await driver.queryWithCompletion('Complete this: Hello', {
+    // シンプルなテキストプロンプトを使用（MessageElementなし）
+    // これによりcompletion APIが自動選択される
+    const compiledPrompt: CompiledPrompt = {
+      instructions: ['Complete this:'],
+      data: ['Hello'],
+      output: []
+    };
+
+    const result = await driver.query(compiledPrompt, {
       maxTokens: 5,
       temperature: 0.3
     });
 
     expect(result).toBeDefined();
     expect(result.content).toBeDefined();
-  });
+  }, 30000); // 30秒のタイムアウト
 
   it('should handle temperature=0 (deterministic)', async () => {
     if (!driver) {
@@ -97,5 +108,5 @@ describe('MLX Driver Parameters Integration', () => {
 
     expect(result).toBeDefined();
     expect(result.content).toBeDefined();
-  });
+  }, 30000); // 30秒のタイムアウト
 });

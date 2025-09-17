@@ -11,8 +11,12 @@
 import { describe, it, expect, beforeAll, afterAll } from 'vitest';
 import { MlxDriver } from '../../src/mlx-ml/mlx-driver.js';
 import type { ChatMessage, CompiledPrompt } from '@moduler-prompt/core';
+import { platform } from 'os';
 
-describe('MLX Parameters System Test', () => {
+// MLXはApple Silicon専用なので、他のプラットフォームではスキップ
+const isMacOS = platform() === 'darwin';
+
+describe.skipIf(!isMacOS)('MLX Parameters System Test', () => {
   let driver: MlxDriver;
   const testModel = 'mlx-community/gemma-3-270m-it-qat-8bit';
 
