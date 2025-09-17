@@ -1,6 +1,6 @@
 {
   "name": "@moduler-prompt/process",
-  "version": "0.1.4",
+  "version": "0.1.5",
   "description": "Process module for modular prompt framework",
   "type": "module",
   "main": "./dist/index.js",
@@ -37,7 +37,7 @@
   },
   "dependencies": {
     "@moduler-prompt/core": "^0.1.1",
-    "@moduler-prompt/driver": "^0.1.7"
+    "@moduler-prompt/driver": "^0.1.8"
   },
   "devDependencies": {
     "@eslint/js": "^9.34.0",

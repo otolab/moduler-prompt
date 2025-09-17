@@ -1,6 +1,6 @@
 {
   "name": "@moduler-prompt/driver",
-  "version": "0.1.7",
+  "version": "0.1.8",
   "type": "module",
   "main": "./dist/index.js",
   "types": "./dist/index.d.ts",
@@ -19,6 +19,9 @@
     "build": "tsc",
     "test": "vitest",
     "test:run": "vitest run",
+    "test:system": "vitest run --config vitest.config.system.ts",
+    "test:system:mlx": "vitest run --config vitest.config.system.ts test/system/mlx-parameters.system.test.ts",
+    "test:download-model": "cd src/mlx-ml/python && uv run mlx_lm.generate --model mlx-community/gemma-3-270m-it-4bit --prompt 'test' --max-tokens 1",
     "lint": "eslint src/**/*.ts",
     "typecheck": "tsc --noEmit",
     "prepack": "npm run clean && npm run build:deps && npm run build",

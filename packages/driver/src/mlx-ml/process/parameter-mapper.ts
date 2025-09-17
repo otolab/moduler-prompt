@@ -22,11 +22,12 @@ function camelToSnakeCase(str: string): string {
  * MLX stream_generateでサポートされているパラメータ
  * TypeScript側 (キャメルケース) -> Python側 (スネークケース) のマッピング
  *
- * 特殊なケース:
- * - temperature -> temp (MLX固有の短縮形)
+ * 注: MLXは内部でmake_samplerを使用しており、
+ * stream_generateは**kwargsで受け取ったパラメータを処理する
  */
 const SPECIAL_MAPPINGS: Record<string, string> = {
-  'temperature': 'temp',  // MLX固有: temperature -> temp
+  // 現在は特殊なマッピングなし
+  // temperatureはそのままtemperatureとして送る
 };
 
 /**

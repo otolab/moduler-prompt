@@ -23,7 +23,7 @@ describe('MLX Parameter Mapper', () => {
       });
     });
 
-    it('should convert temperature to temp (MLX specific)', () => {
+    it('should keep temperature as temperature', () => {
       const options = {
         temperature: 0.7
       };
@@ -31,7 +31,7 @@ describe('MLX Parameter Mapper', () => {
       const result = mapOptionsToPython(options);
 
       expect(result).toEqual({
-        temp: 0.7  // MLX uses 'temp' instead of 'temperature'
+        temperature: 0.7  // temperature is passed as-is
       });
     });
 
@@ -46,7 +46,7 @@ describe('MLX Parameter Mapper', () => {
 
       expect(result).toEqual({
         max_tokens: 100000,  // clamped to max
-        temp: 0.0,          // clamped to min
+        temperature: 0.0,    // clamped to min
         top_p: 1.0          // clamped to max
       });
     });
@@ -103,7 +103,7 @@ describe('MLX Parameter Mapper', () => {
 
       expect(result).toEqual({
         max_tokens: 500,
-        temp: 0.7
+        temperature: 0.7
       });
     });
 
@@ -131,7 +131,7 @@ describe('MLX Parameter Mapper', () => {
 
       expect(result).toEqual({
         max_tokens: 500,
-        temp: 0.7,
+        temperature: 0.7,
         top_p: 0.9,
         top_k: 50,
         repetition_penalty: 1.1,

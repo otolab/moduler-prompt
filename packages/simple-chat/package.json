@@ -1,6 +1,6 @@
 {
   "name": "@moduler-prompt/simple-chat",
-  "version": "0.1.6",
+  "version": "0.1.7",
   "type": "module",
   "description": "Sample implementation: Simple chat application using Moduler Prompt with MLX models",
   "main": "dist/index.js",
@@ -24,7 +24,7 @@
   },
   "dependencies": {
     "@moduler-prompt/core": "^0.1.1",
-    "@moduler-prompt/driver": "^0.1.7",
+    "@moduler-prompt/driver": "^0.1.8",
     "@moduler-prompt/process": "^0.1.4",
     "@moduler-prompt/utils": "^0.1.1",
     "chalk": "^5.3.0",
