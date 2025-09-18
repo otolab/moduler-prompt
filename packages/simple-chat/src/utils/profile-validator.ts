@@ -28,8 +28,7 @@ export function validateProfileOptions(profile: any): void {
     }
     // Also check if it's an unknown parameter
     else if (!validParams.includes(key)) {
-      // It might be a typo or unknown parameter
-      console.warn(`Warning: Unknown parameter '${key}' in profile options`);
+      // It might be a typo or unknown parameter - skip silently
     }
   }
 

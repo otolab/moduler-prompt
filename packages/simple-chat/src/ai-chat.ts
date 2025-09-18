@@ -2,6 +2,8 @@
  * AI chat functionality using Moduler Prompt
  */
 
+/* eslint-disable no-console */
+
 import type { PromptModule} from '@moduler-prompt/core';
 import { compile, createContext, merge } from '@moduler-prompt/core';
 import { withMaterials, type MaterialContext } from '@moduler-prompt/process';

@@ -2,6 +2,8 @@
  * Main chat processing
  */
 
+/* eslint-disable no-console */
+
 import { readFileSync } from 'fs';
 import chalk from 'chalk';
 import type { 

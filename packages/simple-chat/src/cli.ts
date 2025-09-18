@@ -4,6 +4,8 @@
  * Simple Chat CLI
  */
 
+/* eslint-disable no-console */
+
 import { program } from 'commander';
 import { readFileSync } from 'fs';
 import { join, dirname } from 'path';
