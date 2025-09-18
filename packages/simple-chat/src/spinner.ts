@@ -2,12 +2,14 @@
  * Spinner for loading indication
  */
 
+/* global setInterval, clearInterval, NodeJS */
+
 const FRAMES = ["⠋", "⠙", "⠹", "⠸", "⠼", "⠴", "⠦", "⠧", "⠇", "⠏"];
 
 export class Spinner {
   private idx = 0;
   private message: string = '';
-  private output: NodeJS.WriteStream = process.stderr;
+  private output: typeof process.stderr = process.stderr;
   private intervalId: NodeJS.Timeout | null = null;
   private isSpinning = false;
 
