@@ -6,10 +6,10 @@
 
 import { readFileSync } from 'fs';
 import chalk from 'chalk';
-import type { 
-  DialogProfile, 
-  ChatLog, 
-  SimpleChatOptions 
+import type {
+  DialogProfile,
+  ChatLog,
+  SimpleChatOptions
 } from './types.js';
 import {
   getDefaultProfile,
@@ -28,6 +28,7 @@ import {
 } from './ai-chat.js';
 import { loadResourceFiles } from './resource-files.js';
 import type { MaterialContext } from '@moduler-prompt/process';
+import { Spinner } from './spinner.js';
 
 /**
  * Process user input
@@ -141,12 +142,20 @@ export async function runChat(options: SimpleChatOptions): Promise<void> {
   let materials: MaterialContext['materials'];
   let loadedFiles: string[] = [];
   if (profile.resourceFiles && profile.resourceFiles.length > 0) {
+    const spinner = new Spinner();
+    spinner.start('Loading resource files...');
+
     const resourceResult = await loadResourceFiles(
       profile.resourceFiles,
       options.profilePath
     );
     materials = resourceResult.materials;
     loadedFiles = resourceResult.loadedFiles;
+
+    spinner.stop();
+    if (loadedFiles.length > 0) {
+      console.log(chalk.gray(`✓ Loaded ${loadedFiles.length} resource file(s)`));
+    }
   }
   
   // Add user message to log
