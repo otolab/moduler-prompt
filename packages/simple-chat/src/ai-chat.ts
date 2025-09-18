@@ -13,6 +13,7 @@ import type { DialogProfile, ChatLog } from './types.js';
 import chalk from 'chalk';
 import { fileURLToPath } from 'url';
 import { dirname, join } from 'path';
+import { Spinner } from './spinner.js';
 
 /**
  * Chat context interface
@@ -188,40 +189,55 @@ export async function performAIChat(
   customRegistry?: DriverRegistry,
   customConfigPath?: string
 ): Promise<{ response: string; driver: AIDriver }> {
+  const spinner = new Spinner();
+
+  // Start spinner while creating driver
+  spinner.start('Initializing AI driver...');
   const driver = await createDriver(profile, customRegistry, customConfigPath);
-  
+
   try {
+    // Update spinner for context creation
+    spinner.update('Preparing context...');
+
     // Create empty typed context from module
     const context = createContext(chatPromptModule);
-    
+
     // Populate context with actual data
     context.messages = chatLog.messages.filter(m => m.role !== 'system');
     context.userMessage = userMessage;
     context.materials = materials;
     context.systemPrompt = profile.systemPrompt;
-    
+
     // Compile module with populated context
+    spinner.update('Compiling prompt...');
     const compiledPrompt = compile(chatPromptModule, context);
-    
+
+    // Update spinner for AI query
+    spinner.update('Waiting for AI response...');
+
     // Query AI with streaming
     if (driver.streamQuery) {
+      // Stop spinner before streaming starts
+      spinner.stop();
       console.log(chalk.cyan('\nAssistant: '));
-      
+
       let response = '';
       for await (const chunk of driver.streamQuery(compiledPrompt, profile.options)) {
         process.stdout.write(chunk);
         response += chunk;
       }
       console.log('\n');
-      
+
       return { response, driver };
     } else {
       // Fallback to non-streaming
       const result = await driver.query(compiledPrompt, profile.options);
+      spinner.stop();
       console.log(chalk.cyan('\nAssistant: ') + result.content + '\n');
       return { response: result.content, driver };
     }
   } catch (error) {
+    spinner.stop();
     console.error(chalk.red(`\n❌ AI chat error: ${error}`));
     throw error;
   }
