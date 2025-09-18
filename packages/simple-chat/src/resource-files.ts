@@ -32,8 +32,8 @@ export async function loadResourceFiles(
         content: content
       });
       loadedFiles.push(file);
-    } catch (error) {
-      console.error(`Warning: Could not load resource file ${file}: ${error}`);
+    } catch {
+      // Could not load resource file - skip silently
     }
   }
   

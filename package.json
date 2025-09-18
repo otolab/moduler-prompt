@@ -1,6 +1,6 @@
 {
   "name": "@moduler-prompt/root",
-  "version": "0.1.1",
+  "version": "0.1.2",
   "private": true,
   "description": "Modular prompt framework for generative AI",
   "workspaces": [
@@ -8,12 +8,15 @@
   ],
   "scripts": {
     "build": "npm run build --workspaces",
+    "build:ordered": "npm run build -w @moduler-prompt/core && npm run build -w @moduler-prompt/utils && npm run build -w @moduler-prompt/driver && npm run build -w @moduler-prompt/process && npm run build -w @moduler-prompt/simple-chat",
     "test": "npm run test --workspaces",
     "test:run": "npm run test:run --workspaces --if-present",
     "clean": "npm run clean --workspaces",
+    "clean:all": "npm run clean --workspaces && rm -rf node_modules packages/*/node_modules",
     "dev": "npm run dev --workspace=@moduler-prompt/core",
     "lint": "npm run lint --workspaces",
     "typecheck": "npm run typecheck --workspaces",
+    "prepack:all": "npm run prepack --workspaces --if-present",
     "chat": "node packages/simple-chat/dist/cli.js",
     "chat:help": "node packages/simple-chat/dist/cli.js --help",
     "chat:template": "node packages/simple-chat/dist/cli.js --generate-template",

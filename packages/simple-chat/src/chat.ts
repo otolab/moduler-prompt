@@ -2,6 +2,8 @@
  * Main chat processing
  */
 
+/* eslint-disable no-console */
+
 import { readFileSync } from 'fs';
 import chalk from 'chalk';
 import type { 
@@ -151,12 +153,14 @@ export async function runChat(options: SimpleChatOptions): Promise<void> {
   addMessage(chatLog, 'user', userMessage, loadedFiles);
   console.log(chalk.green('\nUser: ') + userMessage);
   
-  // Perform AI chat
+  // Perform AI chat with optional custom drivers config
   const { response, driver } = await performAIChat(
     profile,
     chatLog,
     userMessage,
-    materials
+    materials,
+    undefined,  // customRegistry
+    options.driversPath  // Pass the drivers config path
   );
   
   // Add assistant response to log

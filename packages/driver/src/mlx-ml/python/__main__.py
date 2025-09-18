@@ -1,6 +1,7 @@
 import sys
 import json
 from mlx_lm import load, stream_generate
+from mlx_lm.sample_utils import make_sampler
 from token_utils import get_capabilities, is_eod_token
 
 model_name = sys.argv[1] if len(sys.argv) > 1 else "mlx-community/gemma-3-270m-it-qat-4bit"
@@ -175,11 +176,26 @@ def handle_completion(prompt, options=None):
 
 
 def generate_text(prompt, options):
-    """テキスト生成の共通処理"""
+    """テキスト生成の共通処理
+
+    注意: optionsはTypeScript側で事前にバリデーション済み
+    - temperatureパラメータはsamplerオブジェクトに変換
+    - サポートされていないパラメータはTS側でフィルタリング
+    """
     # デフォルトオプションの設定
     default_options = {'max_tokens': 1000}
-    final_options = {**default_options, **options}
-    
+
+    # temperatureパラメータを抽出してsamplerを作成
+    temperature = options.pop('temperature', 1.0) if 'temperature' in options else 1.0
+    top_p = options.pop('top_p', 0.0) if 'top_p' in options else 0.0
+    top_k = options.pop('top_k', 0) if 'top_k' in options else 0
+
+    # samplerオブジェクトを作成
+    sampler = make_sampler(temp=temperature, top_p=top_p, top_k=top_k)
+
+    # 残りのオプションとマージ
+    final_options = {**default_options, **options, 'sampler': sampler}
+
     if isinstance(prompt, list):  # tokenized
         sys.stderr.write(f"--- prompt: len={len(prompt)}\n")
     else:

@@ -7,6 +7,7 @@ import { readFile } from 'fs/promises';
 import * as yaml from 'js-yaml';
 import type { AIDriver } from '@moduler-prompt/driver';
 import * as Drivers from '@moduler-prompt/driver';
+import { Logger, LogLevel } from '../logger/index.js';
 
 import type {
   DriverProvider,
@@ -28,8 +29,13 @@ export class DriverRegistry implements IDriverRegistry {
   private defaultDriverId?: string;
   private globalConfig?: RegistryConfig['global'];
   private factories: Map<DriverProvider, DriverFactory> = new Map();
+  private logger: Logger;
 
-  constructor() {
+  constructor(logLevel: LogLevel = LogLevel.INFO) {
+    this.logger = new Logger({
+      level: logLevel,
+      prefix: 'DriverRegistry'
+    });
     // デフォルトのファクトリを登録
     this.registerDefaultFactories();
   }
@@ -279,16 +285,16 @@ export class DriverRegistry implements IDriverRegistry {
 
     // 警告があれば出力
     if (result.warnings) {
-      console.warn('Driver selection warnings:', result.warnings);
+      this.logger.warn('Driver selection warnings:', result.warnings);
     }
 
-    console.log(`Selected driver: ${result.driver.name} (${result.driver.id})`);
-    console.log(`Reason: ${result.reason}`);
+    this.logger.info(`Selected driver: ${result.driver.name} (${result.driver.id})`);
+    this.logger.debug(`Reason: ${result.reason}`);
 
     try {
       return await this.createDriver(result.driver);
     } catch (error) {
-      console.warn(`Failed to create driver: ${error}`);
+      this.logger.error(`Failed to create driver: ${error}`);
       return null;
     }
   }

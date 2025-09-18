@@ -49,6 +49,8 @@ export interface SimpleChatOptions {
   profilePath?: string;
   /** Chat log file path */
   logPath?: string;
+  /** Drivers configuration file path */
+  driversPath?: string;
   /** User message from command line */
   userMessage?: string;
   /** Use stdin for input */

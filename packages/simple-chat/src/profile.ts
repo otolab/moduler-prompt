@@ -5,6 +5,7 @@
 import { readFile } from 'fs/promises';
 import yaml from 'js-yaml';
 import type { DialogProfile } from './types.js';
+import { validateProfileOptions } from './utils/profile-validator.js';
 
 /**
  * Get default profile
@@ -28,8 +29,16 @@ export async function loadDialogProfile(profilePath: string): Promise<DialogProf
   try {
     const content = await readFile(profilePath, 'utf-8');
     const profile = yaml.load(content) as DialogProfile;
+
+    // Validate that options use camelCase, not snake_case
+    validateProfileOptions(profile);
+
     return profile;
   } catch (error) {
+    if (error instanceof Error && error.message.includes('snake_case')) {
+      // Re-throw validation errors as-is
+      throw error;
+    }
     throw new Error(`Failed to load dialog profile from ${profilePath}: ${error}`);
   }
 }

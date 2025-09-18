@@ -2,6 +2,8 @@
  * AI chat functionality using Moduler Prompt
  */
 
+/* eslint-disable no-console */
+
 import type { PromptModule} from '@moduler-prompt/core';
 import { compile, createContext, merge } from '@moduler-prompt/core';
 import { withMaterials, type MaterialContext } from '@moduler-prompt/process';
@@ -95,20 +97,33 @@ export const chatPromptModule = merge(baseChatModule, withMaterials);
 let driverRegistry: DriverRegistry | null = null;
 
 /**
- * Initialize driver registry
+ * Initialize driver registry with optional custom config path
  */
-async function initializeRegistry(): Promise<DriverRegistry> {
+async function initializeRegistry(customConfigPath?: string): Promise<DriverRegistry> {
+  // カスタム設定パスが指定されている場合は、新しいレジストリを作成
+  if (customConfigPath) {
+    const registry = new DriverRegistry();
+    try {
+      await registry.loadConfig(customConfigPath);
+      console.log(chalk.green(`✓ Loaded drivers from: ${customConfigPath}`));
+    } catch (error) {
+      throw new Error(`Failed to load drivers config from ${customConfigPath}: ${error}`);
+    }
+    return registry;
+  }
+
+  // 既存のレジストリがあれば再利用
   if (driverRegistry) {
     return driverRegistry;
   }
-  
+
   driverRegistry = new DriverRegistry();
-  
+
   // デフォルト設定ファイルを読み込み
   const __filename = fileURLToPath(import.meta.url);
   const __dirname = dirname(__filename);
   const configPath = join(__dirname, '..', 'drivers.yaml');
-  
+
   try {
     await driverRegistry.loadConfig(configPath);
   } catch {
@@ -125,15 +140,15 @@ async function initializeRegistry(): Promise<DriverRegistry> {
       }
     });
   }
-  
+
   return driverRegistry;
 }
 
 /**
  * Create driver from profile
  */
-export async function createDriver(profile: DialogProfile, customRegistry?: DriverRegistry): Promise<AIDriver> {
-  const registry = customRegistry || await initializeRegistry();
+export async function createDriver(profile: DialogProfile, customRegistry?: DriverRegistry, customConfigPath?: string): Promise<AIDriver> {
+  const registry = customRegistry || await initializeRegistry(customConfigPath);
   
   // プロファイルで明示的にモデルが指定されている場合
   if (profile.model) {
@@ -170,9 +185,10 @@ export async function performAIChat(
   chatLog: ChatLog,
   userMessage: string,
   materials?: MaterialContext['materials'],
-  customRegistry?: DriverRegistry
+  customRegistry?: DriverRegistry,
+  customConfigPath?: string
 ): Promise<{ response: string; driver: AIDriver }> {
-  const driver = await createDriver(profile, customRegistry);
+  const driver = await createDriver(profile, customRegistry, customConfigPath);
   
   try {
     // Create empty typed context from module

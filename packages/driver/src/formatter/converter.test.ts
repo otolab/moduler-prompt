@@ -1,7 +1,7 @@
 import { describe, it, expect } from 'vitest';
 import { formatPrompt, formatPromptAsMessages, defaultFormatterTexts } from './converter.js';
 import { DefaultFormatter } from './formatter.js';
-import type { CompiledPrompt } from '@moduler-prompt/core';
+import type { CompiledPrompt, Element } from '@moduler-prompt/core';
 
 describe('preamble and section descriptions', () => {
   it('should add preamble when provided', () => {
@@ -164,7 +164,7 @@ describe('formatPrompt', () => {
   
   it('should use custom formatter when provided', () => {
     class CustomFormatter extends DefaultFormatter {
-      format(element: any): string {
+      format(element: Element): string {
         if (element.type === 'text') {
           return `CUSTOM: ${element.content}`;
         }
@@ -525,7 +525,7 @@ describe('formatPromptAsMessages', () => {
   
   it('should use custom formatter when provided', () => {
     class CustomFormatter extends DefaultFormatter {
-      format(element: any): string {
+      format(element: Element): string {
         if (element.type === 'section') {
           return `CUSTOM SECTION: ${element.title}`;
         }

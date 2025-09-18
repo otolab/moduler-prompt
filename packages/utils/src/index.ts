@@ -16,3 +16,14 @@ export type {
   IDriverRegistry,
   DriverFactory
 } from './driver-registry/index.js';
+
+// Logger exports
+export {
+  Logger,
+  LogLevel,
+  defaultLogger
+} from './logger/index.js';
+
+export type {
+  LoggerOptions
+} from './logger/index.js';
