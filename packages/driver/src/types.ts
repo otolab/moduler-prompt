@@ -18,12 +18,25 @@ export interface ChatMessage {
  * Query result from AI model
  */
 export interface QueryResult {
+  /**
+   * Raw text response from the model
+   */
   content: string;
+
+  /**
+   * Structured outputs extracted from the response
+   * - undefined: no schema was specified
+   * - []: schema was specified but no valid JSON found
+   * - [...]: extracted JSON objects/arrays
+   */
+  structuredOutputs?: unknown[];
+
   usage?: {
     promptTokens: number;
     completionTokens: number;
     totalTokens: number;
   };
+
   finishReason?: 'stop' | 'length' | 'error';
 }
 

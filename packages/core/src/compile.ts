@@ -7,7 +7,9 @@ import type {
   SubSectionElement,
   DynamicElement,
   SectionType,
-  SimpleDynamicContent
+  SimpleDynamicContent,
+  Element,
+  JSONElement
 } from './types.js';
 import { STANDARD_SECTIONS } from './types.js';
 
@@ -20,7 +22,7 @@ export function compile<TContext = any>(
 ): CompiledPrompt {
   // コンテキストが提供されていない場合、module.createContextから生成
   const actualContext = context ?? (module.createContext ? module.createContext() : {} as TContext);
-  
+
   const compiled: CompiledPrompt = {
     instructions: [],
     data: [],
@@ -43,6 +45,27 @@ export function compile<TContext = any>(
 
     // セクションタイプに応じて分類
     compiled[sectionDef.type].push(sectionElement);
+
+    // schemaセクションの場合、コンパイル結果からJSONElementを探す
+    if (sectionName === 'schema') {
+      // sectionElement.itemsの中にJSONElementの文字列表現があるかチェック
+      // (JSONElementはformatDynamicElementAsStringで```json```ブロックに変換される)
+      for (const item of sectionElement.items) {
+        if (typeof item === 'string' && item.startsWith('```json\n') && item.endsWith('\n```')) {
+          // ```json```ブロックから内容を抽出
+          const jsonContent = item.slice(8, -4); // "```json\n" と "\n```" を除去
+          try {
+            const schema = JSON.parse(jsonContent);
+            compiled.metadata = {
+              outputSchema: schema
+            };
+            break;
+          } catch (e) {
+            // パースエラーの場合はスキップ
+          }
+        }
+      }
+    }
   }
 
   return compiled;
@@ -176,28 +199,35 @@ function formatDynamicElementAsString(element: DynamicElement): string {
   switch (element.type) {
     case 'text':
       return element.content;
-    
+
     case 'message':
       const role = element.role.charAt(0).toUpperCase() + element.role.slice(1);
-      const content = typeof element.content === 'string' 
-        ? element.content 
+      const content = typeof element.content === 'string'
+        ? element.content
         : '[attachments]';
-      return element.name 
+      return element.name
         ? `[${role} - ${element.name}]: ${content}`
         : `[${role}]: ${content}`;
-    
+
     case 'material':
       const materialContent = typeof element.content === 'string'
         ? element.content
         : '[attachments]';
       return `[Material: ${element.title}]\n${materialContent}`;
-    
+
     case 'chunk':
       const chunkContent = typeof element.content === 'string'
         ? element.content
         : '[attachments]';
       return `[Chunk from ${element.partOf}]\n${chunkContent}`;
-    
+
+    case 'json':
+      // JSONElementを文字列表現に変換
+      const jsonContent = typeof element.content === 'string'
+        ? element.content
+        : JSON.stringify(element.content, null, 2);
+      return `\`\`\`json\n${jsonContent}\n\`\`\``;
+
     default:
       // 型の網羅性チェック
       const _exhaustive: never = element;
