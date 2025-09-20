@@ -58,21 +58,29 @@ export interface SubSectionElement<TContext = any> {
   items: (string | SimpleDynamicContent<TContext>)[];
 }
 
+// JSON スキーマ要素
+export interface JSONElement {
+  type: 'json';
+  content: object | string;  // JSONSchemaオブジェクトまたはJSON文字列
+}
+
 // 統合型
-export type Element = 
+export type Element =
   | TextElement
-  | MessageElement 
-  | MaterialElement 
-  | ChunkElement 
+  | MessageElement
+  | MaterialElement
+  | ChunkElement
   | SectionElement
-  | SubSectionElement;
+  | SubSectionElement
+  | JSONElement;
 
 // 動的に生成できる要素（構造要素は除外）
-export type DynamicElement = 
+export type DynamicElement =
   | TextElement
-  | MessageElement 
-  | MaterialElement 
-  | ChunkElement;
+  | MessageElement
+  | MaterialElement
+  | ChunkElement
+  | JSONElement;
 
 // シンプルな動的コンテンツ（文字列のみを生成）
 // SubSection内で使用される
@@ -159,4 +167,7 @@ export interface CompiledPrompt {
   instructions: Element[];
   data: Element[];
   output: Element[];
+  metadata?: {
+    outputSchema?: object;  // JSONElementから抽出されたスキーマ
+  };
 }
