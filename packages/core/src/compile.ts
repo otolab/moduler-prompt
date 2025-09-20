@@ -7,9 +7,7 @@ import type {
   SubSectionElement,
   DynamicElement,
   SectionType,
-  SimpleDynamicContent,
-  Element,
-  JSONElement
+  SimpleDynamicContent
 } from './types.js';
 import { STANDARD_SECTIONS } from './types.js';
 

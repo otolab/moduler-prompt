@@ -2,6 +2,8 @@ import Anthropic from '@anthropic-ai/sdk';
 import { BaseDriver } from '../base/base-driver.js';
 import type { ChatMessage } from '../formatter/types.js';
 import type { QueryOptions, QueryResult } from '../types.js';
+import type { CompiledPrompt } from '@moduler-prompt/core';
+import { extractJSON } from '@moduler-prompt/utils';
 
 /**
  * Anthropic driver configuration
@@ -84,7 +86,33 @@ export class AnthropicDriver extends BaseDriver {
     
     return { system, messages: anthropicMessages };
   }
-  
+
+  /**
+   * Query the AI model with structuredOutputs support
+   */
+  async query(prompt: CompiledPrompt, options?: AnthropicQueryOptions): Promise<QueryResult> {
+    // Use base implementation to get result
+    const result = await super.query(prompt, options);
+
+    // Extract structured outputs if schema is specified
+    if (prompt.metadata?.outputSchema) {
+      const extraction = extractJSON(result.content, {
+        repair: true,
+        multiple: true
+      });
+
+      if (extraction.source !== 'none') {
+        result.structuredOutputs = Array.isArray(extraction.data)
+          ? extraction.data
+          : [extraction.data];
+      } else {
+        result.structuredOutputs = [];
+      }
+    }
+
+    return result;
+  }
+
   /**
    * Query with messages
    */
