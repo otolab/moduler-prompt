@@ -77,14 +77,14 @@ export interface AIDriver {
   query(prompt: CompiledPrompt, options?: QueryOptions): Promise<QueryResult>;
 
   /**
-   * Stream query with both stream and result (optional)
+   * Stream query with both stream and result
    */
-  streamQuery?(prompt: CompiledPrompt, options?: QueryOptions): Promise<StreamResult>;
+  streamQuery(prompt: CompiledPrompt, options?: QueryOptions): Promise<StreamResult>;
 
   /**
-   * Close the driver connection (optional)
+   * Close the driver connection
    */
-  close?(): Promise<void>;
+  close(): Promise<void>;
 }
 
 /**

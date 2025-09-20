@@ -1,7 +1,6 @@
 import OpenAI from 'openai';
 import type { CompiledPrompt } from '@moduler-prompt/core';
 import type { AIDriver, QueryOptions, QueryResult, StreamResult } from '../types.js';
-import { extractJSON } from '@moduler-prompt/utils';
 import type {
   ChatCompletionCreateParams,
   ChatCompletionMessageParam
@@ -151,11 +150,9 @@ export class OpenAIDriver implements AIDriver {
    * Query the AI model
    */
   async query(prompt: CompiledPrompt, options?: QueryOptions): Promise<QueryResult> {
-    // Use streamQuery if available for consistency
-    if (this.streamQuery) {
-      const { result } = await this.streamQuery(prompt, options);
-      return result;
-    }
+    // Use streamQuery for consistency
+    const { result } = await this.streamQuery(prompt, options);
+    return result;
 
     // Fallback implementation
     const openaiOptions = options as OpenAIQueryOptions || {};
@@ -175,7 +172,7 @@ export class OpenAIDriver implements AIDriver {
         n: mergedOptions.n,
         logprobs: mergedOptions.logprobs,
         top_logprobs: mergedOptions.topLogprobs,
-        response_format: mergedOptions.responseFormat,
+        response_format: prompt.metadata?.outputSchema ? { type: 'json_object' } : mergedOptions.responseFormat,
         seed: mergedOptions.seed,
         tools: mergedOptions.tools,
         tool_choice: mergedOptions.toolChoice,
@@ -201,17 +198,13 @@ export class OpenAIDriver implements AIDriver {
 
       const content = choice.message?.content || '';
 
-      // Extract structured outputs if schema is specified
+      // If response_format was used, the content should already be JSON
       let structuredOutputs: unknown[] | undefined;
-      if (prompt.metadata?.outputSchema) {
-        const extraction = extractJSON(content, {
-          repair: true,
-          multiple: true
-        });
-
-        if (extraction.source !== 'none') {
-          structuredOutputs = Array.isArray(extraction.data) ? extraction.data : [extraction.data];
-        } else {
+      if (prompt.metadata?.outputSchema && mergedOptions.responseFormat?.type === 'json_object') {
+        try {
+          const parsed = JSON.parse(content);
+          structuredOutputs = [parsed];
+        } catch {
           structuredOutputs = [];
         }
       }
@@ -251,6 +244,7 @@ export class OpenAIDriver implements AIDriver {
       frequency_penalty: mergedOptions.frequencyPenalty,
       presence_penalty: mergedOptions.presencePenalty,
       stop: mergedOptions.stop,
+      response_format: prompt.metadata?.outputSchema ? { type: 'json_object' } : undefined,
       stream: true
     };
 
@@ -319,17 +313,13 @@ export class OpenAIDriver implements AIDriver {
 
     // Create result promise
     const resultPromise = processingPromise.then(() => {
-      // Extract structured outputs if schema is specified
+      // If response_format was used, the content should already be JSON
       let structuredOutputs: unknown[] | undefined;
-      if (prompt.metadata?.outputSchema) {
-        const extraction = extractJSON(fullContent, {
-          repair: true,
-          multiple: true
-        });
-
-        if (extraction.source !== 'none') {
-          structuredOutputs = Array.isArray(extraction.data) ? extraction.data : [extraction.data];
-        } else {
+      if (prompt.metadata?.outputSchema && params.response_format?.type === 'json_object') {
+        try {
+          const parsed = JSON.parse(fullContent);
+          structuredOutputs = [parsed];
+        } catch {
           structuredOutputs = [];
         }
       }
