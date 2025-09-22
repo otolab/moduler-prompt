@@ -1,5 +1,5 @@
 import Anthropic from '@anthropic-ai/sdk';
-import type { CompiledPrompt } from '@moduler-prompt/core';
+import type { CompiledPrompt, Element } from '@moduler-prompt/core';
 import type { AIDriver, QueryOptions, QueryResult, StreamResult } from '../types.js';
 
 /**
@@ -58,7 +58,7 @@ export class AnthropicDriver implements AIDriver {
         if (typeof element === 'string') {
           content.push(element);
         } else if (typeof element === 'object' && element !== null && 'type' in element) {
-          const el = element as any;
+          const el = element as Element;
 
           if (el.type === 'text') {
             content.push(el.content);
@@ -80,11 +80,11 @@ export class AnthropicDriver implements AIDriver {
               for (const item of el.items) {
                 if (typeof item === 'string') {
                   content.push(item);
-                } else if (item.type === 'subsection') {
+                } else if (typeof item === 'object' && item !== null && 'type' in item && item.type === 'subsection') {
                   if (item.title) content.push(`### ${item.title}`);
                   if (item.content) content.push(item.content);
-                  if (item.items) {
-                    content.push(...item.items.filter((i: any) => typeof i === 'string'));
+                  if ('items' in item && item.items) {
+                    content.push(...item.items.filter((i) => typeof i === 'string'));
                   }
                 }
               }
@@ -190,7 +190,8 @@ export class AnthropicDriver implements AIDriver {
           chunks.push(content);
         } else if (chunk.type === 'message_stop') {
           // Get usage from the final message
-          const finalMessage = chunk as any;
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
+          const finalMessage = chunk as any; // MessageStopEvent type doesn't expose usage directly
           if (finalMessage.message?.usage) {
             usage = {
               promptTokens: finalMessage.message.usage.input_tokens,

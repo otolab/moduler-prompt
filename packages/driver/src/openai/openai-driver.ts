@@ -1,5 +1,5 @@
 import OpenAI from 'openai';
-import type { CompiledPrompt } from '@moduler-prompt/core';
+import type { CompiledPrompt, Element } from '@moduler-prompt/core';
 import type { AIDriver, QueryOptions, QueryResult, StreamResult } from '../types.js';
 import type {
   ChatCompletionCreateParams,
@@ -77,7 +77,7 @@ export class OpenAIDriver implements AIDriver {
         if (typeof element === 'string') {
           content.push(element);
         } else if (typeof element === 'object' && element !== null && 'type' in element) {
-          const el = element as any;
+          const el = element as Element;
 
           if (el.type === 'text') {
             content.push(el.content);
@@ -95,11 +95,11 @@ export class OpenAIDriver implements AIDriver {
               for (const item of el.items) {
                 if (typeof item === 'string') {
                   content.push(item);
-                } else if (item.type === 'subsection') {
+                } else if (typeof item === 'object' && item !== null && 'type' in item && item.type === 'subsection') {
                   if (item.title) content.push(`### ${item.title}`);
                   if (item.content) content.push(item.content);
-                  if (item.items) {
-                    content.push(...item.items.filter((i: any) => typeof i === 'string'));
+                  if ('items' in item && item.items) {
+                    content.push(...item.items.filter((i) => typeof i === 'string'));
                   }
                 }
               }
@@ -153,13 +153,17 @@ export class OpenAIDriver implements AIDriver {
     // Use streamQuery for consistency
     const { result } = await this.streamQuery(prompt, options);
     return result;
+  }
 
-    // Fallback implementation
-    const openaiOptions = options as OpenAIQueryOptions || {};
-    const mergedOptions = { ...this.defaultOptions, ...openaiOptions };
-    const messages = this.compiledPromptToMessages(prompt);
-
+  /**
+   * Stream query implementation with both stream and result
+   */
+  async streamQuery(prompt: CompiledPrompt, options?: QueryOptions): Promise<StreamResult> {
     try {
+      const openaiOptions = options as OpenAIQueryOptions || {};
+      const mergedOptions = { ...this.defaultOptions, ...openaiOptions };
+      const messages = this.compiledPromptToMessages(prompt);
+
       const params: ChatCompletionCreateParams = {
         model: mergedOptions.model || this.defaultModel,
         messages,
@@ -169,14 +173,8 @@ export class OpenAIDriver implements AIDriver {
         frequency_penalty: mergedOptions.frequencyPenalty,
         presence_penalty: mergedOptions.presencePenalty,
         stop: mergedOptions.stop,
-        n: mergedOptions.n,
-        logprobs: mergedOptions.logprobs,
-        top_logprobs: mergedOptions.topLogprobs,
-        response_format: prompt.metadata?.outputSchema ? { type: 'json_object' } : mergedOptions.responseFormat,
-        seed: mergedOptions.seed,
-        tools: mergedOptions.tools,
-        tool_choice: mergedOptions.toolChoice,
-        stream: false
+        response_format: prompt.metadata?.outputSchema ? { type: 'json_object' } : undefined,
+        stream: true
       };
 
       // Remove undefined values
@@ -186,159 +184,103 @@ export class OpenAIDriver implements AIDriver {
         }
       });
 
-      const response = await this.client.chat.completions.create(params);
+      const openaiStream = await this.client.chat.completions.create(params);
 
-      // Type assertion for non-streaming response
-      const completion = response as OpenAI.Chat.ChatCompletion;
-      const choice = completion.choices[0];
-
+      // Shared state for accumulating content and metadata
+      let fullContent = '';
+      let usage: QueryResult['usage'] | undefined;
       let finishReason: QueryResult['finishReason'] = 'stop';
-      if (choice.finish_reason === 'length') {
-        finishReason = 'length';
-      } else if (choice.finish_reason === 'content_filter') {
-        finishReason = 'error';
-      }
+      let streamConsumed = false;
+      const chunks: string[] = [];
 
-      const content = choice.message?.content || '';
-
-      // If response_format was used, the content should already be JSON
-      let structuredOutputs: unknown[] | undefined;
-      if (prompt.metadata?.outputSchema && mergedOptions.responseFormat?.type === 'json_object') {
+      // Process the OpenAI stream and cache chunks
+      const processStream = async () => {
         try {
-          const parsed = JSON.parse(content);
-          structuredOutputs = [parsed];
+          for await (const chunk of openaiStream) {
+            const content = chunk.choices[0]?.delta?.content;
+            if (content) {
+              fullContent += content;
+              chunks.push(content);
+            }
+
+            // Update finish reason if provided
+            if (chunk.choices[0]?.finish_reason) {
+              const reason = chunk.choices[0].finish_reason;
+              if (reason === 'length') {
+                finishReason = 'length';
+              } else if (reason === 'content_filter') {
+                finishReason = 'error';
+              }
+            }
+
+            // Accumulate usage if provided (usually in the final chunk)
+            if (chunk.usage) {
+              usage = {
+                promptTokens: chunk.usage.prompt_tokens,
+                completionTokens: chunk.usage.completion_tokens,
+                totalTokens: chunk.usage.total_tokens
+              };
+            }
+          }
         } catch {
-          structuredOutputs = [];
+          finishReason = 'error';
         }
-      }
-
-      return {
-        content,
-        structuredOutputs,
-        usage: completion.usage ? {
-          promptTokens: completion.usage?.prompt_tokens || 0,
-          completionTokens: completion.usage?.completion_tokens || 0,
-          totalTokens: completion.usage?.total_tokens || 0
-        } : undefined,
-        finishReason
+        streamConsumed = true;
       };
-    } catch {
-      return {
-        content: '',
-        finishReason: 'error'
-      };
-    }
-  }
 
-  /**
-   * Stream query implementation with both stream and result
-   */
-  async streamQuery(prompt: CompiledPrompt, options?: QueryOptions): Promise<StreamResult> {
-    const openaiOptions = options as OpenAIQueryOptions || {};
-    const mergedOptions = { ...this.defaultOptions, ...openaiOptions };
-    const messages = this.compiledPromptToMessages(prompt);
+      // Start processing the stream
+      const processingPromise = processStream();
 
-    const params: ChatCompletionCreateParams = {
-      model: mergedOptions.model || this.defaultModel,
-      messages,
-      temperature: mergedOptions.temperature,
-      max_tokens: mergedOptions.maxTokens,
-      top_p: mergedOptions.topP,
-      frequency_penalty: mergedOptions.frequencyPenalty,
-      presence_penalty: mergedOptions.presencePenalty,
-      stop: mergedOptions.stop,
-      response_format: prompt.metadata?.outputSchema ? { type: 'json_object' } : undefined,
-      stream: true
-    };
-
-    // Remove undefined values
-    Object.keys(params).forEach(key => {
-      if (params[key as keyof typeof params] === undefined) {
-        delete params[key as keyof typeof params];
-      }
-    });
-
-    const openaiStream = await this.client.chat.completions.create(params);
-
-    // Shared state for accumulating content and metadata
-    let fullContent = '';
-    let usage: QueryResult['usage'] | undefined;
-    let finishReason: QueryResult['finishReason'] = 'stop';
-    let streamConsumed = false;
-    const chunks: string[] = [];
-
-    // Process the OpenAI stream and cache chunks
-    const processStream = async () => {
-      for await (const chunk of openaiStream) {
-        const content = chunk.choices[0]?.delta?.content;
-        if (content) {
-          fullContent += content;
-          chunks.push(content);
+      // Create the stream generator that yields cached chunks
+      const streamGenerator = async function* () {
+        let index = 0;
+        while (!streamConsumed || index < chunks.length) {
+          if (index < chunks.length) {
+            yield chunks[index++];
+          } else {
+            // Wait a bit for more chunks
+            await new Promise(resolve => setTimeout(resolve, 10));
+          }
         }
+      };
 
-        // Update finish reason if provided
-        if (chunk.choices[0]?.finish_reason) {
-          const reason = chunk.choices[0].finish_reason;
-          if (reason === 'length') {
-            finishReason = 'length';
-          } else if (reason === 'content_filter') {
-            finishReason = 'error';
+      // Create result promise
+      const resultPromise = processingPromise.then(() => {
+        // If response_format was used, the content should already be JSON
+        let structuredOutputs: unknown[] | undefined;
+        if (prompt.metadata?.outputSchema && params.response_format?.type === 'json_object') {
+          try {
+            const parsed = JSON.parse(fullContent);
+            structuredOutputs = [parsed];
+          } catch {
+            structuredOutputs = [];
           }
         }
 
-        // Accumulate usage if provided (usually in the final chunk)
-        if (chunk.usage) {
-          usage = {
-            promptTokens: chunk.usage.prompt_tokens,
-            completionTokens: chunk.usage.completion_tokens,
-            totalTokens: chunk.usage.total_tokens
-          };
-        }
-      }
-      streamConsumed = true;
-    };
-
-    // Start processing the stream
-    const processingPromise = processStream();
-
-    // Create the stream generator that yields cached chunks
-    const streamGenerator = async function* () {
-      let index = 0;
-      while (!streamConsumed || index < chunks.length) {
-        if (index < chunks.length) {
-          yield chunks[index++];
-        } else {
-          // Wait a bit for more chunks
-          await new Promise(resolve => setTimeout(resolve, 10));
-        }
-      }
-    };
-
-    // Create result promise
-    const resultPromise = processingPromise.then(() => {
-      // If response_format was used, the content should already be JSON
-      let structuredOutputs: unknown[] | undefined;
-      if (prompt.metadata?.outputSchema && params.response_format?.type === 'json_object') {
-        try {
-          const parsed = JSON.parse(fullContent);
-          structuredOutputs = [parsed];
-        } catch {
-          structuredOutputs = [];
-        }
-      }
+        return {
+          content: fullContent,
+          structuredOutputs,
+          usage,
+          finishReason
+        };
+      });
 
       return {
-        content: fullContent,
-        structuredOutputs,
-        usage,
-        finishReason
+        stream: streamGenerator(),
+        result: resultPromise
       };
-    });
-
-    return {
-      stream: streamGenerator(),
-      result: resultPromise
-    };
+    } catch {
+      // Return error state
+      return {
+        stream: (async function* () {
+          // Empty stream
+        })(),
+        result: Promise.resolve({
+          content: '',
+          finishReason: 'error' as const
+        })
+      };
+    }
   }
 
   /**
