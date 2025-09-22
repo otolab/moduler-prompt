@@ -37,7 +37,21 @@ vi.mock('@google-cloud/vertexai', () => {
           }
         }]
       };
-    })()
+    })(),
+    response: Promise.resolve({
+      candidates: [{
+        content: {
+          parts: [{ text: 'Streaming response' }],
+          role: 'model'
+        },
+        finishReason: 'STOP'
+      }],
+      usageMetadata: {
+        promptTokenCount: 15,
+        candidatesTokenCount: 8,
+        totalTokenCount: 23
+      }
+    })
   });
   
   return {

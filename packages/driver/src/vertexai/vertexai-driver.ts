@@ -366,15 +366,7 @@ export class VertexAIDriver implements AIDriver {
     const resultPromise = (async (): Promise<QueryResult> => {
       // Aggregate the response from streaming
       const response = await streamingResult.response;
-
-      if (!response || !response.candidates) {
-        return {
-          content: '',
-          finishReason: 'error'
-        };
-      }
-
-      const candidate = response.candidates[0];
+      const candidate = response.candidates?.[0];
 
       if (!candidate || !candidate.content) {
         return {
