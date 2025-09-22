@@ -16,7 +16,7 @@
     "src/mlx-ml/python"
   ],
   "scripts": {
-    "build": "tsc",
+    "build": "tsc -b --force",
     "test": "vitest",
     "test:run": "vitest run",
     "test:system": "vitest run --config vitest.config.system.ts",
