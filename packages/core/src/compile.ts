@@ -58,7 +58,7 @@ export function compile<TContext = any>(
               outputSchema: schema
             };
             break;
-          } catch (e) {
+          } catch {
             // パースエラーの場合はスキップ
           }
         }

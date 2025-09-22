@@ -81,7 +81,7 @@ function extractFromCodeBlocks(text: string, options: ExtractJSONOptions): unkno
         if (!options.multiple && results.length > 0) {
           return results;
         }
-      } catch (e) {
+      } catch {
         // Continue to next match
       }
     }
@@ -144,7 +144,7 @@ function extractDirectJSON(text: string, options: ExtractJSONOptions): unknown[]
   const results: unknown[] = [];
 
   // Find all potential JSON start positions
-  const regex = /[\{\[]/g;
+  const regex = /[{[]/g;
   let match;
 
   while ((match = regex.exec(text)) !== null) {
@@ -164,7 +164,7 @@ function extractDirectJSON(text: string, options: ExtractJSONOptions): unknown[]
 
         // Skip ahead to avoid re-parsing the same JSON
         regex.lastIndex = match.index + extracted.length;
-      } catch (e) {
+      } catch {
         // Continue to next potential match
       }
     }
@@ -188,7 +188,7 @@ function parseFullText(text: string, options: ExtractJSONOptions): unknown | nul
     return options.repair
       ? JSON.parse(jsonrepair(trimmed))
       : JSON.parse(trimmed);
-  } catch (e) {
+  } catch {
     return null;
   }
 }
@@ -242,7 +242,7 @@ export function extractJSON(
         };
       } catch {
         // If it needed repair, check if it's still full JSON
-        if (opts.repair && (trimmed === text || /^\s*[\{\[]/.test(text))) {
+        if (opts.repair && (trimmed === text || /^\s*[{[]/.test(text))) {
           return {
             data: fullResult,
             repaired: true,

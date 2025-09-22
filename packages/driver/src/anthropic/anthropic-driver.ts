@@ -189,9 +189,12 @@ export class AnthropicDriver implements AIDriver {
           fullContent += content;
           chunks.push(content);
         } else if (chunk.type === 'message_stop') {
-          // Get usage from the final message
+          // TODO: Investigate correct way to get usage from streaming response
+          // The actual API response may contain usage data in message_stop event,
+          // but the SDK type definitions don't reflect this.
+          // Consider checking message_start event or using MessageStream class instead.
           // eslint-disable-next-line @typescript-eslint/no-explicit-any
-          const finalMessage = chunk as any; // MessageStopEvent type doesn't expose usage directly
+          const finalMessage = chunk as any;
           if (finalMessage.message?.usage) {
             usage = {
               promptTokens: finalMessage.message.usage.input_tokens,

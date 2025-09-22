@@ -8,15 +8,41 @@ vi.mock('openai', () => {
     default: vi.fn().mockImplementation(() => ({
       chat: {
         completions: {
-          create: vi.fn().mockResolvedValue({
-            choices: [{
-              message: { content: 'Mocked response' },
-              finish_reason: 'stop'
-            }],
-            usage: {
-              prompt_tokens: 10,
-              completion_tokens: 5,
-              total_tokens: 15
+          create: vi.fn().mockImplementation((params) => {
+            if (params.stream) {
+              // Return an async iterable for streaming
+              return (async function* () {
+                yield {
+                  choices: [{
+                    delta: { content: 'Mocked' },
+                    finish_reason: null
+                  }]
+                };
+                yield {
+                  choices: [{
+                    delta: { content: ' response' },
+                    finish_reason: 'stop'
+                  }],
+                  usage: {
+                    prompt_tokens: 10,
+                    completion_tokens: 5,
+                    total_tokens: 15
+                  }
+                };
+              })();
+            } else {
+              // Return a promise for non-streaming
+              return Promise.resolve({
+                choices: [{
+                  message: { content: 'Mocked response' },
+                  finish_reason: 'stop'
+                }],
+                usage: {
+                  prompt_tokens: 10,
+                  completion_tokens: 5,
+                  total_tokens: 15
+                }
+              });
             }
           })
         }
@@ -82,20 +108,30 @@ describe('OpenAIDriver', () => {
     OpenAI.mockImplementationOnce(() => ({
       chat: {
         completions: {
-          create: vi.fn().mockRejectedValue(new Error('API Error'))
+          create: vi.fn().mockImplementation((params) => {
+            if (params.stream) {
+              // Return an async iterable that throws
+              return (async function* () {
+                yield; // Add yield to satisfy generator requirement
+                throw new Error('API Error');
+              })();
+            } else {
+              return Promise.reject(new Error('API Error'));
+            }
+          })
         }
       }
     }));
-    
+
     const errorDriver = new OpenAIDriver({ apiKey: 'test-key' });
     const prompt: CompiledPrompt = {
       instructions: [{ type: 'text', content: 'Test' }],
       data: [],
       output: []
     };
-    
+
     const result = await errorDriver.query(prompt);
-    
+
     expect(result.content).toBe('');
     expect(result.finishReason).toBe('error');
   });

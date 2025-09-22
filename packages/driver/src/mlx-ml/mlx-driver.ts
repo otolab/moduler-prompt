@@ -1,7 +1,7 @@
 import { Readable } from 'stream';
 import type { AIDriver, QueryOptions, QueryResult, StreamResult } from '../types.js';
 import type { FormatterOptions, ChatMessage } from '../formatter/types.js';
-import { formatPrompt, formatPromptAsMessages } from '../formatter/converter.js';
+import { formatPromptAsMessages } from '../formatter/converter.js';
 import { MlxProcess } from './process/index.js';
 import type { MlxMessage, MlxMlModelOptions } from './types.js';
 import type { MlxCapabilities } from './process/types.js';
