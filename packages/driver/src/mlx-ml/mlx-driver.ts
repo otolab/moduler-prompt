@@ -1,7 +1,7 @@
 import { Readable } from 'stream';
-import { BaseDriver } from '../base/base-driver.js';
-import type { ChatMessage } from '../formatter/types.js';
-import type { QueryOptions, QueryResult } from '../types.js';
+import type { AIDriver, QueryOptions, QueryResult, StreamResult } from '../types.js';
+import type { FormatterOptions, ChatMessage } from '../formatter/types.js';
+import { formatPrompt, formatPromptAsMessages } from '../formatter/converter.js';
 import { MlxProcess } from './process/index.js';
 import type { MlxMessage, MlxMlModelOptions } from './types.js';
 import type { MlxCapabilities } from './process/types.js';
@@ -17,6 +17,7 @@ export interface MlxDriverConfig {
   defaultOptions?: Partial<MlxMlModelOptions>;
   modelSpec?: Partial<ModelSpec>;
   customProcessor?: ModelCustomProcessor;
+  formatterOptions?: FormatterOptions;
 }
 
 /**
@@ -65,12 +66,14 @@ class StreamToAsyncIterable {
 /**
  * MLX ML driver using Python subprocess
  */
-export class MlxDriver extends BaseDriver {
+export class MlxDriver implements AIDriver {
   private process: MlxProcess;
   private model: string;
   private defaultOptions: Partial<MlxMlModelOptions>;
   private capabilities: MlxCapabilities | null = null;
   private modelProcessor;
+  private formatterOptions: FormatterOptions;
+  private preferMessageFormat: boolean = true;
   
   /**
    * CompiledPromptにMessageElementが含まれているかチェック
@@ -94,13 +97,19 @@ export class MlxDriver extends BaseDriver {
   }
   
   constructor(config: MlxDriverConfig) {
-    super();
-    
     this.model = config.model;
     this.defaultOptions = config.defaultOptions || {};
     this.process = new MlxProcess(config.model, config.modelSpec, config.customProcessor);
-    this.preferMessageFormat = true; // MLX uses message format
     this.modelProcessor = createModelSpecificProcessor(config.model);
+    this.formatterOptions = config.formatterOptions || {};
+    this.preferMessageFormat = true; // MLX uses message format
+  }
+
+  /**
+   * Get formatter options for this driver
+   */
+  protected getFormatterOptions(): FormatterOptions {
+    return this.formatterOptions;
   }
   
   /**
@@ -327,15 +336,15 @@ export class MlxDriver extends BaseDriver {
   /**
    * Stream query implementation
    */
-  async *streamQuery(
-    prompt: CompiledPrompt, 
+  async streamQuery(
+    prompt: CompiledPrompt,
     options?: QueryOptions
-  ): AsyncIterable<string> {
+  ): Promise<StreamResult> {
     await this.ensureInitialized();
-    
+
     const messages = formatPromptAsMessages(prompt, this.getFormatterOptions());
     const mlxMessages = this.convertMessages(messages);
-    
+
     // Merge options
     const mlxOptions: MlxMlModelOptions = {
       ...this.defaultOptions,
@@ -343,27 +352,27 @@ export class MlxDriver extends BaseDriver {
       temperature: options?.temperature,
       topP: options?.topP
     };
-    
+
     // ドライバーレベルでAPIを選択
     await this.process.ensureInitialized();
     const specManager = this.process.getSpecManager();
-    
+
     // 前処理とモデル固有処理を適用
     let processedMessages = specManager.preprocessMessages(mlxMessages);
     processedMessages = this.applyModelSpecificProcessing(processedMessages);
-    
+
     // MessageElementがあるかチェックしてAPIを決定
     const hasMessageEl = this.hasMessageElement(prompt);
     let api: 'chat' | 'completion';
-    
+
     // まずモデルの制約を確認
     const canUseChat = specManager.canUseChat();
     const canUseCompletion = specManager.canUseCompletion();
-    
+
     if (!canUseChat && !canUseCompletion) {
       throw new Error('Model supports neither chat nor completion API');
     }
-    
+
     if (hasMessageEl) {
       // MessageElementがある場合はchatを優先
       if (canUseChat) {
@@ -385,21 +394,69 @@ export class MlxDriver extends BaseDriver {
         api = specManager.determineApi(processedMessages);
       }
     }
-    
+
     let stream: Readable;
     if (api === 'completion') {
       // completion APIを使用
-      const prompt = specManager.generatePrompt(processedMessages);
-      const processedPrompt = this.applyCompletionSpecificProcessing(prompt);
+      const promptText = specManager.generatePrompt(processedMessages);
+      const processedPrompt = this.applyCompletionSpecificProcessing(promptText);
       stream = await this.process.completion(processedPrompt, mlxOptions);
     } else {
       // chat APIを使用
       stream = await this.process.chat(processedMessages, undefined, mlxOptions);
     }
-    
-    // Convert stream to async iterable
+
+    // Track accumulated content
+    let fullContent = '';
+    const chunks: string[] = [];
+
+    // Convert stream to async iterable and collect chunks
     const iterable = new StreamToAsyncIterable(stream);
-    yield* iterable;
+
+    // Process stream once to collect chunks
+    const processStream = async () => {
+      for await (const chunk of iterable) {
+        fullContent += chunk;
+        chunks.push(chunk);
+      }
+      return {
+        content: fullContent,
+        finishReason: 'stop' as const
+      };
+    };
+
+    // Start processing
+    const resultPromise = processStream();
+
+    // Create a generator that yields the collected chunks
+    async function* streamGenerator(): AsyncIterable<string> {
+      let index = 0;
+      while (index < chunks.length || !await isStreamComplete()) {
+        if (index < chunks.length) {
+          yield chunks[index++];
+        } else {
+          await new Promise(resolve => setTimeout(resolve, 10));
+        }
+      }
+    }
+
+    // Helper to check if stream processing is complete
+    async function isStreamComplete(): Promise<boolean> {
+      try {
+        await Promise.race([
+          resultPromise,
+          new Promise(resolve => setTimeout(resolve, 0))
+        ]);
+        return true;
+      } catch {
+        return false;
+      }
+    }
+
+    return {
+      stream: streamGenerator(),
+      result: resultPromise
+    };
   }
   
   /**
@@ -409,6 +466,3 @@ export class MlxDriver extends BaseDriver {
     this.process.exit();
   }
 }
-
-// Re-import for proper typing
-import { formatPromptAsMessages } from '../formatter/converter.js';

@@ -222,7 +222,8 @@ export async function performAIChat(
       console.log(chalk.cyan('\nAssistant: '));
 
       let response = '';
-      for await (const chunk of driver.streamQuery(compiledPrompt, profile.options)) {
+      const streamResult = await driver.streamQuery(compiledPrompt, profile.options);
+      for await (const chunk of streamResult.stream) {
         process.stdout.write(chunk);
         response += chunk;
       }

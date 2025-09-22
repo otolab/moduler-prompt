@@ -5,6 +5,7 @@
 
 import type { CompiledPrompt, QueryOptions, QueryResult } from '../types.js';
 import { extractJSON } from '@moduler-prompt/utils';
+import type { StreamResult } from '../types.js';
 import { MlxDriver } from './mlx-driver.js';
 
 /**
@@ -50,36 +51,48 @@ export class MlxDriverWithJSON extends MlxDriver {
   /**
    * Override streaming to collect and extract at the end
    */
-  async *streamQuery(
+  async streamQuery(
     prompt: CompiledPrompt,
     options?: QueryOptions
-  ): AsyncIterable<string> {
+  ): Promise<StreamResult> {
+    const parentResult = await super.streamQuery(prompt, options);
     const chunks: string[] = [];
 
-    // Stream and collect
-    for await (const chunk of super.streamQuery(prompt, options)) {
-      chunks.push(chunk);
-      yield chunk;
-    }
-
-    // After streaming, try extraction if schema is specified
-    if (prompt.metadata?.outputSchema) {
-      const fullResponse = chunks.join('');
-      const extraction = extractJSON(fullResponse, {
-        repair: true,
-        multiple: true
-      });
-
-      if (extraction.source !== 'none') {
-        console.log(`\n[JSON extracted: ${
-          Array.isArray(extraction.data)
-            ? `${extraction.data.length} object(s)`
-            : '1 object'
-        }]`);
-      } else {
-        console.log('\n[Warning: No valid JSON found in response]');
+    // Create new stream that collects chunks
+    async function* newStream(): AsyncIterable<string> {
+      for await (const chunk of parentResult.stream) {
+        chunks.push(chunk);
+        yield chunk;
       }
     }
+
+    // Wrap the result to add structured outputs
+    const wrappedResult = parentResult.result.then(result => {
+      // After streaming, try extraction if schema is specified
+      if (prompt.metadata?.outputSchema) {
+        const fullResponse = chunks.join('');
+        const extraction = extractJSON(fullResponse, {
+          repair: true,
+          multiple: true
+        });
+
+        if (extraction.source !== 'none') {
+          console.log(`\n[JSON extracted: ${
+            Array.isArray(extraction.data)
+              ? `${extraction.data.length} object(s)`
+              : '1 object'
+          }]`);
+        } else {
+          console.log('\n[Warning: No valid JSON found in response]');
+        }
+      }
+      return result;
+    });
+
+    return {
+      stream: newStream(),
+      result: wrappedResult
+    };
   }
 }
 

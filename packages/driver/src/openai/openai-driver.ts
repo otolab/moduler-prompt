@@ -187,7 +187,10 @@ export class OpenAIDriver implements AIDriver {
       });
 
       const response = await this.client.chat.completions.create(params);
-      const choice = response.choices[0];
+
+      // Type assertion for non-streaming response
+      const completion = response as OpenAI.Chat.ChatCompletion;
+      const choice = completion.choices[0];
 
       let finishReason: QueryResult['finishReason'] = 'stop';
       if (choice.finish_reason === 'length') {
@@ -212,10 +215,10 @@ export class OpenAIDriver implements AIDriver {
       return {
         content,
         structuredOutputs,
-        usage: response.usage ? {
-          promptTokens: response.usage.prompt_tokens,
-          completionTokens: response.usage.completion_tokens,
-          totalTokens: response.usage.total_tokens
+        usage: completion.usage ? {
+          promptTokens: completion.usage?.prompt_tokens || 0,
+          completionTokens: completion.usage?.completion_tokens || 0,
+          totalTokens: completion.usage?.total_tokens || 0
         } : undefined,
         finishReason
       };

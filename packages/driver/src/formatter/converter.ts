@@ -232,10 +232,10 @@ function elementToMessages(element: Element, formatter: ElementFormatter): ChatM
       
     case 'chunk': {
       // Format chunk with partOf, index, and total
-      const chunkContent = typeof element.content === 'string' 
-        ? element.content 
+      const chunkContent = typeof element.content === 'string'
+        ? element.content
         : JSON.stringify(element.content);
-      
+
       // Format header based on available information
       let chunkHeader: string;
       if (element.index !== undefined && element.total !== undefined) {
@@ -245,13 +245,24 @@ function elementToMessages(element: Element, formatter: ElementFormatter): ChatM
       } else {
         chunkHeader = `Part of ${element.partOf}:`;
       }
-      
+
       return [{
         role: 'system',
         content: `${chunkHeader}\n\n${chunkContent}`
       }];
     }
-      
+
+    case 'json': {
+      // Format JSONElement
+      const jsonContent = typeof element.content === 'string'
+        ? element.content
+        : JSON.stringify(element.content, null, 2);
+      return [{
+        role: 'system',
+        content: `JSON Output Format:\n${jsonContent}`
+      }];
+    }
+
     default: {
       // Type guard exhaustive check
       const _exhaustive: never = element;

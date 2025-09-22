@@ -8,9 +8,8 @@ import {
   ResponseSchema,
   SchemaType
 } from '@google-cloud/vertexai';
-import { BaseDriver } from '../base/base-driver.js';
-import type { ChatMessage } from '../formatter/types.js';
-import type { QueryOptions, QueryResult } from '../types.js';
+import type { CompiledPrompt, Element } from '@moduler-prompt/core';
+import type { AIDriver, QueryOptions, QueryResult, StreamResult } from '../types.js';
 
 /**
  * VertexAI driver configuration
@@ -55,33 +54,68 @@ const finishReasonMap: Record<FinishReason | 'error', QueryResult['finishReason'
 /**
  * VertexAI (Google Gemini) driver
  */
-export class VertexAIDriver extends BaseDriver {
+export class VertexAIDriver implements AIDriver {
   private vertexAI: VertexAI;
   private defaultModel: string;
   private defaultTemperature: number;
   private defaultOptions: Partial<VertexAIQueryOptions>;
   
   constructor(config: VertexAIDriverConfig = {}) {
-    super();
-    
     const project = config.project || process.env.GOOGLE_CLOUD_PROJECT || process.env.ANTHROPIC_VERTEX_PROJECT_ID;
     const location = config.location || process.env.GOOGLE_CLOUD_REGION || process.env.CLOUD_ML_REGION || 'us-central1';
-    
+
     if (!project) {
       throw new Error('VertexAI project ID is required. Set it in config or GOOGLE_CLOUD_PROJECT environment variable.');
     }
-    
+
     this.vertexAI = new VertexAI({ project, location });
     this.defaultModel = config.model || 'gemini-2.0-flash-001';
     this.defaultTemperature = config.temperature ?? 0.05;
     this.defaultOptions = config.defaultOptions || {};
-    this.preferMessageFormat = true; // VertexAI uses message format
   }
   
   /**
-   * Convert our ChatMessage format to VertexAI's format
+   * Convert CompiledPrompt to VertexAI's format
    */
-  private convertMessages(messages: ChatMessage[]): GenerateContentRequest {
+  private compiledPromptToVertexAI(prompt: CompiledPrompt): GenerateContentRequest {
+    const messages: Array<{ role: 'system' | 'user' | 'assistant'; content: string }> = [];
+
+    // Convert Element[] to string using formatter
+    const formatElements = (elements: Element[]): string => {
+      return elements.map(el => {
+        if (typeof el === 'string') return el;
+        if ('content' in el) return el.content;
+        return JSON.stringify(el);
+      }).join('\n');
+    };
+
+    // Add instructions as system message
+    if (prompt.instructions && prompt.instructions.length > 0) {
+      messages.push({ role: 'system', content: formatElements(prompt.instructions) });
+    }
+
+    // Add data as user message if present
+    if (prompt.data && prompt.data.length > 0) {
+      messages.push({ role: 'user', content: formatElements(prompt.data) });
+    }
+
+    // Add output format as user message if present
+    if (prompt.output && prompt.output.length > 0) {
+      messages.push({ role: 'user', content: formatElements(prompt.output) });
+    }
+
+    // If no user messages, add a default one
+    if (!prompt.data && !prompt.output) {
+      messages.push({ role: 'user', content: 'Please process according to the instructions.' });
+    }
+
+    return this.convertMessages(messages);
+  }
+
+  /**
+   * Convert messages to VertexAI's format
+   */
+  private convertMessages(messages: Array<{ role: 'system' | 'user' | 'assistant'; content: string }>): GenerateContentRequest {
     // Separate system messages from conversation
     const systemMessages = messages.filter(m => m.role === 'system');
     const conversation = messages.filter(m => m.role !== 'system');
@@ -205,18 +239,18 @@ export class VertexAIDriver extends BaseDriver {
   }
   
   /**
-   * Query with messages
+   * Query implementation
    */
-  protected async queryWithMessages(
-    messages: ChatMessage[], 
+  async query(
+    prompt: CompiledPrompt,
     options: VertexAIQueryOptions = {}
   ): Promise<QueryResult> {
     try {
       // Merge options with defaults
       const mergedOptions = { ...this.defaultOptions, ...options };
-      
-      // Convert messages
-      const request = this.convertMessages(messages);
+
+      // Convert prompt to VertexAI format
+      const request = this.compiledPromptToVertexAI(prompt);
       
       // Create generation config
       const generationConfig: GenerationConfig = {
@@ -224,8 +258,8 @@ export class VertexAIDriver extends BaseDriver {
         temperature: mergedOptions.temperature ?? this.defaultTemperature,
         topP: mergedOptions.topP,
         topK: mergedOptions.topK,
-        responseMimeType: mergedOptions.responseFormat === 'json' ? 'application/json' : 'text/plain',
-        responseSchema: this.convertJsonSchema(mergedOptions.jsonSchema)
+        responseMimeType: prompt.metadata?.outputSchema ? 'application/json' : 'text/plain',
+        responseSchema: this.convertJsonSchema(prompt.metadata?.outputSchema)
       };
       
       // Remove undefined values
@@ -258,10 +292,21 @@ export class VertexAIDriver extends BaseDriver {
       
       // Map finish reason
       const finishReason = finishReasonMap[candidate.finishReason || 'error'];
-      
+
+      // Handle structured outputs
+      let structuredOutputs: unknown[] | undefined;
+      if (prompt.metadata?.outputSchema && content) {
+        try {
+          structuredOutputs = [JSON.parse(content)];
+        } catch {
+          // Keep as text if not valid JSON
+        }
+      }
+
       return {
         content,
         finishReason,
+        structuredOutputs,
         usage: response.usageMetadata ? {
           promptTokens: response.usageMetadata.promptTokenCount || 0,
           completionTokens: response.usageMetadata.candidatesTokenCount || 0,
@@ -279,41 +324,91 @@ export class VertexAIDriver extends BaseDriver {
   /**
    * Stream query implementation
    */
-  async *streamQuery(
-    prompt: import('@moduler-prompt/core').CompiledPrompt, 
+  async streamQuery(
+    prompt: CompiledPrompt,
     options?: VertexAIQueryOptions
-  ): AsyncIterable<string> {
-    const messages = formatPromptAsMessages(prompt, this.getFormatterOptions());
+  ): Promise<StreamResult> {
     const mergedOptions = { ...this.defaultOptions, ...options };
-    
-    // Convert messages
-    const request = this.convertMessages(messages);
-    
+
+    // Convert prompt to VertexAI format
+    const request = this.compiledPromptToVertexAI(prompt);
+
     // Create generation config
     const generationConfig: GenerationConfig = {
       maxOutputTokens: mergedOptions.maxTokens || 1000,
       temperature: mergedOptions.temperature ?? this.defaultTemperature,
-      responseMimeType: 'text/plain'
+      responseMimeType: prompt.metadata?.outputSchema ? 'application/json' : 'text/plain',
+      responseSchema: this.convertJsonSchema(prompt.metadata?.outputSchema)
     };
-    
+
     // Remove undefined values
     Object.keys(generationConfig).forEach(key => {
       if (generationConfig[key as keyof GenerationConfig] === undefined) {
         delete generationConfig[key as keyof GenerationConfig];
       }
     });
-    
+
     // Create client and generate stream
     const model = mergedOptions.model || this.defaultModel;
     const client = this.createClient(model, generationConfig);
     const streamingResult = await client.generateContentStream(request);
-    
-    // Stream chunks
-    for await (const chunk of streamingResult.stream) {
-      if (chunk?.candidates?.[0]?.content?.parts?.[0]?.text) {
-        yield chunk.candidates[0].content.parts[0].text;
+
+    // Create stream generator
+    async function* streamGenerator(): AsyncIterable<string> {
+      for await (const chunk of streamingResult.stream) {
+        if (chunk?.candidates?.[0]?.content?.parts?.[0]?.text) {
+          yield chunk.candidates[0].content.parts[0].text;
+        }
       }
     }
+
+    // Create result promise
+    const resultPromise = (async (): Promise<QueryResult> => {
+      // Aggregate the response from streaming
+      const response = await streamingResult.response;
+      const candidate = response.candidates?.[0];
+
+      if (!candidate || !candidate.content) {
+        return {
+          content: '',
+          finishReason: 'error'
+        };
+      }
+
+      // Extract text content
+      const content = candidate.content.parts
+        .map(part => part.text || '')
+        .join('');
+
+      // Map finish reason
+      const finishReason = finishReasonMap[candidate.finishReason || 'error'];
+
+      // Handle structured outputs
+      let structuredOutputs: unknown[] | undefined;
+      if (prompt.metadata?.outputSchema && content) {
+        try {
+          structuredOutputs = [JSON.parse(content)];
+        } catch {
+          // Keep as text if not valid JSON
+        }
+      }
+
+      return {
+        content,
+        finishReason,
+        structuredOutputs,
+        usage: response.usageMetadata ? {
+          promptTokens: response.usageMetadata.promptTokenCount || 0,
+          completionTokens: response.usageMetadata.candidatesTokenCount || 0,
+          totalTokens: response.usageMetadata.totalTokenCount || 0
+        } : undefined
+      };
+    })();
+
+    return {
+      stream: streamGenerator(),
+      result: resultPromise
+    };
   }
   
   /**
@@ -323,6 +418,3 @@ export class VertexAIDriver extends BaseDriver {
     // VertexAI client doesn't need explicit closing
   }
 }
-
-// Re-import for proper typing
-import { formatPromptAsMessages } from '../formatter/converter.js';

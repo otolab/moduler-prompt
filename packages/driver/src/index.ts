@@ -8,11 +8,6 @@ export type {
   Role
 } from './types.js';
 
-// Base driver
-export {
-  BaseDriver
-} from './base/base-driver.js';
-
 // Test driver
 export {
   TestDriver,

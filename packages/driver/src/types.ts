@@ -74,12 +74,12 @@ export interface AIDriver {
   /**
    * Query the AI model with a compiled prompt
    */
-  query(prompt: CompiledPrompt, options?: QueryOptions): Promise<QueryResult>;
+  query(prompt: import('@moduler-prompt/core').CompiledPrompt, options?: QueryOptions): Promise<QueryResult>;
 
   /**
    * Stream query with both stream and result
    */
-  streamQuery(prompt: CompiledPrompt, options?: QueryOptions): Promise<StreamResult>;
+  streamQuery(prompt: import('@moduler-prompt/core').CompiledPrompt, options?: QueryOptions): Promise<StreamResult>;
 
   /**
    * Close the driver connection
