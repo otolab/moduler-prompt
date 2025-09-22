@@ -406,55 +406,54 @@ export class MlxDriver implements AIDriver {
       stream = await this.process.chat(processedMessages, undefined, mlxOptions);
     }
 
-    // Track accumulated content
+    // Track accumulated content for the result
     let fullContent = '';
     const chunks: string[] = [];
+    let streamCompleted = false;
+    let streamError: Error | null = null;
 
-    // Convert stream to async iterable and collect chunks
+    // Convert stream to async iterable
     const iterable = new StreamToAsyncIterable(stream);
 
-    // Process stream once to collect chunks
-    const processStream = async () => {
-      for await (const chunk of iterable) {
-        fullContent += chunk;
-        chunks.push(chunk);
+    // Create a spy generator that passes through chunks while collecting them
+    async function* streamGenerator(): AsyncIterable<string> {
+      try {
+        for await (const chunk of iterable) {
+          fullContent += chunk;
+          chunks.push(chunk);
+          yield chunk; // Pass through the chunk immediately
+        }
+        streamCompleted = true;
+      } catch (error) {
+        streamError = error as Error;
+        streamCompleted = true;
+        throw error;
       }
+    }
+
+    // Create the actual stream that can be consumed
+    const actualStream = streamGenerator();
+
+    // Create result promise that waits for stream completion
+    const resultPromise = (async (): Promise<QueryResult> => {
+      // Wait for stream to complete
+      while (!streamCompleted) {
+        await new Promise(resolve => setTimeout(resolve, 10));
+      }
+
+      // If there was an error, throw it
+      if (streamError) {
+        throw streamError;
+      }
+
       return {
         content: fullContent,
         finishReason: 'stop' as const
       };
-    };
-
-    // Start processing
-    const resultPromise = processStream();
-
-    // Create a generator that yields the collected chunks
-    async function* streamGenerator(): AsyncIterable<string> {
-      let index = 0;
-      while (index < chunks.length || !await isStreamComplete()) {
-        if (index < chunks.length) {
-          yield chunks[index++];
-        } else {
-          await new Promise(resolve => setTimeout(resolve, 10));
-        }
-      }
-    }
-
-    // Helper to check if stream processing is complete
-    async function isStreamComplete(): Promise<boolean> {
-      try {
-        await Promise.race([
-          resultPromise,
-          new Promise(resolve => setTimeout(resolve, 0))
-        ]);
-        return true;
-      } catch {
-        return false;
-      }
-    }
+    })();
 
     return {
-      stream: streamGenerator(),
+      stream: actualStream,
       result: resultPromise
     };
   }
