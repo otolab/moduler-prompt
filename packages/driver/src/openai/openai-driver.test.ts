@@ -37,7 +37,6 @@ describe('OpenAIDriver', () => {
   
   it('should initialize with config', () => {
     expect(driver).toBeDefined();
-    expect(driver.preferMessageFormat).toBe(true);
   });
   
   it('should query with a compiled prompt', async () => {

@@ -230,8 +230,10 @@ describe('MlxDriver - MessageElement based API selection', () => {
       output: []
     };
 
+    const { stream } = await driver.streamQuery(promptWithMessageElement);
+
     const chunks: string[] = [];
-    for await (const chunk of driver.streamQuery(promptWithMessageElement)) {
+    for await (const chunk of stream) {
       chunks.push(chunk);
     }
 

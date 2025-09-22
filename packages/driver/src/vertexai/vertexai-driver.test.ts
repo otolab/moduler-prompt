@@ -86,7 +86,6 @@ describe('VertexAIDriver', () => {
   
   it('should initialize with config', () => {
     expect(driver).toBeDefined();
-    expect(driver.preferMessageFormat).toBe(true);
   });
   
   it('should throw error if project is not provided', () => {
@@ -148,11 +147,13 @@ describe('VertexAIDriver', () => {
       output: []
     };
     
+    const { stream } = await driver.streamQuery(prompt);
+
     const chunks: string[] = [];
-    for await (const chunk of driver.streamQuery(prompt)) {
+    for await (const chunk of stream) {
       chunks.push(chunk);
     }
-    
+
     expect(chunks).toEqual(['Streaming ', 'response']);
   });
   

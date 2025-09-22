@@ -215,32 +215,6 @@ describe('TestDriver', () => {
   });
 
   describe('formatter options', () => {
-    it('returns default formatter options', () => {
-      const driver = new TestDriver();
-      const options = driver.getFormatterOptions();
-      
-      expect(options).toEqual({});
-    });
-    
-    it('returns custom formatter options', () => {
-      const customOptions: FormatterOptions = {
-        markers: {
-          materialStart: '<ref>',
-          materialEnd: '</ref>',
-          chunkStart: '<part>',
-          chunkEnd: '</part>'
-        },
-        lineBreak: '\r\n'
-      };
-      
-      const driver = new TestDriver({
-        formatterOptions: customOptions
-      });
-      
-      const options = driver.getFormatterOptions();
-      expect(options).toEqual(customOptions);
-    });
-    
     it('uses formatter options for prompt formatting', async () => {
       const driver = new TestDriver({
         responses: ['Test response'],
@@ -251,7 +225,7 @@ describe('TestDriver', () => {
           }
         }
       });
-      
+
       const prompt: CompiledPrompt = {
         instructions: [
           {
@@ -264,9 +238,9 @@ describe('TestDriver', () => {
         data: [],
         output: []
       };
-      
+
       const result = await driver.query(prompt);
-      
+
       // The driver should use the formatter options internally
       // We're mainly testing that it doesn't crash and returns expected result
       expect(result.content).toBe('Test response');
@@ -274,67 +248,5 @@ describe('TestDriver', () => {
       expect(result.usage?.promptTokens).toBeGreaterThan(0);
     });
   });
-  
-  describe('preferMessageFormat', () => {
-    it('should default to false when not specified', () => {
-      const driver = new TestDriver();
-      expect(driver.preferMessageFormat).toBe(false);
-    });
-    
-    it('should use provided preference', () => {
-      let driver = new TestDriver({ preferMessageFormat: true });
-      expect(driver.preferMessageFormat).toBe(true);
-      
-      driver = new TestDriver({ preferMessageFormat: false });
-      expect(driver.preferMessageFormat).toBe(false);
-    });
-    
-    it('should use message format when preferred', async () => {
-      const driver = new TestDriver({
-        preferMessageFormat: true,
-        responses: ['Test response'],
-        formatterOptions: {
-          preamble: 'Test preamble',
-          sectionDescriptions: {
-            instructions: 'Instructions desc'
-          }
-        }
-      });
-      
-      const prompt: CompiledPrompt = {
-        instructions: [{ type: 'text', content: 'Test instruction' }],
-        data: [],
-        output: []
-      };
-      
-      const result = await driver.query(prompt);
-      expect(result.content).toBe('Test response');
-      
-      // Check usage calculation uses message format
-      // With message format, the prompt is converted to messages then joined
-      expect(result.usage).toBeDefined();
-      expect(result.usage?.promptTokens).toBeGreaterThan(0);
-    });
-    
-    it('should use text format when not preferred', async () => {
-      const driver = new TestDriver({
-        preferMessageFormat: false,
-        responses: ['Test response'],
-        formatterOptions: {
-          preamble: 'Test preamble'
-        }
-      });
-      
-      const prompt: CompiledPrompt = {
-        instructions: [{ type: 'text', content: 'Test instruction' }],
-        data: [],
-        output: []
-      };
-      
-      const result = await driver.query(prompt);
-      expect(result.content).toBe('Test response');
-      expect(result.usage).toBeDefined();
-      expect(result.usage?.promptTokens).toBeGreaterThan(0);
-    });
-  });
+
 });
