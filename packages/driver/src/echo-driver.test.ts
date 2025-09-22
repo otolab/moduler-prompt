@@ -155,18 +155,24 @@ describe('EchoDriver', () => {
         streamChunkSize: 50
       });
       
+      const { stream, result } = await driver.streamQuery(samplePrompt);
+
       const chunks: string[] = [];
-      for await (const chunk of driver.streamQuery(samplePrompt)) {
+      for await (const chunk of stream) {
         chunks.push(chunk);
       }
-      
+
       expect(chunks.length).toBeGreaterThan(1);
-      
+
       // Reconstruct content from chunks
       const fullContent = chunks.join('');
       expect(fullContent).toContain('# Instructions');
       expect(fullContent).toContain('# Data');
       expect(fullContent).toContain('# Output');
+
+      // Verify result promise
+      const finalResult = await result;
+      expect(finalResult.content).toBe(fullContent);
     });
   });
   

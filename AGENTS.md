@@ -14,7 +14,7 @@ AIアシスタントがコードベースを効率的に理解・操作するた
 - `packages/core/src/merge.ts` - モジュールのマージ処理
 
 ### ドライバー
-- `packages/driver/src/base-driver.ts` - 基底ドライバークラス
+- `packages/driver/src/types.ts` - ドライバーインターフェース定義
 - `packages/driver/src/*/` - 各AIサービス実装（openai、anthropic、vertexai、mlx等）
 
 ### ユーティリティ
@@ -24,8 +24,20 @@ AIアシスタントがコードベースを効率的に理解・操作するた
 ## 開発コマンド
 
 ```bash
+# 依存関係のインストール（プロジェクトルートで実行）
+npm install
+
 # ビルド
 npm run build
+
+# クリーンビルド（エラー時に推奨）
+npm run clean && npm run build
+
+# 個別パッケージのビルド
+npm run build -w @moduler-prompt/core
+npm run build -w @moduler-prompt/driver
+npm run build -w @moduler-prompt/utils
+npm run build -w @moduler-prompt/process
 
 # テスト
 npm test
@@ -35,6 +47,11 @@ npm run typecheck
 
 # Lint
 npm run lint
+
+# トラブルシューティング
+# - ビルドエラー時: npm run clean && npm install && npm run build
+# - TypeScript参照エラー: 各パッケージで tsc --build を使用
+# - 注意: npm run clean実行後は必ずnpm installが必要（node_modulesも削除されるため）
 ```
 
 ## 主要概念
@@ -146,6 +163,7 @@ npm run lint
 - `@moduler-prompt/driver` - AIモデルドライバー
   - OpenAI、Anthropic、VertexAI、Ollama、MLX
   - 統一インターフェースとストリーミングサポート
+  - StreamResult型: stream（AsyncIterable<string>）+ result（Promise<QueryResult>）
 
 ### ユーティリティパッケージ
 - `@moduler-prompt/utils` - ユーティリティ機能
@@ -185,13 +203,13 @@ npm run lint
   - モックレスポンス
   - テスト用途
 
-### 基底クラス設計
-- **BaseDriver** (`packages/driver/src/base-driver.ts`)
-  - 全ドライバーの基底クラス
-  - プロンプト生成責任の統合
-  - formatPrompt: テキスト形式生成
-  - formatPromptAsMessages: メッセージ形式生成
-  - preferMessageFormatフラグで形式選択
+### ドライバーインターフェース
+- **AIDriver** (`packages/driver/src/types.ts`)
+  - 全ドライバーが実装する統一インターフェース
+  - query: 通常クエリ実行
+  - streamQuery: ストリーミングクエリ（StreamResult型を返す）
+  - close: リソースクリーンアップ
+  - 各ドライバーが独立してCompiledPromptを処理
 
 ## テスト構成
 - ユニットテスト：`*.test.ts`（実装と同階層）

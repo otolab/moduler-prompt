@@ -5,9 +5,11 @@
     "rootDir": "./src"
   },
   "include": ["src/**/*"],
+  "exclude": ["node_modules", "dist", "**/*.test.ts", "**/*.e2e.test.ts"],
   "references": [
     { "path": "../core" },
     { "path": "../driver" },
+    { "path": "../process" },
     { "path": "../utils" }
   ]
 }

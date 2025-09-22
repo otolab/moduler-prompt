@@ -1,11 +1,12 @@
-import type { 
-  Element, 
-  TextElement, 
-  MessageElement, 
+import type {
+  Element,
+  TextElement,
+  MessageElement,
   MaterialElement,
   ChunkElement,
   SectionElement,
-  SubSectionElement
+  SubSectionElement,
+  JSONElement
 } from '@moduler-prompt/core';
 import type { ElementFormatter, FormatterOptions, SpecialToken, SpecialTokenPair } from './types.js';
 
@@ -59,6 +60,8 @@ export class DefaultFormatter implements ElementFormatter {
         return this.formatSection(element);
       case 'subsection':
         return this.formatSubSection(element);
+      case 'json':
+        return this.formatJSONElement(element);
       default: {
         // Type guard exhaustive check
         const _exhaustive: never = element;
@@ -223,16 +226,33 @@ export class DefaultFormatter implements ElementFormatter {
     return lines.join(lineBreak);
   }
   
+  private formatJSONElement(element: JSONElement): string {
+    const { lineBreak } = this.options;
+    const lines: string[] = [];
+
+    const jsonContent = typeof element.content === 'string'
+      ? element.content
+      : JSON.stringify(element.content, null, 2);
+
+    lines.push('### JSON Output Format');
+    lines.push('');
+    lines.push('```json');
+    lines.push(jsonContent);
+    lines.push('```');
+
+    return lines.join(lineBreak);
+  }
+
   private formatSubSection(element: SubSectionElement): string {
     const { markers, lineBreak } = this.options;
     const lines: string[] = [];
-    
+
     // Add subsection start marker if provided
     if (markers.subsectionStart) lines.push(markers.subsectionStart);
-    
+
     lines.push(`### ${element.title}`);
     lines.push('');
-    
+
     // Format items as bullet list
     for (const item of element.items) {
       lines.push(`- ${item}`);

@@ -1,0 +1,11 @@
+{
+  "files": [],
+  "include": [],
+  "references": [
+    { "path": "packages/core" },
+    { "path": "packages/utils" },
+    { "path": "packages/driver" },
+    { "path": "packages/process" },
+    { "path": "packages/simple-chat" }
+  ]
+}

@@ -1,8 +1,7 @@
-import { BaseDriver } from './base/base-driver.js';
-import type { FormatterOptions, ChatMessage } from './formatter/types.js';
-import { formatPrompt, formatPromptAsMessages } from './formatter/converter.js';
 import type { CompiledPrompt } from '@moduler-prompt/core';
-import type { QueryOptions, QueryResult } from './types.js';
+import type { AIDriver, QueryOptions, QueryResult, StreamResult } from './types.js';
+import type { FormatterOptions } from './formatter/types.js';
+import { formatPrompt, formatPromptAsMessages } from './formatter/converter.js';
 
 /**
  * Echo driver configuration
@@ -43,22 +42,19 @@ export interface EchoDriverConfig {
  * Echo test driver that returns the formatted prompt
  * Useful for testing and debugging prompt generation
  */
-export class EchoDriver extends BaseDriver {
+export class EchoDriver implements AIDriver {
   private format: EchoDriverConfig['format'];
   private includeMetadata: boolean;
   private simulateUsage: boolean;
   private streamChunkSize: number;
-  
+  private formatterOptions: FormatterOptions;
+
   constructor(config: EchoDriverConfig = {}) {
-    super(config.formatterOptions);
-    
     this.format = config.format || 'text';
     this.includeMetadata = config.includeMetadata ?? false;
     this.simulateUsage = config.simulateUsage ?? true;
     this.streamChunkSize = config.streamChunkSize ?? 100;
-    
-    // Set preferMessageFormat based on format option
-    this.preferMessageFormat = this.format === 'messages';
+    this.formatterOptions = config.formatterOptions || {};
   }
   
   /**
@@ -69,35 +65,35 @@ export class EchoDriver extends BaseDriver {
     
     switch (this.format) {
       case 'text': {
-        content = formatPrompt(prompt, this.getFormatterOptions());
+        content = formatPrompt(prompt, this.formatterOptions);
         break;
       }
-      
+
       case 'messages': {
-        const messages = formatPromptAsMessages(prompt, this.getFormatterOptions());
+        const messages = formatPromptAsMessages(prompt, this.formatterOptions);
         content = JSON.stringify(messages, null, 2);
         break;
       }
-      
+
       case 'raw': {
         content = JSON.stringify(prompt, null, 2);
         break;
       }
-      
+
       case 'both': {
-        const text = formatPrompt(prompt, this.getFormatterOptions());
-        const messages = formatPromptAsMessages(prompt, this.getFormatterOptions());
+        const text = formatPrompt(prompt, this.formatterOptions);
+        const messages = formatPromptAsMessages(prompt, this.formatterOptions);
         content = JSON.stringify({
           text,
           messages
         }, null, 2);
         break;
       }
-      
+
       case 'debug': {
-        const text = formatPrompt(prompt, this.getFormatterOptions());
-        const messages = formatPromptAsMessages(prompt, this.getFormatterOptions());
-        
+        const text = formatPrompt(prompt, this.formatterOptions);
+        const messages = formatPromptAsMessages(prompt, this.formatterOptions);
+
         const debug = {
           raw: prompt,
           formatted: {
@@ -108,17 +104,17 @@ export class EchoDriver extends BaseDriver {
             instructionsCount: prompt.instructions?.length || 0,
             dataCount: prompt.data?.length || 0,
             outputCount: prompt.output?.length || 0,
-            formatterOptions: this.getFormatterOptions(),
+            formatterOptions: this.formatterOptions,
             queryOptions: options
           }
         };
-        
+
         content = JSON.stringify(debug, null, 2);
         break;
       }
-      
+
       default:
-        content = formatPrompt(prompt, this.getFormatterOptions());
+        content = formatPrompt(prompt, this.formatterOptions);
     }
     
     // Add metadata if requested
@@ -148,81 +144,32 @@ export class EchoDriver extends BaseDriver {
   /**
    * Stream query implementation
    */
-  async *streamQuery(prompt: CompiledPrompt, options?: QueryOptions): AsyncIterable<string> {
+  async streamQuery(prompt: CompiledPrompt, options?: QueryOptions): Promise<StreamResult> {
     const result = await this.query(prompt, options);
     const content = result.content;
-    
-    // Stream in chunks
-    for (let i = 0; i < content.length; i += this.streamChunkSize) {
-      yield content.slice(i, i + this.streamChunkSize);
-      
-      // Small delay to simulate streaming
-      await new Promise(resolve => setTimeout(resolve, 10));
+    const chunkSize = this.streamChunkSize;
+
+    // Create stream generator
+    async function* streamGenerator(): AsyncIterable<string> {
+      // Stream in chunks
+      for (let i = 0; i < content.length; i += chunkSize) {
+        yield content.slice(i, i + chunkSize);
+
+        // Small delay to simulate streaming
+        await new Promise(resolve => setTimeout(resolve, 10));
+      }
     }
-  }
-  
-  /**
-   * Override queryWithMessages to handle message format
-   */
-  protected async queryWithMessages(messages: ChatMessage[], options?: QueryOptions): Promise<QueryResult> {
-    let content: string;
-    
-    if (this.format === 'messages' || this.format === 'both') {
-      content = JSON.stringify(messages, null, 2);
-    } else {
-      // Convert messages back to text for other formats
-      content = messages.map(m => `${m.role}: ${m.content}`).join('\n\n');
-    }
-    
-    if (this.includeMetadata) {
-      const metadata = {
-        format: 'messages',
-        messageCount: messages.length,
-        timestamp: new Date().toISOString(),
-        options
-      };
-      content = `=== METADATA ===\n${JSON.stringify(metadata, null, 2)}\n\n=== MESSAGES ===\n${content}`;
-    }
-    
-    const usage = this.simulateUsage ? {
-      promptTokens: Math.ceil(content.length / 4),
-      completionTokens: 0,
-      totalTokens: Math.ceil(content.length / 4)
-    } : undefined;
-    
+
     return {
-      content,
-      finishReason: 'stop',
-      usage
+      stream: streamGenerator(),
+      result: Promise.resolve(result)
     };
   }
   
   /**
-   * Override queryWithText to handle text format
+   * Close the driver
    */
-  protected async queryWithText(text: string, options?: QueryOptions): Promise<QueryResult> {
-    let content = text;
-    
-    if (this.includeMetadata) {
-      const metadata = {
-        format: 'text',
-        textLength: text.length,
-        timestamp: new Date().toISOString(),
-        options
-      };
-      content = `=== METADATA ===\n${JSON.stringify(metadata, null, 2)}\n\n=== TEXT ===\n${content}`;
-    }
-    
-    const usage = this.simulateUsage ? {
-      promptTokens: Math.ceil(content.length / 4),
-      completionTokens: 0,
-      totalTokens: Math.ceil(content.length / 4)
-    } : undefined;
-    
-    return {
-      content,
-      finishReason: 'stop',
-      usage
-    };
+  async close(): Promise<void> {
+    // No resources to clean up
   }
 }

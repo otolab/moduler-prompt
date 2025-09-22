@@ -1,7 +1,6 @@
 import Anthropic from '@anthropic-ai/sdk';
-import { BaseDriver } from '../base/base-driver.js';
-import type { ChatMessage } from '../formatter/types.js';
-import type { QueryOptions, QueryResult } from '../types.js';
+import type { CompiledPrompt, Element } from '@moduler-prompt/core';
+import type { AIDriver, QueryOptions, QueryResult, StreamResult } from '../types.js';
 
 /**
  * Anthropic driver configuration
@@ -27,153 +26,222 @@ export interface AnthropicQueryOptions extends QueryOptions {
 /**
  * Anthropic API driver
  */
-export class AnthropicDriver extends BaseDriver {
+export class AnthropicDriver implements AIDriver {
   private client: Anthropic;
   private defaultModel: string;
   private defaultOptions: Partial<AnthropicQueryOptions>;
-  
+
   constructor(config: AnthropicDriverConfig = {}) {
-    super();
-    
     this.client = new Anthropic({
       apiKey: config.apiKey || process.env.ANTHROPIC_API_KEY
     });
-    
+
     this.defaultModel = config.model || 'claude-3-5-sonnet-20241022';
     this.defaultOptions = config.defaultOptions || {};
-    this.preferMessageFormat = true; // Anthropic uses message format
   }
-  
+
   /**
-   * Convert our ChatMessage format to Anthropic's format
+   * Convert CompiledPrompt to Anthropic messages
    */
-  private convertMessages(messages: ChatMessage[]): { 
+  private compiledPromptToAnthropic(prompt: CompiledPrompt): {
     system?: string;
     messages: Array<{ role: 'user' | 'assistant'; content: string }>;
   } {
     let system: string | undefined;
-    const anthropicMessages: Array<{ role: 'user' | 'assistant'; content: string }> = [];
-    
-    for (const msg of messages) {
-      if (msg.role === 'system') {
-        // Anthropic puts system messages in a separate field
-        system = system ? `${system}\n\n${msg.content}` : msg.content;
-      } else if (msg.role === 'user') {
-        anthropicMessages.push({ role: 'user', content: msg.content });
-      } else {
-        anthropicMessages.push({ role: 'assistant', content: msg.content });
-      }
-    }
-    
-    // Ensure messages alternate between user and assistant
-    // If first message is not user, add a dummy user message
-    if (anthropicMessages.length > 0 && anthropicMessages[0].role !== 'user') {
-      anthropicMessages.unshift({ role: 'user', content: 'Continue.' });
-    }
-    
-    // If last message is user, we're good
-    // If last message is assistant, add a dummy user message
-    if (anthropicMessages.length > 0 && anthropicMessages[anthropicMessages.length - 1].role === 'assistant') {
-      anthropicMessages.push({ role: 'user', content: 'Continue.' });
-    }
-    
-    // If no messages, add a default
-    if (anthropicMessages.length === 0) {
-      anthropicMessages.push({ role: 'user', content: 'Please respond according to the instructions.' });
-    }
-    
-    return { system, messages: anthropicMessages };
-  }
-  
-  /**
-   * Query with messages
-   */
-  protected async queryWithMessages(
-    messages: ChatMessage[], 
-    options: AnthropicQueryOptions = {}
-  ): Promise<QueryResult> {
-    try {
-      // Merge options with defaults
-      const mergedOptions = { ...this.defaultOptions, ...options };
-      
-      // Convert messages
-      const { system, messages: anthropicMessages } = this.convertMessages(messages);
-      
-      // Make the API call
-      const response = await this.client.messages.create({
-        model: mergedOptions.model || this.defaultModel,
-        messages: anthropicMessages,
-        max_tokens: mergedOptions.maxTokens || 4096,
-        temperature: mergedOptions.temperature,
-        top_p: mergedOptions.topP,
-        top_k: mergedOptions.topK,
-        stop_sequences: mergedOptions.stopSequences,
-        system
-      });
-      
-      // Extract text content
-      let content = '';
-      for (const block of response.content) {
-        if (block.type === 'text') {
-          content += block.text;
+    const messages: Array<{ role: 'user' | 'assistant'; content: string }> = [];
+
+    // Helper to process elements
+    const processElements = (elements: unknown[]): string => {
+      const content: string[] = [];
+
+      for (const element of elements) {
+        if (typeof element === 'string') {
+          content.push(element);
+        } else if (typeof element === 'object' && element !== null && 'type' in element) {
+          const el = element as Element;
+
+          if (el.type === 'text') {
+            content.push(el.content);
+          } else if (el.type === 'message') {
+            // Handle message elements separately
+            const role = el.role === 'system' ? 'system' : el.role === 'user' ? 'user' : 'assistant';
+            const messageContent = typeof el.content === 'string' ? el.content : JSON.stringify(el.content);
+
+            if (role === 'system') {
+              system = system ? `${system}\n\n${messageContent}` : messageContent;
+            } else {
+              messages.push({ role: role as 'user' | 'assistant', content: messageContent });
+            }
+          } else if (el.type === 'section' || el.type === 'subsection') {
+            // Process section content
+            if (el.title) content.push(`## ${el.title}`);
+            if (el.content) content.push(el.content);
+            if (el.items) {
+              for (const item of el.items) {
+                if (typeof item === 'string') {
+                  content.push(item);
+                } else if (typeof item === 'object' && item !== null && 'type' in item && item.type === 'subsection') {
+                  if (item.title) content.push(`### ${item.title}`);
+                  if (item.content) content.push(item.content);
+                  if ('items' in item && item.items) {
+                    content.push(...item.items.filter((i) => typeof i === 'string'));
+                  }
+                }
+              }
+            }
+          } else {
+            // Default formatting for other elements
+            content.push(JSON.stringify(el));
+          }
         }
       }
-      
-      // Map stop reason to our finish reason
-      let finishReason: QueryResult['finishReason'] = 'stop';
-      if (response.stop_reason === 'max_tokens') {
-        finishReason = 'length';
-      } else if (response.stop_reason === 'stop_sequence') {
-        finishReason = 'stop';
+
+      return content.join('\n');
+    };
+
+    // Process instructions as system message
+    if (prompt.instructions && prompt.instructions.length > 0) {
+      const instructionContent = processElements(prompt.instructions);
+      if (instructionContent) {
+        system = system ? `${system}\n\n${instructionContent}` : instructionContent;
       }
-      
-      return {
-        content,
-        usage: response.usage ? {
-          promptTokens: response.usage.input_tokens,
-          completionTokens: response.usage.output_tokens,
-          totalTokens: response.usage.input_tokens + response.usage.output_tokens
-        } : undefined,
-        finishReason
-      };
-    } catch {
-      return {
-        content: '',
-        finishReason: 'error'
-      };
     }
+
+    // Process data as user message
+    if (prompt.data && prompt.data.length > 0) {
+      const dataContent = processElements(prompt.data);
+      if (dataContent) {
+        messages.push({ role: 'user', content: dataContent });
+      }
+    }
+
+    // Process output as user message
+    if (prompt.output && prompt.output.length > 0) {
+      const outputContent = processElements(prompt.output);
+      if (outputContent) {
+        messages.push({ role: 'user', content: outputContent });
+      }
+    }
+
+    // Ensure messages alternate between user and assistant
+    // If first message is not user, add a dummy user message
+    if (messages.length > 0 && messages[0].role !== 'user') {
+      messages.unshift({ role: 'user', content: 'Continue.' });
+    }
+
+    // If last message is assistant, add a dummy user message
+    if (messages.length > 0 && messages[messages.length - 1].role === 'assistant') {
+      messages.push({ role: 'user', content: 'Continue.' });
+    }
+
+    // If no messages, add a default
+    if (messages.length === 0) {
+      messages.push({ role: 'user', content: 'Please respond according to the instructions.' });
+    }
+
+    return { system, messages };
   }
-  
+
+  /**
+   * Query the AI model
+   */
+  async query(prompt: CompiledPrompt, options?: QueryOptions): Promise<QueryResult> {
+    // Use streamQuery for consistency
+    const { result } = await this.streamQuery(prompt, options);
+    return result;
+  }
+
   /**
    * Stream query implementation
    */
-  async *streamQuery(
-    prompt: import('@moduler-prompt/core').CompiledPrompt, 
-    options?: AnthropicQueryOptions
-  ): AsyncIterable<string> {
-    const messages = formatPromptAsMessages(prompt, this.getFormatterOptions());
-    const mergedOptions = { ...this.defaultOptions, ...options };
-    
-    // Convert messages
-    const { system, messages: anthropicMessages } = this.convertMessages(messages);
-    
+  async streamQuery(prompt: CompiledPrompt, options?: QueryOptions): Promise<StreamResult> {
+    const anthropicOptions = options as AnthropicQueryOptions || {};
+    const mergedOptions = { ...this.defaultOptions, ...anthropicOptions };
+
+    // Convert prompt
+    const { system, messages } = this.compiledPromptToAnthropic(prompt);
+
     // Create stream
-    const stream = await this.client.messages.create({
+    const anthropicStream = await this.client.messages.create({
       model: mergedOptions.model || this.defaultModel,
-      messages: anthropicMessages,
+      messages,
       max_tokens: mergedOptions.maxTokens || 4096,
       temperature: mergedOptions.temperature,
+      top_p: mergedOptions.topP,
+      top_k: mergedOptions.topK,
+      stop_sequences: mergedOptions.stopSequences,
       system,
       stream: true
     });
-    
-    for await (const chunk of stream) {
-      if (chunk.type === 'content_block_delta' && chunk.delta.type === 'text_delta') {
-        yield chunk.delta.text;
+
+    // Shared state
+    let fullContent = '';
+    let usage: QueryResult['usage'] | undefined;
+    let finishReason: QueryResult['finishReason'] = 'stop';
+    let streamConsumed = false;
+    const chunks: string[] = [];
+
+    // Process the stream
+    const processStream = async () => {
+      for await (const chunk of anthropicStream) {
+        if (chunk.type === 'content_block_delta' && chunk.delta.type === 'text_delta') {
+          const content = chunk.delta.text;
+          fullContent += content;
+          chunks.push(content);
+        } else if (chunk.type === 'message_stop') {
+          // TODO: Investigate correct way to get usage from streaming response
+          // The actual API response may contain usage data in message_stop event,
+          // but the SDK type definitions don't reflect this.
+          // Consider checking message_start event or using MessageStream class instead.
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
+          const finalMessage = chunk as any;
+          if (finalMessage.message?.usage) {
+            usage = {
+              promptTokens: finalMessage.message.usage.input_tokens,
+              completionTokens: finalMessage.message.usage.output_tokens,
+              totalTokens: finalMessage.message.usage.input_tokens + finalMessage.message.usage.output_tokens
+            };
+          }
+        }
       }
-    }
+      streamConsumed = true;
+    };
+
+    // Start processing
+    const processingPromise = processStream();
+
+    // Create stream generator
+    const streamGenerator = async function* () {
+      let index = 0;
+      while (!streamConsumed || index < chunks.length) {
+        if (index < chunks.length) {
+          yield chunks[index++];
+        } else {
+          await new Promise(resolve => setTimeout(resolve, 10));
+        }
+      }
+    };
+
+    // Create result promise
+    const resultPromise = processingPromise.then(() => {
+      // Anthropic doesn't have native structured output support yet
+      // Would need to use prompt engineering or tool use
+      let structuredOutputs: unknown[] | undefined;
+
+      return {
+        content: fullContent,
+        structuredOutputs,
+        usage,
+        finishReason
+      };
+    });
+
+    return {
+      stream: streamGenerator(),
+      result: resultPromise
+    };
   }
-  
+
   /**
    * Close the client
    */
@@ -181,6 +249,3 @@ export class AnthropicDriver extends BaseDriver {
     // Anthropic client doesn't need explicit closing
   }
 }
-
-// Re-import for proper typing
-import { formatPromptAsMessages } from '../formatter/converter.js';

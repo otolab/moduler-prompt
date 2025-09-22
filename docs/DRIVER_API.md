@@ -19,18 +19,10 @@
 ```typescript
 interface AIDriver {
   query(prompt: CompiledPrompt, options?: QueryOptions): Promise<QueryResult>;
-  streamQuery?(prompt: CompiledPrompt, options?: QueryOptions): AsyncIterable<string>;
-  getFormatterOptions(): FormatterOptions;
-  preferMessageFormat?: boolean;
-  close?(): Promise<void>;
+  streamQuery(prompt: CompiledPrompt, options?: QueryOptions): Promise<StreamResult>;
+  close(): Promise<void>;
 }
 ```
-
-#### プロパティ
-
-| プロパティ | 型 | 説明 |
-|---------|---|------|
-| `preferMessageFormat` | `boolean` | メッセージ形式を優先するか（デフォルト：false） |
 
 #### メソッド
 
@@ -54,7 +46,7 @@ query(prompt: CompiledPrompt, options?: QueryOptions): Promise<QueryResult>
 ストリーミングレスポンスを生成。
 
 ```typescript
-streamQuery(prompt: CompiledPrompt, options?: QueryOptions): AsyncIterable<string>
+streamQuery(prompt: CompiledPrompt, options?: QueryOptions): Promise<StreamResult>
 ```
 
 **パラメータ：**
@@ -62,18 +54,7 @@ streamQuery(prompt: CompiledPrompt, options?: QueryOptions): AsyncIterable<strin
 - `options`：クエリオプション
 
 **戻り値：**
-- `AsyncIterable<string>`：レスポンスのチャンク
-
-##### getFormatterOptions()
-
-現在のフォーマッターオプションを取得。
-
-```typescript
-getFormatterOptions(): FormatterOptions
-```
-
-**戻り値：**
-- `FormatterOptions`：フォーマッター設定
+- `StreamResult`：ストリームと最終結果を含むオブジェクト
 
 ##### close()
 
@@ -83,61 +64,16 @@ getFormatterOptions(): FormatterOptions
 close(): Promise<void>
 ```
 
-## 基底クラス
+## ドライバー実装の注意点
 
-### BaseDriver
+各ドライバーは`AIDriver`インターフェースを直接実装します。PR #14以降、`BaseDriver`は廃止され、各ドライバーが独立してプロンプト処理を行います。
 
-すべてのドライバー実装の基底クラス。
+### 実装ガイドライン
 
-```typescript
-abstract class BaseDriver implements AIDriver {
-  protected formatterOptions: FormatterOptions;
-  public preferMessageFormat: boolean = false;
-  
-  constructor(formatterOptions?: FormatterOptions);
-  
-  async query(prompt: CompiledPrompt, options?: QueryOptions): Promise<QueryResult>;
-  async *streamQuery(prompt: CompiledPrompt, options?: QueryOptions): AsyncIterable<string>;
-  getFormatterOptions(): FormatterOptions;
-  
-  protected async queryWithMessages(messages: ChatMessage[], options?: QueryOptions): Promise<QueryResult>;
-  protected async queryWithText(text: string, options?: QueryOptions): Promise<QueryResult>;
-  async close(): Promise<void>;
-}
-```
-
-#### コンストラクタ
-
-```typescript
-constructor(formatterOptions: FormatterOptions = {})
-```
-
-**パラメータ：**
-- `formatterOptions`：プロンプトフォーマッティングオプション
-
-#### 保護メソッド
-
-##### queryWithMessages()
-
-メッセージ配列でクエリを実行（メッセージベースAPI用）。
-
-```typescript
-protected async queryWithMessages(
-  messages: ChatMessage[], 
-  options?: QueryOptions
-): Promise<QueryResult>
-```
-
-##### queryWithText()
-
-テキスト文字列でクエリを実行（テキストベースAPI用）。
-
-```typescript
-protected async queryWithText(
-  text: string, 
-  options?: QueryOptions
-): Promise<QueryResult>
-```
+1. **プロンプト処理**: 各ドライバーが`CompiledPrompt`を適切な形式に変換
+2. **ストリーミング**: `StreamResult`型でストリームと結果の両方を返す
+3. **エラーハンドリング**: 統一された`finishReason`でエラーを表現
+4. **リソース管理**: `close()`メソッドで適切にクリーンアップ
 
 ## ドライバー実装
 
@@ -146,7 +82,7 @@ protected async queryWithText(
 OpenAI API用のドライバー。
 
 ```typescript
-class OpenAIDriver extends BaseDriver {
+class OpenAIDriver implements AIDriver {
   constructor(config: OpenAIDriverConfig);
 }
 ```
@@ -196,7 +132,7 @@ interface OpenAIQueryOptions extends QueryOptions {
 Anthropic Claude API用のドライバー。
 
 ```typescript
-class AnthropicDriver extends BaseDriver {
+class AnthropicDriver implements AIDriver {
   constructor(config: AnthropicDriverConfig);
 }
 ```
@@ -229,7 +165,7 @@ interface AnthropicQueryOptions extends QueryOptions {
 Google Cloud Vertex AI用のドライバー。
 
 ```typescript
-class VertexAIDriver extends BaseDriver {
+class VertexAIDriver implements AIDriver {
   constructor(config: VertexAIDriverConfig);
 }
 ```
@@ -284,7 +220,7 @@ interface OllamaDriverConfig extends Omit<OpenAIDriverConfig, 'apiKey' | 'organi
 MLX ML用のドライバー（Pythonサブプロセス）。
 
 ```typescript
-class MlxDriver extends BaseDriver {
+class MlxDriver implements AIDriver {
   constructor(config: MlxDriverConfig);
 }
 ```
@@ -315,7 +251,7 @@ interface MlxMlModelOptions {
 テストとデバッグ用のモックドライバー。
 
 ```typescript
-class TestDriver extends BaseDriver {
+class TestDriver implements AIDriver {
   constructor(options?: TestDriverOptions);
 }
 ```
@@ -383,12 +319,31 @@ interface QueryOptions {
 ```typescript
 interface QueryResult {
   content: string;
+  structuredOutputs?: unknown[];
   usage?: {
     promptTokens: number;
     completionTokens: number;
     totalTokens: number;
   };
   finishReason?: 'stop' | 'length' | 'error';
+}
+```
+
+### StreamResult
+
+ストリーミングクエリの結果。
+
+```typescript
+interface StreamResult {
+  /**
+   * Async iterable stream of response chunks
+   */
+  stream: AsyncIterable<string>;
+
+  /**
+   * Promise that resolves to the final query result
+   */
+  result: Promise<QueryResult>;
 }
 ```
 
@@ -410,20 +365,21 @@ interface DriverConfig {
 
 ### フォーマッター統合
 
-ドライバーは`@moduler-prompt/utils`のフォーマッターと統合されています。
+各ドライバーは必要に応じて`@moduler-prompt/driver`のフォーマッターを使用できます。
 
 ```typescript
-import { formatPrompt, formatPromptAsMessages } from '@moduler-prompt/utils';
+import { formatPrompt, formatPromptAsMessages } from '../formatter/index.js';
 
-// BaseDriverクラス内部での使用
+// ドライバー実装での使用例
 async query(prompt: CompiledPrompt, options?: QueryOptions): Promise<QueryResult> {
-  if (this.preferMessageFormat) {
-    const messages = formatPromptAsMessages(prompt, this.getFormatterOptions());
-    return this.queryWithMessages(messages, options);
-  } else {
-    const text = formatPrompt(prompt, this.getFormatterOptions());
-    return this.queryWithText(text, options);
-  }
+  // メッセージ形式が必要な場合
+  const messages = formatPromptAsMessages(prompt, this.formatterOptions);
+  // または、テキスト形式が必要な場合
+  const text = formatPrompt(prompt, this.formatterOptions);
+
+  // APIに応じて適切な形式を使用
+  const response = await this.callAPI(messages);
+  // ...
 }
 ```
 
@@ -472,34 +428,43 @@ console.log(result.content);
 ### ストリーミング
 
 ```typescript
-for await (const chunk of driver.streamQuery(prompt)) {
+const { stream, result } = await driver.streamQuery(prompt);
+
+// ストリームをリアルタイムで処理
+for await (const chunk of stream) {
   process.stdout.write(chunk);
 }
+
+// 最終結果を取得
+const finalResult = await result;
+console.log('\nTotal tokens:', finalResult.usage?.totalTokens);
 ```
 
 ### カスタムドライバーの実装
 
 ```typescript
-import { BaseDriver } from '@moduler-prompt/driver';
+import type { AIDriver, QueryResult, StreamResult } from '@moduler-prompt/driver';
+import { formatPromptAsMessages } from '@moduler-prompt/driver';
 
-export class CustomDriver extends BaseDriver {
+export class CustomDriver implements AIDriver {
   private client: CustomAPIClient;
-  
+
   constructor(config: CustomConfig) {
-    super(config.formatterOptions);
     this.client = new CustomAPIClient(config.apiKey);
-    this.preferMessageFormat = true;
   }
-  
-  protected async queryWithMessages(
-    messages: ChatMessage[], 
+
+  async query(
+    prompt: CompiledPrompt,
     options?: QueryOptions
   ): Promise<QueryResult> {
+    // プロンプトをAPI形式に変換
+    const messages = formatPromptAsMessages(prompt);
+
     const response = await this.client.chat({
       messages,
       ...options
     });
-    
+
     return {
       content: response.text,
       finishReason: this.mapFinishReason(response.finishReason),
@@ -510,7 +475,30 @@ export class CustomDriver extends BaseDriver {
       }
     };
   }
-  
+
+  async streamQuery(
+    prompt: CompiledPrompt,
+    options?: QueryOptions
+  ): Promise<StreamResult> {
+    const messages = formatPromptAsMessages(prompt);
+
+    // ストリーミング用のイテレータを作成
+    async function* streamGenerator(): AsyncIterable<string> {
+      const stream = await this.client.streamChat({ messages, ...options });
+      for await (const chunk of stream) {
+        yield chunk.text;
+      }
+    }
+
+    // 結果のPromiseを作成
+    const resultPromise = this.query(prompt, options);
+
+    return {
+      stream: streamGenerator(),
+      result: resultPromise
+    };
+  }
+
   private mapFinishReason(reason: string): QueryResult['finishReason'] {
     switch (reason) {
       case 'complete': return 'stop';
@@ -518,7 +506,7 @@ export class CustomDriver extends BaseDriver {
       default: return 'error';
     }
   }
-  
+
   async close(): Promise<void> {
     await this.client.disconnect();
   }

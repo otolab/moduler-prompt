@@ -38,7 +38,7 @@ vi.mock('./process/model-specific.js', () => ({
 describe('MlxDriver - MessageElement based API selection', () => {
   beforeEach(() => {
     vi.clearAllMocks();
-    
+
     // Setup mock spec manager
     mockGetSpecManager.mockReturnValue({
       preprocessMessages: (messages: unknown) => messages,
@@ -47,17 +47,20 @@ describe('MlxDriver - MessageElement based API selection', () => {
       canUseCompletion: vi.fn().mockReturnValue(true),
       generatePrompt: () => 'generated prompt'
     });
-    
+
     // Setup mock streams
     const createMockStream = (content: string) => {
-      const stream = new Readable();
-      stream.push(content);
-      stream.push(null);
+      const stream = new Readable({
+        read() {
+          this.push(content);
+          this.push(null);
+        }
+      });
       return stream;
     };
-    
-    mockChat.mockResolvedValue(createMockStream('chat response'));
-    mockCompletion.mockResolvedValue(createMockStream('completion response'));
+
+    mockChat.mockImplementation(() => Promise.resolve(createMockStream('chat response')));
+    mockCompletion.mockImplementation(() => Promise.resolve(createMockStream('completion response')));
   });
 
   it('should use chat API when MessageElement is present', async () => {
@@ -230,13 +233,20 @@ describe('MlxDriver - MessageElement based API selection', () => {
       output: []
     };
 
+    const { stream, result } = await driver.streamQuery(promptWithMessageElement);
+
+    // Collect chunks from stream
     const chunks: string[] = [];
-    for await (const chunk of driver.streamQuery(promptWithMessageElement)) {
+    for await (const chunk of stream) {
       chunks.push(chunk);
     }
 
+    // Then get the result
+    const queryResult = await result;
+
     expect(mockChat).toHaveBeenCalled();
     expect(mockCompletion).not.toHaveBeenCalled();
+    expect(queryResult.content).toBe('chat response');
     expect(chunks.join('')).toBe('chat response');
   });
 });

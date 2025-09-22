@@ -19,7 +19,7 @@
     "dist"
   ],
   "scripts": {
-    "build": "tsc",
+    "build": "tsc -b --force",
     "dev": "tsc --watch",
     "test": "vitest",
     "test:ui": "vitest --ui",
