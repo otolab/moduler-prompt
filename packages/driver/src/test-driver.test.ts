@@ -97,11 +97,13 @@ describe('TestDriver', () => {
         output: []
       };
       
+      const { stream } = await driver.streamQuery(prompt);
+
       const chars: string[] = [];
-      for await (const char of driver.streamQuery(prompt)) {
+      for await (const char of stream) {
         chars.push(char);
       }
-      
+
       expect(chars.join('')).toBe('Hello');
       expect(chars).toEqual(['H', 'e', 'l', 'l', 'o']);
     });
@@ -116,14 +118,16 @@ describe('TestDriver', () => {
         output: []
       };
       
+      const { stream: stream1 } = await driver.streamQuery(prompt);
       const chars1: string[] = [];
-      for await (const char of driver.streamQuery(prompt)) {
+      for await (const char of stream1) {
         chars1.push(char);
       }
       expect(chars1.join('')).toBe('Hi');
-      
+
+      const { stream: stream2 } = await driver.streamQuery(prompt);
       const chars2: string[] = [];
-      for await (const char of driver.streamQuery(prompt)) {
+      for await (const char of stream2) {
         chars2.push(char);
       }
       expect(chars2.join('')).toBe('Bye');
@@ -140,8 +144,7 @@ describe('TestDriver', () => {
         output: []
       };
       
-      const iterator = driver.streamQuery(prompt);
-      await expect(iterator.next()).rejects.toThrow('No more responses available');
+      await expect(driver.streamQuery(prompt)).rejects.toThrow('No more responses available');
     });
   });
   
@@ -194,11 +197,13 @@ describe('TestDriver', () => {
         output: []
       };
       
+      const { stream } = await driver.streamQuery(prompt);
+
       const chars: string[] = [];
-      for await (const char of driver.streamQuery(prompt)) {
+      for await (const char of stream) {
         chars.push(char);
       }
-      
+
       expect(chars).toEqual(['A', 'B', 'C']);
     });
   });
