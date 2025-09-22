@@ -140,12 +140,20 @@ type DynamicContent<TContext> = (context: TContext) =>
 
 ### カスタムドライバーの追加
 
-BaseDriverを継承して新しいAIサービスに対応：
+AIDriverインターフェースを実装して新しいAIサービスに対応：
 
 ```typescript
-class CustomDriver extends BaseDriver {
-  protected async queryWithMessages(messages, options) {
+class CustomDriver implements AIDriver {
+  async query(prompt: CompiledPrompt, options?: QueryOptions): Promise<QueryResult> {
     // カスタム実装
+  }
+
+  async streamQuery(prompt: CompiledPrompt, options?: QueryOptions): Promise<StreamResult> {
+    // ストリーミング実装
+  }
+
+  async close(): Promise<void> {
+    // リソースクリーンアップ
   }
 }
 ```

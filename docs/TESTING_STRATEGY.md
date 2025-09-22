@@ -34,7 +34,7 @@ npm test -w @moduler-prompt/driver  # 特定パッケージのみ
 **定義**: モジュールの公開APIとインターフェース仕様を検証
 
 **対象例**:
-- ドライバーの公開メソッド（queryWithMessages, queryWithCompletion）
+- ドライバーの公開メソッド（query, streamQuery, close）
 - プロセスモジュールのAPI
 - パッケージのexports
 

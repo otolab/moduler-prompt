@@ -77,8 +77,9 @@ const prompt = compile(module, context);
 ```typescript
 // 統一されたインターフェース
 interface AIDriver {
-  query(prompt: CompiledPrompt): Promise<Result>;
-  streamQuery(prompt: CompiledPrompt): AsyncIterable<string>;
+  query(prompt: CompiledPrompt, options?: QueryOptions): Promise<QueryResult>;
+  streamQuery(prompt: CompiledPrompt, options?: QueryOptions): Promise<StreamResult>;
+  close(): Promise<void>;
 }
 
 // モデルに依存しないコード
