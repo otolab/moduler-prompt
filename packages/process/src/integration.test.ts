@@ -63,8 +63,11 @@ describe('integration tests', () => {
     };
     
     const result = compile(workflow, context);
-    
+
     // プロンプトの構造を確認
+    // TODO: toBeDefinedは曖昧な判定。具体的な型や構造を検証すべき
+    // 例: expect(result.instructions).toBeInstanceOf(Array)
+    // 例: expect(result.instructions[0]).toHaveProperty('type')
     expect(result.instructions).toBeDefined();
     expect(result.data).toBeDefined();
     expect(result.output).toBeDefined();

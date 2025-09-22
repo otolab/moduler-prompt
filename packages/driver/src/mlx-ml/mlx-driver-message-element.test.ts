@@ -238,20 +238,13 @@ describe('MlxDriver - MessageElement based API selection', () => {
     // First get the result to ensure stream processing is complete
     const queryResult = await result;
 
-    // Then iterate over the stream (chunks should be collected by now)
-    const chunks: string[] = [];
-    for await (const chunk of stream) {
-      chunks.push(chunk);
-    }
-
     expect(mockChat).toHaveBeenCalled();
     expect(mockCompletion).not.toHaveBeenCalled();
     expect(queryResult.content).toBe('chat response');
 
-    // Note: The stream may be empty if we await result first
-    // This is expected behavior as the chunks are consumed during result processing
-    if (chunks.length > 0) {
-      expect(chunks.join('')).toBe('chat response');
-    }
+    // Note: Due to the current implementation of MlxDriver.streamQuery,
+    // the stream is consumed during result processing.
+    // This test verifies that the correct API (chat vs completion) was called,
+    // not the streaming behavior itself.
   });
 });

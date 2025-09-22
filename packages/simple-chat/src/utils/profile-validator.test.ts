@@ -12,6 +12,9 @@ describe('Profile Validator', () => {
         }
       };
 
+      // TODO: not.toThrow()は曖昧な判定。何を返すべきか明確にすべき
+      // 例: const result = validateProfileOptions(profile);
+      //     expect(result).toEqual({ valid: true })
       expect(() => validateProfileOptions(profile)).not.toThrow();
     });
 
