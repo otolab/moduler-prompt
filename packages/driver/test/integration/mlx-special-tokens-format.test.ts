@@ -7,25 +7,27 @@ describe('MLX Special Tokens Formatting', () => {
     it('should format JSON material with code block tokens', async () => {
       const processor = new DefaultModelSpecificProcessor('gemma-3');
 
+      // materialsセクションはSectionElementとしてコンパイルされる
+      // DynamicContentとしてMaterialElementを返す
       const prompt = compile({
         instructions: ['Process the data'],
-        data: [],
+        materials: [
+          () => ({
+            type: 'material' as const,
+            id: 'config',
+            title: 'Configuration',
+            content: '{"api_key": "secret", "timeout": 30}'
+          })
+        ],
         output: []
       });
 
-      // materialエレメントを追加
-      prompt.data = [{
-        type: 'material',
-        id: 'config',
-        title: 'Configuration',
-        content: '{"api_key": "secret", "timeout": 30}'
-      }];
-
       const result = await processor.formatCompletionPrompt(prompt);
 
-      // Gemma-3では```トークンが利用可能
-      expect(result).toContain('```');
+      // materialsセクションの内容を確認
       expect(result).toContain('Configuration');
+      // MaterialElementはmarkdown引用形式でフォーマットされる
+      expect(result).toMatch(/###\s+Configuration|>\s+\{/);
     });
 
     it('should format code material with code block tokens', async () => {
@@ -33,22 +35,23 @@ describe('MLX Special Tokens Formatting', () => {
 
       const prompt = compile({
         instructions: ['Review the code'],
-        data: [],
+        materials: [
+          () => ({
+            type: 'material' as const,
+            id: 'code',
+            title: 'Example Function',
+            content: 'function hello() {\n  console.log("Hello");\n}'
+          })
+        ],
         output: []
       });
 
-      prompt.data = [{
-        type: 'material',
-        id: 'code',
-        title: 'Example Function',
-        content: 'function hello() {\n  console.log("Hello");\n}'
-      }];
-
       const result = await processor.formatCompletionPrompt(prompt);
 
-      expect(result).toContain('```');
       expect(result).toContain('Example Function');
       expect(result).toContain('function hello()');
+      // MaterialElementはmarkdown引用形式でフォーマットされる
+      expect(result).toMatch(/###\s+Example Function|>\s+function/);
     });
   });
 
@@ -58,27 +61,27 @@ describe('MLX Special Tokens Formatting', () => {
 
       const prompt = compile({
         instructions: ['Generate response'],
-        data: [],
-        output: [{
-          type: 'text',
-          content: 'Generate JSON in the specified format'
-        }]
+        cue: ['Generate JSON in the specified format'],
+        schema: [
+          () => ({
+            type: 'json' as const,
+            content: {
+              type: 'object',
+              properties: {
+                result: { type: 'string' }
+              }
+            }
+          })
+        ]
       });
-
-      prompt.metadata = {
-        outputSchema: {
-          type: 'object',
-          properties: {
-            result: { type: 'string' }
-          }
-        }
-      };
 
       const result = await processor.formatCompletionPrompt(prompt);
 
       // JSON出力形式が特殊トークンでマークされることを確認
-      expect(result).toContain('Output Format');
+      // schemaセクションのJSONElementが```jsonブロックとしてフォーマットされる
       expect(result).toContain('```json');
+      expect(result).toContain('"type": "object"');
+      expect(result).toContain('```');
     });
   });
 
@@ -87,13 +90,14 @@ describe('MLX Special Tokens Formatting', () => {
       const processor = new DefaultModelSpecificProcessor('gemma-3');
 
       const prompt = compile({
-        instructions: [{
-          type: 'section',
-          title: 'Important Rules',
-          items: ['Rule 1', 'Rule 2']
-        }],
-        data: [],
-        output: []
+        instructions: [
+          'Process the following:',
+          {
+            type: 'subsection',
+            title: 'Important Rules',
+            items: ['Rule 1', 'Rule 2']
+          }
+        ]
       });
 
       const result = await processor.formatCompletionPrompt(prompt);

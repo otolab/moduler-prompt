@@ -7,7 +7,9 @@ import type {
   SubSectionElement,
   DynamicElement,
   SectionType,
-  SimpleDynamicContent
+  SimpleDynamicContent,
+  Element,
+  JSONElement
 } from './types.js';
 import { STANDARD_SECTIONS } from './types.js';
 
@@ -33,7 +35,7 @@ export function compile<TContext = any>(
     if (!sectionContent) continue;
 
     const sectionDef = STANDARD_SECTIONS[sectionName];
-    const sectionElement = compileSectionToElement(
+    const elements = compileSectionToElements(
       sectionContent,
       sectionDef.title,
       sectionDef.type,
@@ -42,25 +44,20 @@ export function compile<TContext = any>(
     );
 
     // セクションタイプに応じて分類
-    compiled[sectionDef.type].push(sectionElement);
+    compiled[sectionDef.type].push(...elements);
 
-    // schemaセクションの場合、コンパイル結果からJSONElementを探す
+    // schemaセクションの場合、JSONElementを探す
     if (sectionName === 'schema') {
-      // sectionElement.itemsの中にJSONElementの文字列表現があるかチェック
-      // (JSONElementはformatDynamicElementAsStringで```json```ブロックに変換される)
-      for (const item of sectionElement.items) {
-        if (typeof item === 'string' && item.startsWith('```json\n') && item.endsWith('\n```')) {
-          // ```json```ブロックから内容を抽出
-          const jsonContent = item.slice(8, -4); // "```json\n" と "\n```" を除去
-          try {
-            const schema = JSON.parse(jsonContent);
-            compiled.metadata = {
-              outputSchema: schema
-            };
-            break;
-          } catch {
-            // パースエラーの場合はスキップ
-          }
+      for (const element of elements) {
+        if (element.type === 'json') {
+          const jsonElement = element as JSONElement;
+          const schema = typeof jsonElement.content === 'string'
+            ? JSON.parse(jsonElement.content)
+            : jsonElement.content;
+          compiled.metadata = {
+            outputSchema: schema
+          };
+          break;
         }
       }
     }
@@ -70,15 +67,17 @@ export function compile<TContext = any>(
 }
 
 /**
- * セクションコンテンツをSectionElementにコンパイル
+ * セクションコンテンツをElement配列にコンパイル
+ * DynamicElementはそのまま保持し、文字列やSubSectionはSectionElementにまとめる
  */
-function compileSectionToElement<TContext>(
+function compileSectionToElements<TContext>(
   content: SectionContent<TContext>,
   title: string,
   category: SectionType,
   _sectionName: string,
   context: TContext
-): SectionElement {
+): Element[] {
+  const elements: Element[] = [];
   const plainItems: string[] = [];
   const subsections: SubSectionElement[] = [];
 
@@ -89,11 +88,16 @@ function compileSectionToElement<TContext>(
     if (typeof item === 'function') {
       // DynamicContentを実行
       const dynamicResult = item(context);
-      const processedStrings = processDynamicContent(dynamicResult);
-      
-      // 変換された文字列を追加
-      for (const str of processedStrings) {
-        plainItems.push(str);
+      const processedElements = processDynamicContentToElements(dynamicResult);
+
+      // DynamicElementはそのままElement配列に追加
+      for (const elem of processedElements) {
+        if (typeof elem === 'string') {
+          plainItems.push(elem);
+        } else {
+          // DynamicElementを直接追加
+          elements.push(elem);
+        }
       }
     } else if (typeof item === 'string') {
       // 文字列をそのまま追加
@@ -118,51 +122,51 @@ function compileSectionToElement<TContext>(
     }
   }
 
-  // 順序: 通常要素 → サブセクション
-  const items: (string | SubSectionElement)[] = [
-    ...plainItems,
-    ...subsections
-  ];
+  // 文字列やサブセクションがある場合は、SectionElementにまとめる
+  if (plainItems.length > 0 || subsections.length > 0) {
+    const sectionElement: SectionElement = {
+      type: 'section',
+      category,
+      content: '',
+      title,
+      items: [...plainItems, ...subsections]
+    };
+    elements.unshift(sectionElement); // セクションを先頭に追加
+  }
 
-  return {
-    type: 'section',
-    category,
-    content: '',
-    title,
-    items
-  };
+  return elements;
 }
 
 /**
- * DynamicContentの結果を文字列配列に変換
- * 文字列や文字列配列を直接返すことができるように拡張
+ * DynamicContentの結果をElement配列または文字列配列に変換
+ * DynamicElementはそのまま保持
  */
-function processDynamicContent(
+function processDynamicContentToElements(
   result: string | string[] | DynamicElement | DynamicElement[] | null | undefined
-): string[] {
+): (string | DynamicElement)[] {
   // null/undefinedの場合は空配列
   if (result === null || result === undefined) {
     return [];
   }
-  
+
   // 文字列の場合
   if (typeof result === 'string') {
     return [result];
   }
-  
+
   // 配列の場合
   if (Array.isArray(result)) {
     return result.flatMap(item => {
       if (typeof item === 'string') {
         return item;  // 文字列はそのまま
       } else {
-        return formatDynamicElementAsString(item);  // Elementは変換
+        return item;  // DynamicElementはそのまま保持
       }
     });
   }
-  
+
   // 単一のElementの場合
-  return [formatDynamicElementAsString(result)];
+  return [result];
 }
 
 /**
@@ -188,50 +192,6 @@ function processSimpleDynamicContent<TContext>(
   }
   
   return [];
-}
-
-/**
- * DynamicElementを文字列に変換
- */
-function formatDynamicElementAsString(element: DynamicElement): string {
-  switch (element.type) {
-    case 'text':
-      return element.content;
-
-    case 'message':
-      const role = element.role.charAt(0).toUpperCase() + element.role.slice(1);
-      const content = typeof element.content === 'string'
-        ? element.content
-        : '[attachments]';
-      return element.name
-        ? `[${role} - ${element.name}]: ${content}`
-        : `[${role}]: ${content}`;
-
-    case 'material':
-      const materialContent = typeof element.content === 'string'
-        ? element.content
-        : '[attachments]';
-      return `[Material: ${element.title}]\n${materialContent}`;
-
-    case 'chunk':
-      const chunkContent = typeof element.content === 'string'
-        ? element.content
-        : '[attachments]';
-      return `[Chunk from ${element.partOf}]\n${chunkContent}`;
-
-    case 'json':
-      // JSONElementを文字列表現に変換
-      const jsonContent = typeof element.content === 'string'
-        ? element.content
-        : JSON.stringify(element.content, null, 2);
-      return `\`\`\`json\n${jsonContent}\n\`\`\``;
-
-    default:
-      // 型の網羅性チェック
-      const _exhaustive: never = element;
-      void _exhaustive;
-      return '';
-  }
 }
 
 

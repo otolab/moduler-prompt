@@ -1,6 +1,6 @@
 /**
  * MLX Driver モデル固有処理
- * 
+ *
  * モデルごとの特殊なフォーマット処理、メッセージ変換、プロンプト生成を管理
  * Python側のapply_model_specific_processingをTypeScript側に移行
  */
@@ -8,8 +8,10 @@
 import type { MlxMessage, MlxCapabilities } from './types.js';
 import { formatMessagesAsPrompt } from '../../formatter/converter.js';
 import type { ChatMessage } from '../../formatter/types.js';
-import type { CompiledPrompt, Element } from '@moduler-prompt/core';
+import type { CompiledPrompt } from '@moduler-prompt/core';
 import type { MlxProcess } from './index.js';
+import { ElementFormatterRegistry } from './element-formatters/index.js';
+import { mergeSystemMessages, selectChatProcessor, selectCompletionProcessor } from './model-handlers.js';
 
 export interface ModelSpecificProcessor {
   /**
@@ -37,29 +39,14 @@ export interface ModelSpecificProcessor {
   generateMergedPrompt(messages: MlxMessage[]): string;
 }
 
-function mergeSystemMessages(msgs: MlxMessage[]): MlxMessage[] {
-  let systemContent = '';
-  const conversation: MlxMessage[] = [];
-  
-  for (const msg of msgs) {
-    if (msg.role === 'system') {
-      systemContent += msg.content + '\\n\\n';
-    } else {
-      conversation.push(msg);
-    }
-  }
-  
-  if (systemContent) {
-    const systemMessage: MlxMessage = { role: 'system', content: systemContent.trim() };
-    return [systemMessage, ...conversation];
-  }
-  return conversation;
-}
 
 export class DefaultModelSpecificProcessor implements ModelSpecificProcessor {
   private specialTokensCache: MlxCapabilities['special_tokens'] | null = null;
+  private formatterRegistry: ElementFormatterRegistry;
 
-  constructor(private modelName: string, private process?: MlxProcess) {}
+  constructor(private modelName: string, private process?: MlxProcess) {
+    this.formatterRegistry = new ElementFormatterRegistry(modelName);
+  }
 
   /**
    * 特殊トークンを取得（キャッシュ付き）
@@ -76,126 +63,9 @@ export class DefaultModelSpecificProcessor implements ModelSpecificProcessor {
   /**
    * Element種別に応じた特殊トークンのフォーマット
    */
-  private async formatElementWithTokens(element: Element): Promise<string> {
+  private async formatElementWithTokens(element: any): Promise<string> {
     const specialTokens = await this.getSpecialTokens();
-    switch (element.type) {
-      case 'text':
-        return element.content;
-
-      case 'message':
-        // 特殊トークンが利用可能な場合は使用
-        if (specialTokens) {
-          const roleTokens = specialTokens[element.role];
-          if (roleTokens && typeof roleTokens === 'object' && 'start' in roleTokens && 'end' in roleTokens) {
-            // start/endトークンがある場合
-            return `${roleTokens.start.text}${element.content}${roleTokens.end.text}\n`;
-          }
-        }
-
-        // モデル固有のフォールバック処理
-        if (this.modelName.indexOf('gemma-3') !== -1) {
-          const roleMap = {
-            system: 'user',  // Gemma-3はsystemロールをサポートしない
-            user: 'user',
-            assistant: 'model'
-          };
-          const role = roleMap[element.role as keyof typeof roleMap] || 'user';
-          // Gemma-3のデフォルトトークン
-          return `<start_of_turn>${role}\n${element.content}<end_of_turn>\n`;
-        }
-        // デフォルトは通常のテキスト形式
-        return `[${element.role.toUpperCase()}]\n${element.content}\n`;
-
-      case 'section':
-        const sectionItems = await Promise.all(
-          element.items.map(async item => {
-            if (typeof item === 'string') {
-              return item;
-            } else if ('type' in item && item.type === 'subsection') {
-              return await this.formatElementWithTokens(item);
-            } else {
-              // DynamicContentは既にコンパイル時に解決されているはず
-              return '';
-            }
-          })
-        );
-        const sectionContent = sectionItems.join('\n');
-
-        // headingトークンが利用可能な場合
-        if (specialTokens?.['heading'] &&
-            typeof specialTokens['heading'] === 'object' &&
-            'start' in specialTokens['heading']) {
-          return `${specialTokens['heading'].start.text}${element.title}${specialTokens['heading'].end.text}\n${sectionContent}\n`;
-        }
-
-        return `=== ${element.title} ===\n${sectionContent}\n`;
-
-      case 'subsection':
-        const subsectionContent = element.items.join('\n');
-        return `--- ${element.title} ---\n${subsectionContent}\n`;
-
-      case 'material':
-        // materialは主に引用・参照文書として扱う
-        if (specialTokens) {
-          // 引用トークンが利用可能な場合
-          if (specialTokens['quote'] &&
-              typeof specialTokens['quote'] === 'object' &&
-              'start' in specialTokens['quote']) {
-            return `${specialTokens['quote'].start.text}${element.title}\n${element.content}${specialTokens['quote'].end.text}\n`;
-          }
-          // 参照トークンが利用可能な場合
-          else if (specialTokens['ref'] &&
-                   typeof specialTokens['ref'] === 'object' &&
-                   'start' in specialTokens['ref']) {
-            return `${specialTokens['ref'].start.text}${element.title}\n${element.content}${specialTokens['ref'].end.text}\n`;
-          }
-          // citationトークンが利用可能な場合
-          else if (specialTokens['citation'] &&
-                   typeof specialTokens['citation'] === 'object' &&
-                   'start' in specialTokens['citation']) {
-            return `${specialTokens['citation'].start.text}${element.title}\n${element.content}${specialTokens['citation'].end.text}\n`;
-          }
-          // contextトークンが利用可能な場合
-          else if (specialTokens['context'] &&
-                   typeof specialTokens['context'] === 'object' &&
-                   'start' in specialTokens['context']) {
-            return `${specialTokens['context'].start.text}Material: ${element.title}\n${element.content}${specialTokens['context'].end.text}\n`;
-          }
-        }
-
-        // デフォルト（マークダウン引用形式）
-        const lines = element.content.split('\n');
-        const quotedContent = lines.map(line => `> ${line}`).join('\n');
-        return `### ${element.title}\n\n${quotedContent}\n`;
-
-      case 'chunk':
-        return `[Chunk ${element.index}/${element.total} of ${element.partOf}]\n${element.content}\n`;
-
-      case 'json':
-        // JSONスキーマ要素は構造化データとして明確にマーク
-        const jsonContent = typeof element.content === 'string'
-          ? element.content
-          : JSON.stringify(element.content, null, 2);
-
-        // コードブロックトークンを使用
-        if (specialTokens?.['code_block_start']) {
-          const start = specialTokens['code_block_start'].text || '```';
-          const end = specialTokens['code_block_end']?.text || '```';
-          return `JSON Schema:\n${start}json\n${jsonContent}\n${end}\n`;
-        }
-        // 代替：codeトークンを使用
-        else if (specialTokens?.['code'] &&
-                 typeof specialTokens['code'] === 'object' &&
-                 'start' in specialTokens['code']) {
-          return `JSON Schema:\n${specialTokens['code'].start.text}\n${jsonContent}\n${specialTokens['code'].end.text}\n`;
-        }
-        // デフォルト
-        return `JSON Schema:\n\`\`\`json\n${jsonContent}\n\`\`\`\n`;
-
-      default:
-        // 未知の要素はテキストとして扱う
-        return JSON.stringify(element);
-    }
+    return this.formatterRegistry.formatElement(element, specialTokens || undefined);
   }
 
 
@@ -223,26 +93,12 @@ export class DefaultModelSpecificProcessor implements ModelSpecificProcessor {
 
     // Output section - 特にschemaやJSON出力の場合は特殊トークンを活用
     if (prompt.output.length > 0) {
+      const specialTokens = await this.getSpecialTokens();
+      const hasOutputSchema = !!prompt.metadata?.outputSchema;
       const outputTexts = await Promise.all(
-        prompt.output.map(async el => {
-          // schema情報がある場合はJSONブロックとしてマーク
-          if (prompt.metadata?.outputSchema && el.type === 'text') {
-            const specialTokens = await this.getSpecialTokens();
-            // コードブロックトークンを使用（JSONは構造化データ）
-            if (specialTokens?.['code_block_start']) {
-              const start = specialTokens['code_block_start'].text || '```';
-              const end = specialTokens['code_block_end']?.text || '```';
-              return `Output Format (JSON):\n${start}json\n${el.content}\n${end}`;
-            }
-            // 代替：コードトークンを使用
-            else if (specialTokens?.['code'] &&
-                     typeof specialTokens['code'] === 'object' &&
-                     'start' in specialTokens['code']) {
-              return `Output Format (JSON):\n${specialTokens['code'].start.text}\n${el.content}\n${specialTokens['code'].end.text}`;
-            }
-          }
-          return await this.formatElementWithTokens(el);
-        })
+        prompt.output.map(el =>
+          this.formatterRegistry.formatOutputElement(el, specialTokens || undefined, hasOutputSchema)
+        )
       );
       sections.push(outputTexts.join('\n'));
     }
@@ -258,47 +114,8 @@ export class DefaultModelSpecificProcessor implements ModelSpecificProcessor {
    * モデルごとのチャットフォーマットに合わせるための処理
    */
   applyChatSpecificProcessing(messages: MlxMessage[]): MlxMessage[] {
-    let processedMessages = [...messages];
-
-    // Tanuki-8B-dpo-v1 固有処理
-    if (this.modelName.indexOf('Tanuki-8B-dpo-v1') !== -1) {
-      processedMessages = [
-        {
-          role: 'system',
-          content: '以下は、タスクを説明する指示です。要求を適切に満たす応答を書きなさい。\\n',
-        } as const,
-        ...processedMessages,
-        {
-          role: 'user',
-          content: 'systemプロンプトで説明されたタスクを正確に実行し、Output Sectionに書かれるべき内容を出力してください。\\n',
-        } as const,
-      ];
-      processedMessages = mergeSystemMessages(processedMessages);
-    }
-    // CodeLlama 固有処理
-    else if (this.modelName.indexOf('mlx-community/CodeLlama') !== -1) {
-      processedMessages = mergeSystemMessages(processedMessages);
-      // userがない場合は必要
-      if (processedMessages[processedMessages.length - 1].role !== 'user') {
-        processedMessages.push({
-          role: 'user',
-          content: 'Read the system prompt and output the appropriate content.',
-        } as const);
-      }
-    }
-    // Gemma-3 固有処理
-    else if (this.modelName.indexOf('mlx-community/gemma-3') !== -1) {
-      processedMessages = mergeSystemMessages(processedMessages);
-      // (system) => user => assistant => user => ... と、きれいに並んでいないとエラーになる。
-      if (processedMessages[processedMessages.length - 1].role !== 'user') {
-        processedMessages.push({
-          role: 'user',
-          content: 'Read the system prompt and output the appropriate content.',
-        } as const);
-      }
-    }
-
-    return processedMessages;
+    const processor = selectChatProcessor(this.modelName);
+    return processor ? processor(messages) : messages;
   }
 
   /**
@@ -306,36 +123,8 @@ export class DefaultModelSpecificProcessor implements ModelSpecificProcessor {
    * モデルごとにブロック化トークンやプロンプトフォーマットを適用
    */
   applyCompletionSpecificProcessing(prompt: string): string {
-    if (this.modelName.indexOf('llm-jp-3.1') !== -1) {
-      return [
-        '<s>\\n\\n### 指示:',
-        '指示は英語と日本語の混ぜ書きになっています。以下の指示書(prompt)を丁寧に読んで実行してください。',
-        '',
-        prompt,
-        '\\n### 応答:',
-      ].join('\\n');
-    }
-
-    // Tanuki-8B用のcompletion処理
-    if (this.modelName.indexOf('Tanuki-8B') !== -1) {
-      // completion APIではブロック化トークンを使用可能
-      return `### システム:\n${prompt}\n\n### 応答:\n`;
-    }
-
-    // CodeLlama用のcompletion処理
-    if (this.modelName.indexOf('CodeLlama') !== -1) {
-      // completion APIでは直接プロンプトを使用
-      return prompt;
-    }
-
-    // Gemma-3用のcompletion処理
-    if (this.modelName.indexOf('gemma-3') !== -1) {
-      // Gemma-3はchat形式に依存しないcompletion処理が可能
-      return `<start_of_turn>user\n${prompt}<end_of_turn>\n<start_of_turn>model\n`;
-    }
-
-    // デフォルトはそのまま返す
-    return prompt;
+    const processor = selectCompletionProcessor(this.modelName);
+    return processor ? processor(prompt) : prompt;
   }
 
   /**
