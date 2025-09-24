@@ -42,6 +42,7 @@
 - [モジュールの使い方](./docs/USING_MODULES.md) - モジュールの実行とドライバー連携
 - [動作確認手順](./docs/VERIFYING_MODULES.md) - モジュールのテストとデバッグ
 - [ドライバーAPI](./docs/DRIVER_API.md) - AIモデルドライバーのAPI仕様
+- [Structured Outputs](./docs/STRUCTURED_OUTPUTS.md) - 構造化出力（JSON）の仕様と使用方法
 - [ユーティリティ](./docs/UTILITIES.md) - ログシステムとその他のユーティリティ
 
 ### 開発者向けドキュメント
