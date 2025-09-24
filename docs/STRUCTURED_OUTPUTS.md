@@ -136,12 +136,12 @@ if (prompt.metadata?.outputSchema) {
 }
 ```
 
-### 3. 未実装型（MlxDriver、OllamaDriver）
+### 3. 実装予定型（MlxDriver、OllamaDriver）
 
-これらのドライバーは今後の実装を予定：
+これらのドライバーは実装可能だが現在未対応：
 
-- **MlxDriver**: Pythonプロセスでのスキーマ検証を検討
-- **OllamaDriver**: OpenAI互換APIの機能を活用予定
+- **MlxDriver**: JSON抽出によるベストエフォート実装が可能
+- **OllamaDriver**: OpenAI互換APIの機能を活用可能
 
 ## 使用方法
 
@@ -274,8 +274,8 @@ const data = result.structuredOutputs?.[0] ||
 | VertexAIDriver | ⚠️ 部分対応 | responseFormat/jsonSchema | 検証中 |
 | TestDriver | ✅ 対応済み | JSON抽出 | v0.2.1〜 |
 | EchoDriver | ✅ 対応済み | JSON抽出 | v0.2.1〜 |
-| MlxDriver | ❌ 未対応 | - | 実装予定 |
-| OllamaDriver | ❌ 未対応 | - | 実装予定 |
+| MlxDriver | ❌ 未対応 | - | 実装可能（JSON抽出方式） |
+| OllamaDriver | ❌ 未対応 | - | 実装可能（OpenAI互換） |
 
 ## 今後の拡張予定
 
