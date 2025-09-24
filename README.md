@@ -16,6 +16,7 @@
 - **モジュール化** - プロンプトを再利用可能なモジュールとして構築
 - **動的生成** - 実行時のコンテキストに基づいたプロンプト生成
 - **マルチモデル対応** - OpenAI、Anthropic、Google、ローカルLLMに対応
+- **構造化出力** - JSONスキーマに基づく構造化データの取得（ベストエフォート）
 - **ストリーム処理** - 大規模データの効率的な処理
 - **型安全** - TypeScriptによる完全な型定義
 - **柔軟なマージ** - モジュールの再帰的統合と順序制御
@@ -97,6 +98,40 @@ context.sourceCode = 'const example = () => { ... }';
 const compiled = compile(analysisModule, context);
 // compiledは instructions, data, output のElement配列を含む
 ```
+
+### 構造化出力（Structured Outputs）
+
+AIからの応答を構造化されたJSONとして取得できます：
+
+```typescript
+import { OpenAIDriver } from '@moduler-prompt/driver';
+
+// スキーマを定義してプロンプトに含める
+const prompt = compile(module, context);
+prompt.metadata = {
+  outputSchema: {
+    type: 'object',
+    properties: {
+      issues: { type: 'array', items: { type: 'string' } },
+      score: { type: 'number' },
+      suggestions: { type: 'array', items: { type: 'string' } }
+    }
+  }
+};
+
+// ドライバーで実行
+const driver = new OpenAIDriver({ apiKey: process.env.OPENAI_API_KEY });
+const result = await driver.query(prompt);
+
+// 構造化データを取得
+if (result.structuredOutputs?.[0]) {
+  const analysis = result.structuredOutputs[0];
+  console.log('Score:', analysis.score);
+  console.log('Issues:', analysis.issues);
+}
+```
+
+詳細は[Structured Outputs仕様](./docs/STRUCTURED_OUTPUTS.md)を参照してください。
 
 ## 開発
 

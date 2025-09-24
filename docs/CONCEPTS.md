@@ -118,6 +118,45 @@ const driver = registry.selectDriver(
 );
 ```
 
+### 6. 構造化されたデータ取得の難しさ
+
+**課題**：
+- AIからの応答がテキストのみで、プログラムで処理しづらい
+- JSONを生成させても形式が不安定
+- モデルごとに構造化出力の対応が異なる
+
+**解決アプローチ**：
+**Structured Outputs（構造化出力）のベストエフォート実装**：
+
+```typescript
+// スキーマを定義
+prompt.metadata = {
+  outputSchema: {
+    type: 'object',
+    properties: {
+      result: { type: 'string' },
+      confidence: { type: 'number' }
+    }
+  }
+};
+
+// ドライバーが可能な限り構造化データを返す
+const result = await driver.query(prompt);
+if (result.structuredOutputs?.[0]) {
+  // 構造化データとして処理
+  const data = result.structuredOutputs[0];
+  console.log(data.confidence);
+} else {
+  // フォールバック：テキストを手動解析
+  const data = parseText(result.content);
+}
+```
+
+各ドライバーがベストエフォートで対応：
+- ネイティブサポート（OpenAI、VertexAI）
+- プロンプト指示による生成（Anthropic）
+- JSON抽出ユーティリティ（TestDriver、EchoDriver）
+
 ## コア設計思想
 
 ### モジュラリティ（Modularity）

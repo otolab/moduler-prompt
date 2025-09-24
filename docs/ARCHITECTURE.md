@@ -71,11 +71,18 @@ Moduler Promptは4層のレイヤードアーキテクチャで構成される�
 各AIサービスへの統一インターフェース。
 
 **実装済みドライバー：**
-- OpenAI（GPT-4, GPT-3.5）
+- OpenAI（GPT-4, GPT-3.5）- Structured Outputs対応
 - Anthropic（Claude）
 - Google Vertex AI（Gemini）
 - Ollama（ローカルLLM）
 - MLX（Apple Silicon最適化）
+- TestDriver（テスト用）- Structured Outputs対応
+- EchoDriver（デバッグ用）- Structured Outputs対応
+
+**主要機能：**
+- 統一されたクエリインターフェース
+- ストリーミングレスポンス
+- 構造化出力（Structured Outputs）- JSONスキーマベースの応答取得
 
 ### @moduler-prompt/utils
 共通ユーティリティとヘルパー機能。
@@ -83,6 +90,7 @@ Moduler Promptは4層のレイヤードアーキテクチャで構成される�
 **主要機能：**
 - DriverRegistry：ドライバーの動的選択
 - Formatter：プロンプトのテキスト変換
+- JSON Extractor：様々な形式からのJSON抽出（Structured Outputs用）
 - デフォルト設定とテキスト
 
 ### @moduler-prompt/process
