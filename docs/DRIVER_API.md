@@ -248,7 +248,7 @@ interface MlxMlModelOptions {
 
 ### TestDriver
 
-テストとデバッグ用のモックドライバー。
+テストとデバッグ用のモックドライバー。v0.2.1よりstructured outputs対応。
 
 ```typescript
 class TestDriver implements AIDriver {
@@ -260,12 +260,8 @@ class TestDriver implements AIDriver {
 
 ```typescript
 interface TestDriverOptions {
-  responses?: string[];
-  responseProvider?: ResponseProvider;
-  responseDelay?: number;
-  streamChunkDelay?: number;
-  errorOnQuery?: number;
-  simulateUsage?: boolean;
+  responses?: string[] | ResponseProvider;
+  delay?: number;
 }
 ```
 
@@ -273,10 +269,47 @@ interface TestDriverOptions {
 
 ```typescript
 type ResponseProvider = (
-  prompt: CompiledPrompt, 
+  prompt: CompiledPrompt,
   options?: QueryOptions
 ) => string | Promise<string>;
 ```
+
+#### 特徴
+
+- **Structured Outputs対応** (v0.2.1以降): `outputSchema`が指定された場合、レスポンスからJSONを自動抽出
+- **レスポンスプロバイダー**: 動的なレスポンス生成が可能
+- **遅延シミュレーション**: API呼び出しの遅延を模擬
+- **使用状況シミュレーション**: トークン使用量を推定
+
+### EchoDriver
+
+プロンプトをエコーバックするデバッグ用ドライバー。v0.2.1よりstructured outputs対応。
+
+```typescript
+class EchoDriver implements AIDriver {
+  constructor(config?: EchoDriverConfig);
+}
+```
+
+#### EchoDriverConfig
+
+```typescript
+interface EchoDriverConfig {
+  format?: 'text' | 'messages' | 'raw' | 'both' | 'debug';
+  includeMetadata?: boolean;
+  formatterOptions?: FormatterOptions;
+  simulateUsage?: boolean;
+  streamChunkSize?: number;
+}
+```
+
+#### 特徴
+
+- **複数の出力形式**: テキスト、メッセージ、生データ、両方、デバッグ情報
+- **Structured Outputs対応** (v0.2.1以降): JSON形式（raw、messages、both、debug）の場合に自動的にstructuredOutputsを生成
+- **メタデータ付加**: リクエストのメタデータを含めることが可能
+- **カスタムフォーマッターオプション**: 出力形式のカスタマイズ
+- **ストリーミングサポート**: チャンクサイズを指定可能
 
 ## 型定義
 
