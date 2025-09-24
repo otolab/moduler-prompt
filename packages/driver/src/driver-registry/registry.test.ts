@@ -235,6 +235,7 @@ describe('DriverRegistry', () => {
         name: 'Test',
         model: {
           model: 'test',
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
           provider: 'unknown-provider' as any,  // 存在しないプロバイダー
           capabilities: [],
         },
@@ -279,6 +280,7 @@ describe('DriverRegistry', () => {
         name: 'Test Driver',
         model: {
           model: 'test',
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
           provider: 'unknown-provider' as any,  // 存在しないプロバイダー
           capabilities: ['local', 'fast'],
         },

@@ -150,27 +150,35 @@ describe('Core Integration Tests', () => {
         expect(rulesSubsection).toBeDefined();
       }
       
-      // Check data - should have 1 section with formatted elements
-      expect(compiled.data).toHaveLength(1);
-      expect(compiled.data[0].type).toBe('section');
-      const dataSection = compiled.data[0];
-      if (dataSection.type === 'section') {
-        // DynamicContentが文字列に変換されているか確認
-        const items = dataSection.items as string[];
-        expect(items.some(item => item.includes('[Material: Documentation]'))).toBe(true);
-        expect(items.some(item => item.includes('[User]: What is the weather?'))).toBe(true);
-        expect(items.some(item => item.includes('[Assistant]: I can help with weather information.'))).toBe(true);
-      }
+      // Check data - should have 3 elements (Material, Message, Message)
+      expect(compiled.data).toHaveLength(3);
+      expect(compiled.data[0]).toEqual({
+        type: 'material',
+        id: 'doc-1',
+        title: 'Documentation',
+        content: 'API documentation content',
+        usage: 100
+      });
+      expect(compiled.data[1]).toEqual({
+        type: 'message',
+        role: 'user',
+        content: 'What is the weather?'
+      });
+      expect(compiled.data[2]).toEqual({
+        type: 'message',
+        role: 'assistant',
+        content: 'I can help with weather information.'
+      });
       
-      // Check output - should have 1 section with formatted chunk
+      // Check output - should have 1 chunk element
       expect(compiled.output).toHaveLength(1);
-      expect(compiled.output[0].type).toBe('section');
-      const outputSection = compiled.output[0];
-      if (outputSection.type === 'section') {
-        const items = outputSection.items as string[];
-        expect(items.some(item => item.includes('[Chunk from response.txt]'))).toBe(true);
-        expect(items.some(item => item.includes('First part of response'))).toBe(true);
-      }
+      expect(compiled.output[0]).toEqual({
+        type: 'chunk',
+        partOf: 'response.txt',
+        index: 1,
+        total: 3,
+        content: 'First part of response'
+      });
     });
   });
   

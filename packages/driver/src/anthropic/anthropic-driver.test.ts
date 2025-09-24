@@ -21,6 +21,7 @@ describe('AnthropicDriver', () => {
     vi.clearAllMocks();
     driver = new AnthropicDriver({ apiKey: 'test-key' });
     // Get the mock create function
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     mockCreate = (driver as any).client.messages.create;
   });
 

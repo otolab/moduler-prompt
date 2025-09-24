@@ -23,12 +23,19 @@ import type { DriverConfig } from './types.js';
  * ドライバクラスのマップ型
  */
 export interface DriverClasses {
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   MlxDriver?: any;
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   OpenAIDriver?: any;
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   AnthropicDriver?: any;
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   VertexAIDriver?: any;
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   EchoDriver?: any;
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   TestDriver?: any;
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   [key: string]: any;
 }
 
@@ -98,10 +105,13 @@ export function registerDriverFactories(
 
   // Test Driver (for unit testing)
   if (drivers.TestDriver) {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     registry.registerFactory('test' as any, (config: DriverConfig) => {
       return new drivers.TestDriver({
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
         responses: config.options?.responses as any,
         delay: config.options?.delay as number,
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
         formatterOptions: config.options?.formatterOptions as any,
         preferMessageFormat: config.options?.preferMessageFormat as boolean
       });

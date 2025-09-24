@@ -6,8 +6,7 @@
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
 import { performAIChat } from './ai-chat.js';
 import type { DialogProfile, ChatLog } from './types.js';
-import { DriverRegistry } from '@moduler-prompt/utils';
-import { TestDriver, EchoDriver } from '@moduler-prompt/driver';
+import { DriverRegistry, TestDriver, EchoDriver } from '@moduler-prompt/driver';
 import type { CompiledPrompt } from '@moduler-prompt/core';
 
 describe('AI Chat E2E Tests', () => {

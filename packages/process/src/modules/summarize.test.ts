@@ -93,13 +93,11 @@ describe('summarize modules', () => {
       
       const result = compile(contentSummarize, context);
       
-      const prepSection = result.instructions.find(
-        e => e.type === 'section' && e.title === 'Response Preparation Note'
+      const textElements = result.instructions.filter(e => e.type === 'text');
+      const prepNote = textElements.find(e =>
+        e.type === 'text' && e.content.includes('Analysis report content')
       );
-      expect(prepSection).toBeDefined();
-      if (prepSection?.type === 'section') {
-        expect(prepSection.items[0]).toContain('Analysis report content');
-      }
+      expect(prepNote).toBeDefined();
     });
 
     it('アルゴリズムのサブセクションを含む', () => {
