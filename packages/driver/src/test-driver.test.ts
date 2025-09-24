@@ -272,7 +272,7 @@ describe('TestDriver', () => {
 
       const result = await driver.query(prompt);
       expect(result.content).toBe('{"name": "Alice", "age": 30}');
-      expect(result.structuredOutputs).toEqual([{ name: 'Alice', age: 30 }]);
+      expect(result.structuredOutput).toEqual([{ name: 'Alice', age: 30 }]);
     });
 
     it('handles JSON in markdown code blocks', async () => {
@@ -296,10 +296,10 @@ describe('TestDriver', () => {
       };
 
       const result = await driver.query(prompt);
-      expect(result.structuredOutputs).toEqual([{ status: 'success', count: 42 }]);
+      expect(result.structuredOutput).toEqual([{ status: 'success', count: 42 }]);
     });
 
-    it('returns undefined structuredOutputs when no schema provided', async () => {
+    it('returns undefined structuredOutput when no schema provided', async () => {
       const driver = new TestDriver({
         responses: ['{"name": "Bob"}']
       });
@@ -312,10 +312,10 @@ describe('TestDriver', () => {
 
       const result = await driver.query(prompt);
       expect(result.content).toBe('{"name": "Bob"}');
-      expect(result.structuredOutputs).toBeUndefined();
+      expect(result.structuredOutput).toBeUndefined();
     });
 
-    it('returns undefined structuredOutputs when no valid JSON found', async () => {
+    it('returns undefined structuredOutput when no valid JSON found', async () => {
       const driver = new TestDriver({
         responses: ['This is plain text response']
       });
@@ -331,7 +331,7 @@ describe('TestDriver', () => {
 
       const result = await driver.query(prompt);
       expect(result.content).toBe('This is plain text response');
-      expect(result.structuredOutputs).toBeUndefined();
+      expect(result.structuredOutput).toBeUndefined();
     });
 
     it('handles structured outputs in streamQuery', async () => {
@@ -357,7 +357,7 @@ describe('TestDriver', () => {
       const queryResult = await result;
 
       expect(queryResult.content).toBe('{"items": [1, 2, 3]}');
-      expect(queryResult.structuredOutputs).toEqual([{ items: [1, 2, 3] }]);
+      expect(queryResult.structuredOutput).toEqual([{ items: [1, 2, 3] }]);
     });
 
     it('works with response provider function', async () => {
@@ -380,7 +380,7 @@ describe('TestDriver', () => {
       };
 
       const result = await driver.query(promptWithSchema);
-      expect(result.structuredOutputs).toEqual([{ result: 'structured' }]);
+      expect(result.structuredOutput).toEqual([{ result: 'structured' }]);
 
       const promptWithoutSchema: CompiledPrompt = {
         instructions: [{ type: 'text', content: 'Generate' }],
@@ -390,7 +390,7 @@ describe('TestDriver', () => {
 
       const result2 = await driver.query(promptWithoutSchema);
       expect(result2.content).toBe('plain text');
-      expect(result2.structuredOutputs).toBeUndefined();
+      expect(result2.structuredOutput).toBeUndefined();
     });
   });
 

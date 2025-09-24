@@ -247,19 +247,18 @@ export class OpenAIDriver implements AIDriver {
       // Create result promise
       const resultPromise = processingPromise.then(() => {
         // If response_format was used, the content should already be JSON
-        let structuredOutputs: unknown[] | undefined;
+        let structuredOutput: unknown | undefined;
         if (prompt.metadata?.outputSchema && params.response_format?.type === 'json_object') {
           try {
-            const parsed = JSON.parse(fullContent);
-            structuredOutputs = [parsed];
+            structuredOutput = JSON.parse(fullContent);
           } catch {
-            structuredOutputs = [];
+            // Keep as undefined if parsing fails
           }
         }
 
         return {
           content: fullContent,
-          structuredOutputs,
+          structuredOutput,
           usage,
           finishReason
         };

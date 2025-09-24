@@ -76,8 +76,8 @@ describe('MLXDriver Structured Outputs', () => {
       console.log('MLX Response:', result.content);
 
       // Check if structured outputs were extracted
-      if (result.structuredOutputs && result.structuredOutputs.length > 0) {
-        const data = result.structuredOutputs[0] as PersonData;
+      if (result.structuredOutput && result.structuredOutput.length > 0) {
+        const data = result.structuredOutput[0] as PersonData;
         expect(data).toHaveProperty('name');
         expect(data).toHaveProperty('age');
         expect(typeof data.name).toBe('string');
@@ -88,7 +88,7 @@ describe('MLXDriver Structured Outputs', () => {
       }
     }, 30000); // Increase timeout for model loading
 
-    it('should return undefined structuredOutputs when no schema provided', async function() {
+    it('should return undefined structuredOutput when no schema provided', async function() {
       if (!driver) {
         this.skip();
         return;
@@ -107,7 +107,7 @@ describe('MLXDriver Structured Outputs', () => {
       const result = await driver.query(prompt);
 
       expect(result.content).toBeDefined();
-      expect(result.structuredOutputs).toBeUndefined();
+      expect(result.structuredOutput).toBeUndefined();
     }, 30000);
 
     it('should handle JSON in markdown code blocks', async function() {
@@ -147,8 +147,8 @@ describe('MLXDriver Structured Outputs', () => {
       console.log('MLX Response with markdown:', result.content);
 
       // Check if structured outputs were extracted
-      if (result.structuredOutputs && result.structuredOutputs.length > 0) {
-        const data = result.structuredOutputs[0] as StatusData;
+      if (result.structuredOutput && result.structuredOutput.length > 0) {
+        const data = result.structuredOutput[0] as StatusData;
         expect(data).toHaveProperty('status');
         expect(data).toHaveProperty('count');
       } else {
@@ -201,8 +201,8 @@ describe('MLXDriver Structured Outputs', () => {
       const finalResult = await result;
       console.log('Streamed content:', finalResult.content);
 
-      if (finalResult.structuredOutputs && finalResult.structuredOutputs.length > 0) {
-        const data = finalResult.structuredOutputs[0] as StreamData;
+      if (finalResult.structuredOutput && finalResult.structuredOutput.length > 0) {
+        const data = finalResult.structuredOutput[0] as StreamData;
         expect(data).toBeDefined();
         console.log('Extracted structured data:', data);
       }

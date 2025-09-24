@@ -294,10 +294,10 @@ export class VertexAIDriver implements AIDriver {
       const finishReason = finishReasonMap[candidate.finishReason || 'error'];
 
       // Handle structured outputs
-      let structuredOutputs: unknown[] | undefined;
+      let structuredOutput: unknown[] | undefined;
       if (prompt.metadata?.outputSchema && content) {
         try {
-          structuredOutputs = [JSON.parse(content)];
+          structuredOutput = JSON.parse(content)];
         } catch {
           // Keep as text if not valid JSON
         }
@@ -306,7 +306,7 @@ export class VertexAIDriver implements AIDriver {
       return {
         content,
         finishReason,
-        structuredOutputs,
+        structuredOutput,
         usage: response.usageMetadata ? {
           promptTokens: response.usageMetadata.promptTokenCount || 0,
           completionTokens: response.usageMetadata.candidatesTokenCount || 0,
@@ -384,10 +384,10 @@ export class VertexAIDriver implements AIDriver {
       const finishReason = finishReasonMap[candidate.finishReason || 'error'];
 
       // Handle structured outputs
-      let structuredOutputs: unknown[] | undefined;
+      let structuredOutput: unknown[] | undefined;
       if (prompt.metadata?.outputSchema && content) {
         try {
-          structuredOutputs = [JSON.parse(content)];
+          structuredOutput = JSON.parse(content)];
         } catch {
           // Keep as text if not valid JSON
         }
@@ -396,7 +396,7 @@ export class VertexAIDriver implements AIDriver {
       return {
         content,
         finishReason,
-        structuredOutputs,
+        structuredOutput,
         usage: response.usageMetadata ? {
           promptTokens: response.usageMetadata.promptTokenCount || 0,
           completionTokens: response.usageMetadata.candidatesTokenCount || 0,

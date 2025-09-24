@@ -214,10 +214,10 @@ describe('EchoDriver', () => {
       const result = await driver.query(promptWithSchema);
 
       // Raw format returns the prompt as JSON
-      expect(result.structuredOutputs).toBeDefined();
-      expect(result.structuredOutputs).toHaveLength(1);
-      expect(result.structuredOutputs![0]).toHaveProperty('instructions');
-      expect(result.structuredOutputs![0]).toHaveProperty('data');
+      expect(result.structuredOutput).toBeDefined();
+      expect(result.structuredOutput).toHaveLength(1);
+      expect(result.structuredOutput![0]).toHaveProperty('instructions');
+      expect(result.structuredOutput![0]).toHaveProperty('data');
     });
 
     it('extracts JSON from messages format when outputSchema is provided', async () => {
@@ -235,9 +235,9 @@ describe('EchoDriver', () => {
       const result = await driver.query(promptWithSchema);
 
       // Messages format returns an array of messages as JSON
-      expect(result.structuredOutputs).toBeDefined();
-      expect(result.structuredOutputs).toHaveLength(1);
-      expect(Array.isArray(result.structuredOutputs![0])).toBe(true);
+      expect(result.structuredOutput).toBeDefined();
+      expect(result.structuredOutput).toHaveLength(1);
+      expect(Array.isArray(result.structuredOutput![0])).toBe(true);
     });
 
     it('extracts JSON from both format when outputSchema is provided', async () => {
@@ -258,10 +258,10 @@ describe('EchoDriver', () => {
       const result = await driver.query(promptWithSchema);
 
       // Both format returns an object with text and messages
-      expect(result.structuredOutputs).toBeDefined();
-      expect(result.structuredOutputs).toHaveLength(1);
-      expect(result.structuredOutputs![0]).toHaveProperty('text');
-      expect(result.structuredOutputs![0]).toHaveProperty('messages');
+      expect(result.structuredOutput).toBeDefined();
+      expect(result.structuredOutput).toHaveLength(1);
+      expect(result.structuredOutput![0]).toHaveProperty('text');
+      expect(result.structuredOutput![0]).toHaveProperty('messages');
     });
 
     it('extracts JSON from debug format when outputSchema is provided', async () => {
@@ -283,14 +283,14 @@ describe('EchoDriver', () => {
       const result = await driver.query(promptWithSchema);
 
       // Debug format returns detailed debug info as JSON
-      expect(result.structuredOutputs).toBeDefined();
-      expect(result.structuredOutputs).toHaveLength(1);
-      expect(result.structuredOutputs![0]).toHaveProperty('raw');
-      expect(result.structuredOutputs![0]).toHaveProperty('formatted');
-      expect(result.structuredOutputs![0]).toHaveProperty('metadata');
+      expect(result.structuredOutput).toBeDefined();
+      expect(result.structuredOutput).toHaveLength(1);
+      expect(result.structuredOutput![0]).toHaveProperty('raw');
+      expect(result.structuredOutput![0]).toHaveProperty('formatted');
+      expect(result.structuredOutput![0]).toHaveProperty('metadata');
     });
 
-    it('returns undefined structuredOutputs for text format', async () => {
+    it('returns undefined structuredOutput for text format', async () => {
       const driver = new EchoDriver({ format: 'text' });
       const promptWithSchema: CompiledPrompt = {
         ...samplePrompt,
@@ -302,16 +302,16 @@ describe('EchoDriver', () => {
       const result = await driver.query(promptWithSchema);
 
       // Text format doesn't contain JSON, so no structured output
-      expect(result.structuredOutputs).toBeUndefined();
+      expect(result.structuredOutput).toBeUndefined();
     });
 
-    it('returns undefined structuredOutputs when no schema provided', async () => {
+    it('returns undefined structuredOutput when no schema provided', async () => {
       const driver = new EchoDriver({ format: 'raw' });
 
       const result = await driver.query(samplePrompt);
 
       // No schema means no structured outputs
-      expect(result.structuredOutputs).toBeUndefined();
+      expect(result.structuredOutput).toBeUndefined();
     });
 
     it('handles structured outputs in streamQuery', async () => {
@@ -332,10 +332,10 @@ describe('EchoDriver', () => {
       const { result } = await driver.streamQuery(promptWithSchema);
       const queryResult = await result;
 
-      expect(queryResult.structuredOutputs).toBeDefined();
-      expect(queryResult.structuredOutputs).toHaveLength(1);
-      expect(queryResult.structuredOutputs![0]).toHaveProperty('text');
-      expect(queryResult.structuredOutputs![0]).toHaveProperty('messages');
+      expect(queryResult.structuredOutput).toBeDefined();
+      expect(queryResult.structuredOutput).toHaveLength(1);
+      expect(queryResult.structuredOutput![0]).toHaveProperty('text');
+      expect(queryResult.structuredOutput![0]).toHaveProperty('messages');
     });
 
     it('handles metadata inclusion with structured outputs', async () => {
@@ -357,7 +357,7 @@ describe('EchoDriver', () => {
       expect(result.content).toContain('=== CONTENT ===');
 
       // JSON extraction should find the JSON in the CONTENT section
-      expect(result.structuredOutputs).toBeDefined();
+      expect(result.structuredOutput).toBeDefined();
     });
   });
 });

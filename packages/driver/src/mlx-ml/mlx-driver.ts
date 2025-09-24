@@ -251,18 +251,18 @@ export class MlxDriver implements AIDriver {
         stream.on('error', reject);
       });
 
-      // Handle structured outputs if schema is provided
-      let structuredOutputs: unknown[] | undefined;
+      // Handle structured output if schema is provided
+      let structuredOutput: unknown | undefined;
       if (prompt.metadata?.outputSchema && content) {
         const extracted = extractJSON(content, { multiple: false });
         if (extracted.source !== 'none' && extracted.data !== null) {
-          structuredOutputs = [extracted.data];
+          structuredOutput = extracted.data;
         }
       }
 
       return {
         content,
-        structuredOutputs,
+        structuredOutput,
         finishReason: 'stop'
       };
     } catch {
@@ -386,18 +386,18 @@ export class MlxDriver implements AIDriver {
         throw streamError;
       }
 
-      // Handle structured outputs if schema is provided
-      let structuredOutputs: unknown[] | undefined;
+      // Handle structured output if schema is provided
+      let structuredOutput: unknown | undefined;
       if (prompt.metadata?.outputSchema && fullContent) {
         const extracted = extractJSON(fullContent, { multiple: false });
         if (extracted.source !== 'none' && extracted.data !== null) {
-          structuredOutputs = [extracted.data];
+          structuredOutput = extracted.data;
         }
       }
 
       return {
         content: fullContent,
-        structuredOutputs,
+        structuredOutput,
         finishReason: 'stop' as const
       };
     })();

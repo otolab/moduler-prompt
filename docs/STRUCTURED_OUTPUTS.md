@@ -17,7 +17,7 @@ CompiledPrompt (metadata.outputSchema)
     ↓
 AIDriver
     ↓ (スキーマに基づく生成)
-QueryResult.structuredOutputs
+QueryResult.structuredOutput
 ```
 
 ### 型定義
@@ -42,12 +42,11 @@ interface QueryResult {
   content: string;  // 生のテキストレスポンス
 
   /**
-   * 構造化出力の配列
-   * - undefined: スキーマ未指定
-   * - []: スキーマ指定済みだが有効なJSONなし
-   * - [...]: 抽出されたJSONオブジェクト/配列
+   * 構造化出力
+   * - undefined: スキーマ未指定または有効なJSONなし
+   * - object/array: 抽出されたJSON（スキーマに準拠）
    */
-  structuredOutputs?: unknown[];
+  structuredOutput?: unknown;
 
   usage?: {...};
   finishReason?: 'stop' | 'length' | 'error';
@@ -75,9 +74,9 @@ const params = {
 if (prompt.metadata?.outputSchema && params.response_format) {
   try {
     const parsed = JSON.parse(fullContent);
-    structuredOutputs = [parsed];
+    structuredOutput = parsed;
   } catch {
-    structuredOutputs = [];
+    structuredOutput = [];
   }
 }
 ```
@@ -104,7 +103,7 @@ const generationConfig = {
 // レスポンスを解析
 if (prompt.metadata?.outputSchema && content) {
   try {
-    structuredOutputs = [JSON.parse(content)];
+    structuredOutput = [JSON.parse(content)];
   } catch {
     // JSONとして解析できない場合は空配列
   }
@@ -124,7 +123,7 @@ import { extractJSON } from '@moduler-prompt/utils';
 if (prompt.metadata?.outputSchema && content) {
   const extracted = extractJSON(content, { multiple: false });
   if (extracted.source !== 'none' && extracted.data !== null) {
-    structuredOutputs = [extracted.data];
+    structuredOutput = [extracted.data];
   }
 }
 ```
@@ -139,17 +138,32 @@ if (prompt.metadata?.outputSchema) {
     // JSON形式の出力から抽出
     const extracted = extractJSON(content, { multiple: false });
     if (extracted.source !== 'none' && extracted.data !== null) {
-      structuredOutputs = [extracted.data];
+      structuredOutput = [extracted.data];
     }
   }
 }
 ```
 
-### 3. 実装予定型（MlxDriver、OllamaDriver）
+#### MlxDriver
 
-これらのドライバーは実装可能だが現在未対応：
+```typescript
+async query(prompt: CompiledPrompt, options?: QueryOptions): Promise<QueryResult> {
+  // ... モデル実行 ...
 
-- **MlxDriver**: JSON抽出によるベストエフォート実装が可能
+  // スキーマ指定がある場合はJSON抽出
+  if (prompt.metadata?.outputSchema) {
+    const extracted = extractJSON(content, { multiple: false });
+    if (extracted.source !== 'none' && extracted.data !== null) {
+      structuredOutput = [extracted.data];
+    }
+  }
+
+  return { content, structuredOutput };
+}
+```
+
+### 3. 実装予定型（OllamaDriver）
+
 - **OllamaDriver**: OpenAI互換APIの機能を活用可能
 
 ## 使用方法
@@ -182,8 +196,8 @@ const driver = new OpenAIDriver({ apiKey: '...' });
 const result = await driver.query(prompt);
 
 // 構造化出力を取得
-if (result.structuredOutputs && result.structuredOutputs.length > 0) {
-  const data = result.structuredOutputs[0] as {
+if (result.structuredOutput && result.structuredOutput.length > 0) {
+  const data = result.structuredOutput[0] as {
     name: string;
     age: number;
     skills?: string[];
@@ -204,8 +218,8 @@ for await (const chunk of stream) {
 
 // 最終結果から構造化出力を取得
 const finalResult = await result;
-if (finalResult.structuredOutputs) {
-  console.log('Structured:', finalResult.structuredOutputs);
+if (finalResult.structuredOutput) {
+  console.log('Structured:', finalResult.structuredOutput);
 }
 ```
 
@@ -253,14 +267,14 @@ if (extracted.source !== 'none') {
 const result = await driver.query(prompt);
 
 // 構造化出力の検証
-if (result.structuredOutputs === undefined) {
+if (result.structuredOutput === undefined) {
   // スキーマが指定されていない
-} else if (result.structuredOutputs.length === 0) {
+} else if (result.structuredOutput.length === 0) {
   // 有効なJSONが生成されなかった
   console.warn('Failed to generate valid JSON:', result.content);
 } else {
   // 成功
-  const data = result.structuredOutputs[0];
+  const data = result.structuredOutput[0];
   // 型ガードやバリデーションを実施
 }
 ```
@@ -269,7 +283,7 @@ if (result.structuredOutputs === undefined) {
 
 ```typescript
 // 構造化出力が失敗した場合のフォールバック
-const data = result.structuredOutputs?.[0] ||
+const data = result.structuredOutput?.[0] ||
   parseManually(result.content) ||
   defaultData;
 ```
@@ -283,7 +297,7 @@ const data = result.structuredOutputs?.[0] ||
 | VertexAIDriver | ✅ 対応済み | responseMimeType/responseSchema | v0.2.0〜 |
 | TestDriver | ✅ 対応済み | JSON抽出 | v0.2.1〜 |
 | EchoDriver | ✅ 対応済み | JSON抽出 | v0.2.1〜 |
-| MlxDriver | ❌ 未対応 | - | 実装可能（JSON抽出方式） |
+| MlxDriver | ✅ 対応済み | JSON抽出 | v0.2.0〜 |
 | OllamaDriver | ❌ 未対応 | - | 実装可能（OpenAI互換） |
 
 ## 今後の拡張予定
@@ -315,7 +329,7 @@ const data = result.structuredOutputs?.[0] ||
    }
 
    const result = await driver.query<OutputType>(prompt);
-   // result.structuredOutputs は OutputType[] 型
+   // result.structuredOutput は OutputType[] 型
    ```
 
 3. **スキーマバリデーションライブラリとの統合**: Zod、Yup等との連携

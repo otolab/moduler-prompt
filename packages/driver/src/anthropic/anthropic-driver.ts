@@ -226,11 +226,11 @@ export class AnthropicDriver implements AIDriver {
     const resultPromise = processingPromise.then(() => {
       // Anthropic doesn't have native structured output support yet
       // Would need to use prompt engineering or tool use
-      let structuredOutputs: unknown[] | undefined;
+      let structuredOutput: unknown[] | undefined;
 
       return {
         content: fullContent,
-        structuredOutputs,
+        structuredOutput,
         usage,
         finishReason
       };

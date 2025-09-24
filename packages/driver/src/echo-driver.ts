@@ -129,21 +129,21 @@ export class EchoDriver implements AIDriver {
     }
     
     // Handle structured outputs if schema is provided
-    let structuredOutputs: unknown[] | undefined;
+    let structuredOutput: unknown | undefined;
     if (prompt.metadata?.outputSchema) {
       // For echo driver, we'll generate a sample based on the format
       if (this.format === 'raw' || this.format === 'messages' || this.format === 'both' || this.format === 'debug') {
         // These formats already return JSON, so try to extract
         const extracted = extractJSON(content, { multiple: false });
         if (extracted.source !== 'none' && extracted.data !== null) {
-          structuredOutputs = [extracted.data];
+          structuredOutput = extracted.data;
         }
       } else if (this.format === 'text') {
         // For text format, we could simulate a JSON response if schema is provided
         // For now, we'll just try to extract any JSON that might be in the text
         const extracted = extractJSON(content, { multiple: false });
         if (extracted.source !== 'none' && extracted.data !== null) {
-          structuredOutputs = [extracted.data];
+          structuredOutput = extracted.data;
         }
       }
     }
@@ -157,7 +157,7 @@ export class EchoDriver implements AIDriver {
 
     return {
       content,
-      structuredOutputs,
+      structuredOutput,
       finishReason: 'stop',
       usage
     };

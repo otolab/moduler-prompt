@@ -75,7 +75,7 @@ Moduler Promptは4層のレイヤードアーキテクチャで構成される�
 - Anthropic（Claude）
 - Google Vertex AI（Gemini）- Structured Outputs対応
 - Ollama（ローカルLLM）- Structured Outputs実装可能
-- MLX（Apple Silicon最適化）- Structured Outputs実装可能
+- MLX（Apple Silicon最適化）- Structured Outputs対応
 - TestDriver（テスト用）- Structured Outputs対応
 - EchoDriver（デバッグ用）- Structured Outputs対応
 

@@ -58,17 +58,17 @@ export class TestDriver implements AIDriver {
       }
 
       // Handle structured outputs if schema is provided
-      let structuredOutputs: unknown[] | undefined;
+      let structuredOutput: unknown | undefined;
       if (prompt.metadata?.outputSchema && content) {
         const extracted = extractJSON(content, { multiple: false });
         if (extracted.source !== 'none' && extracted.data !== null) {
-          structuredOutputs = [extracted.data];
+          structuredOutput = extracted.data;
         }
       }
 
       return {
         content,
-        structuredOutputs,
+        structuredOutput,
         usage: {
           promptTokens: estimateTokens(formattedPrompt),
           completionTokens: estimateTokens(content),
@@ -91,17 +91,17 @@ export class TestDriver implements AIDriver {
     const content = this.responseQueue.shift()!;
 
     // Handle structured outputs if schema is provided
-    let structuredOutputs: unknown[] | undefined;
+    let structuredOutput: unknown | undefined;
     if (prompt.metadata?.outputSchema && content) {
       const extracted = extractJSON(content, { multiple: false });
       if (extracted.source !== 'none' && extracted.data !== null) {
-        structuredOutputs = [extracted.data];
+        structuredOutput = extracted.data;
       }
     }
 
     return {
       content,
-      structuredOutputs,
+      structuredOutput,
       usage: {
         promptTokens: estimateTokens(formattedPrompt),
         completionTokens: estimateTokens(content),
@@ -145,18 +145,18 @@ export class TestDriver implements AIDriver {
     }
 
     // Handle structured outputs if schema is provided
-    let structuredOutputs: unknown[] | undefined;
+    let structuredOutput: unknown | undefined;
     if (prompt.metadata?.outputSchema && response) {
       const extracted = extractJSON(response, { multiple: false });
       if (extracted.source !== 'none' && extracted.data !== null) {
-        structuredOutputs = [extracted.data];
+        structuredOutput = extracted.data;
       }
     }
 
     // Create result promise
     const resultPromise = Promise.resolve({
       content: response,
-      structuredOutputs,
+      structuredOutput,
       usage: {
         promptTokens: estimateTokens(formattedPrompt),
         completionTokens: estimateTokens(response),
