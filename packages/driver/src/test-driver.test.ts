@@ -249,4 +249,149 @@ describe('TestDriver', () => {
     });
   });
 
+  describe('structured outputs', () => {
+    it('extracts JSON when outputSchema is provided', async () => {
+      const driver = new TestDriver({
+        responses: ['{"name": "Alice", "age": 30}']
+      });
+
+      const prompt: CompiledPrompt = {
+        instructions: [{ type: 'text', content: 'Generate user data' }],
+        data: [],
+        output: [],
+        metadata: {
+          outputSchema: {
+            type: 'object',
+            properties: {
+              name: { type: 'string' },
+              age: { type: 'number' }
+            }
+          }
+        }
+      };
+
+      const result = await driver.query(prompt);
+      expect(result.content).toBe('{"name": "Alice", "age": 30}');
+      expect(result.structuredOutputs).toEqual([{ name: 'Alice', age: 30 }]);
+    });
+
+    it('handles JSON in markdown code blocks', async () => {
+      const driver = new TestDriver({
+        responses: ['Here is the result:\n```json\n{"status": "success", "count": 42}\n```']
+      });
+
+      const prompt: CompiledPrompt = {
+        instructions: [{ type: 'text', content: 'Generate status' }],
+        data: [],
+        output: [],
+        metadata: {
+          outputSchema: {
+            type: 'object',
+            properties: {
+              status: { type: 'string' },
+              count: { type: 'number' }
+            }
+          }
+        }
+      };
+
+      const result = await driver.query(prompt);
+      expect(result.structuredOutputs).toEqual([{ status: 'success', count: 42 }]);
+    });
+
+    it('returns undefined structuredOutputs when no schema provided', async () => {
+      const driver = new TestDriver({
+        responses: ['{"name": "Bob"}']
+      });
+
+      const prompt: CompiledPrompt = {
+        instructions: [{ type: 'text', content: 'Generate data' }],
+        data: [],
+        output: []
+      };
+
+      const result = await driver.query(prompt);
+      expect(result.content).toBe('{"name": "Bob"}');
+      expect(result.structuredOutputs).toBeUndefined();
+    });
+
+    it('returns undefined structuredOutputs when no valid JSON found', async () => {
+      const driver = new TestDriver({
+        responses: ['This is plain text response']
+      });
+
+      const prompt: CompiledPrompt = {
+        instructions: [{ type: 'text', content: 'Generate data' }],
+        data: [],
+        output: [],
+        metadata: {
+          outputSchema: { type: 'object' }
+        }
+      };
+
+      const result = await driver.query(prompt);
+      expect(result.content).toBe('This is plain text response');
+      expect(result.structuredOutputs).toBeUndefined();
+    });
+
+    it('handles structured outputs in streamQuery', async () => {
+      const driver = new TestDriver({
+        responses: ['{"items": [1, 2, 3]}']
+      });
+
+      const prompt: CompiledPrompt = {
+        instructions: [{ type: 'text', content: 'Generate array' }],
+        data: [],
+        output: [],
+        metadata: {
+          outputSchema: {
+            type: 'object',
+            properties: {
+              items: { type: 'array' }
+            }
+          }
+        }
+      };
+
+      const { result } = await driver.streamQuery(prompt);
+      const queryResult = await result;
+
+      expect(queryResult.content).toBe('{"items": [1, 2, 3]}');
+      expect(queryResult.structuredOutputs).toEqual([{ items: [1, 2, 3] }]);
+    });
+
+    it('works with response provider function', async () => {
+      const driver = new TestDriver({
+        responses: (prompt) => {
+          if (prompt.metadata?.outputSchema) {
+            return '{"result": "structured"}';
+          }
+          return 'plain text';
+        }
+      });
+
+      const promptWithSchema: CompiledPrompt = {
+        instructions: [{ type: 'text', content: 'Generate' }],
+        data: [],
+        output: [],
+        metadata: {
+          outputSchema: { type: 'object' }
+        }
+      };
+
+      const result = await driver.query(promptWithSchema);
+      expect(result.structuredOutputs).toEqual([{ result: 'structured' }]);
+
+      const promptWithoutSchema: CompiledPrompt = {
+        instructions: [{ type: 'text', content: 'Generate' }],
+        data: [],
+        output: []
+      };
+
+      const result2 = await driver.query(promptWithoutSchema);
+      expect(result2.content).toBe('plain text');
+      expect(result2.structuredOutputs).toBeUndefined();
+    });
+  });
+
 });

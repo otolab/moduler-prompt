@@ -1,5 +1,6 @@
 import type { CompiledPrompt } from '@moduler-prompt/core';
 import type { AIDriver, QueryOptions, QueryResult, StreamResult } from './types.js';
+import { extractJSON } from '@moduler-prompt/utils';
 
 /**
  * Response provider function type
@@ -51,13 +52,23 @@ export class TestDriver implements AIDriver {
     // If we have a response provider function, use it
     if (this.responseProvider) {
       const content = await this.responseProvider(prompt, options);
-      
+
       if (this.delay > 0) {
         await new Promise(resolve => setTimeout(resolve, this.delay));
       }
-      
+
+      // Handle structured outputs if schema is provided
+      let structuredOutputs: unknown[] | undefined;
+      if (prompt.metadata?.outputSchema && content) {
+        const extracted = extractJSON(content, { multiple: false });
+        if (extracted.source !== 'none' && extracted.data !== null) {
+          structuredOutputs = [extracted.data];
+        }
+      }
+
       return {
         content,
+        structuredOutputs,
         usage: {
           promptTokens: estimateTokens(formattedPrompt),
           completionTokens: estimateTokens(content),
@@ -78,8 +89,19 @@ export class TestDriver implements AIDriver {
     }
     
     const content = this.responseQueue.shift()!;
+
+    // Handle structured outputs if schema is provided
+    let structuredOutputs: unknown[] | undefined;
+    if (prompt.metadata?.outputSchema && content) {
+      const extracted = extractJSON(content, { multiple: false });
+      if (extracted.source !== 'none' && extracted.data !== null) {
+        structuredOutputs = [extracted.data];
+      }
+    }
+
     return {
       content,
+      structuredOutputs,
       usage: {
         promptTokens: estimateTokens(formattedPrompt),
         completionTokens: estimateTokens(content),
@@ -122,9 +144,19 @@ export class TestDriver implements AIDriver {
       }
     }
 
+    // Handle structured outputs if schema is provided
+    let structuredOutputs: unknown[] | undefined;
+    if (prompt.metadata?.outputSchema && response) {
+      const extracted = extractJSON(response, { multiple: false });
+      if (extracted.source !== 'none' && extracted.data !== null) {
+        structuredOutputs = [extracted.data];
+      }
+    }
+
     // Create result promise
     const resultPromise = Promise.resolve({
       content: response,
+      structuredOutputs,
       usage: {
         promptTokens: estimateTokens(formattedPrompt),
         completionTokens: estimateTokens(response),
