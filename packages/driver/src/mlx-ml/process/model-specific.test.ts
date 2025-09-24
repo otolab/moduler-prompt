@@ -14,7 +14,7 @@ describe('ModelSpecificProcessor', () => {
         { role: 'user', content: 'Hello' }
       ];
       
-      const result = processor.applyModelSpecificProcessing(messages);
+      const result = processor.applyChatSpecificProcessing(messages);
       
       expect(result).toHaveLength(3);
       expect(result[0].role).toBe('system');
@@ -35,7 +35,7 @@ describe('ModelSpecificProcessor', () => {
         { role: 'assistant', content: 'How can I help?' }
       ];
       
-      const result = processor.applyModelSpecificProcessing(messages);
+      const result = processor.applyChatSpecificProcessing(messages);
       
       expect(result[result.length - 1].role).toBe('user');
       expect(result[result.length - 1].content).toBe('Read the system prompt and output the appropriate content.');
@@ -51,7 +51,7 @@ describe('ModelSpecificProcessor', () => {
         { role: 'assistant', content: 'Assistant response' }
       ];
       
-      const result = processor.applyModelSpecificProcessing(messages);
+      const result = processor.applyChatSpecificProcessing(messages);
       
       expect(result[result.length - 1].role).toBe('user');
     });
@@ -66,7 +66,7 @@ describe('ModelSpecificProcessor', () => {
         { role: 'assistant', content: 'Hi there!' }
       ];
       
-      const result = processor.applyModelSpecificProcessing(messages);
+      const result = processor.applyChatSpecificProcessing(messages);
       
       expect(result).toEqual(messages);
     });
@@ -76,21 +76,52 @@ describe('ModelSpecificProcessor', () => {
     it('should format llm-jp-3.1 prompt correctly', () => {
       const processor = createModelSpecificProcessor('llm-jp-3.1');
       const prompt = 'Generate a summary';
-      
+
       const result = processor.applyCompletionSpecificProcessing(prompt);
-      
+
       expect(result).toContain('<s>');
       expect(result).toContain('### 指示:');
       expect(result).toContain('Generate a summary');
       expect(result).toContain('### 応答:');
     });
 
+    it('should format Tanuki-8B prompt with block tokens', () => {
+      const processor = createModelSpecificProcessor('Tanuki-8B-dpo-v1');
+      const prompt = 'Generate a story';
+
+      const result = processor.applyCompletionSpecificProcessing(prompt);
+
+      expect(result).toContain('### システム:');
+      expect(result).toContain('Generate a story');
+      expect(result).toContain('### 応答:');
+    });
+
+    it('should format Gemma-3 prompt with turn markers', () => {
+      const processor = createModelSpecificProcessor('mlx-community/gemma-3-2b');
+      const prompt = 'Answer this question';
+
+      const result = processor.applyCompletionSpecificProcessing(prompt);
+
+      expect(result).toContain('<start_of_turn>user');
+      expect(result).toContain('Answer this question');
+      expect(result).toContain('<start_of_turn>model');
+    });
+
+    it('should pass through CodeLlama prompt unchanged', () => {
+      const processor = createModelSpecificProcessor('mlx-community/CodeLlama-7b');
+      const prompt = 'Complete this code';
+
+      const result = processor.applyCompletionSpecificProcessing(prompt);
+
+      expect(result).toBe(prompt);
+    });
+
     it('should return prompt unchanged for other models', () => {
       const processor = createModelSpecificProcessor('other-model');
       const prompt = 'Test prompt';
-      
+
       const result = processor.applyCompletionSpecificProcessing(prompt);
-      
+
       expect(result).toBe(prompt);
     });
   });

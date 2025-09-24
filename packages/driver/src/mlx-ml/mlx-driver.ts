@@ -8,6 +8,7 @@ import type { MlxCapabilities } from './process/types.js';
 import type { ModelSpec, ModelCustomProcessor } from './model-spec/types.js';
 import { createModelSpecificProcessor } from './process/model-specific.js';
 import type { CompiledPrompt } from '@moduler-prompt/core';
+import { extractJSON } from '@moduler-prompt/utils';
 
 /**
  * MLX ML driver configuration
@@ -100,7 +101,8 @@ export class MlxDriver implements AIDriver {
     this.model = config.model;
     this.defaultOptions = config.defaultOptions || {};
     this.process = new MlxProcess(config.model, config.modelSpec, config.customProcessor);
-    this.modelProcessor = createModelSpecificProcessor(config.model);
+    // special_tokensを取得できるようにプロセスを渡す
+    this.modelProcessor = createModelSpecificProcessor(config.model, this.process);
     this.formatterOptions = config.formatterOptions || {};
     this.preferMessageFormat = true; // MLX uses message format
   }
@@ -158,18 +160,12 @@ export class MlxDriver implements AIDriver {
   }
   
   /**
-   * Apply model-specific processing to messages
+   * Apply chat-specific processing to messages
    */
-  private applyModelSpecificProcessing(messages: MlxMessage[]): MlxMessage[] {
-    return this.modelProcessor.applyModelSpecificProcessing(messages);
+  private applyChatSpecificProcessing(messages: MlxMessage[]): MlxMessage[] {
+    return this.modelProcessor.applyChatSpecificProcessing(messages);
   }
   
-  /**
-   * Apply completion-specific processing to prompt
-   */
-  private applyCompletionSpecificProcessing(prompt: string): string {
-    return this.modelProcessor.applyCompletionSpecificProcessing(prompt);
-  }
   
   /**
    * Query the AI model with a compiled prompt
@@ -177,11 +173,7 @@ export class MlxDriver implements AIDriver {
   async query(prompt: CompiledPrompt, options?: QueryOptions): Promise<QueryResult> {
     try {
       await this.ensureInitialized();
-      
-      // Promptから messages に変換
-      const messages = formatPromptAsMessages(prompt, this.getFormatterOptions());
-      const mlxMessages = this.convertMessages(messages);
-      
+
       // Merge options (キャメルケース形式で渡す - mapOptionsToPythonで変換される)
       const mlxOptions: MlxMlModelOptions = {
         ...this.defaultOptions,
@@ -189,15 +181,11 @@ export class MlxDriver implements AIDriver {
         temperature: options?.temperature,
         topP: options?.topP
       };
-      
+
       // APIを選択
       await this.process.ensureInitialized();
       const specManager = this.process.getSpecManager();
-      
-      // 前処理とモデル固有処理を適用
-      let processedMessages = specManager.preprocessMessages(mlxMessages);
-      processedMessages = this.applyModelSpecificProcessing(processedMessages);
-      
+
       // MessageElementがあるかチェックしてAPIを決定
       const hasMessageEl = this.hasMessageElement(prompt);
       let api: 'chat' | 'completion';
@@ -228,18 +216,26 @@ export class MlxDriver implements AIDriver {
           api = 'chat';
         } else {
           // 両方使える場合はモデルの特性に応じて判定
-          api = specManager.determineApi(processedMessages);
+          // この場合のみメッセージ変換が必要
+          const messages = formatPromptAsMessages(prompt, this.getFormatterOptions());
+          const mlxMessages = this.convertMessages(messages);
+          const preprocessedMessages = specManager.preprocessMessages(mlxMessages);
+          api = specManager.determineApi(preprocessedMessages);
         }
       }
       
       let stream: Readable;
       if (api === 'completion') {
-        // completion APIを使用
-        const promptText = specManager.generatePrompt(processedMessages);
-        const processedPrompt = this.applyCompletionSpecificProcessing(promptText);
+        // completion APIを使用 - Element情報を保持したまま処理
+        const processedPrompt = await this.modelProcessor.formatCompletionPrompt(prompt);
         stream = await this.process.completion(processedPrompt, mlxOptions);
       } else {
-        // chat APIを使用
+        // chat APIを使用 - メッセージ変換して処理
+        const messages = formatPromptAsMessages(prompt, this.getFormatterOptions());
+        const mlxMessages = this.convertMessages(messages);
+        let processedMessages = specManager.preprocessMessages(mlxMessages);
+        // chat APIではチャット処理を適用
+        processedMessages = this.applyChatSpecificProcessing(processedMessages);
         stream = await this.process.chat(processedMessages, undefined, mlxOptions);
       }
       
@@ -254,75 +250,19 @@ export class MlxDriver implements AIDriver {
         stream.on('end', resolve);
         stream.on('error', reject);
       });
-      
-      return {
-        content,
-        finishReason: 'stop'
-      };
-    } catch {
-      return {
-        content: '',
-        finishReason: 'error'
-      };
-    }
-  }
-  
-  /**
-   * Query with messages
-   */
-  protected async queryWithMessages(
-    messages: ChatMessage[], 
-    options: QueryOptions = {}
-  ): Promise<QueryResult> {
-    try {
-      await this.ensureInitialized();
-      
-      // Convert messages to MLX format
-      const mlxMessages = this.convertMessages(messages);
-      
-      // Merge options
-      const mlxOptions: MlxMlModelOptions = {
-        ...this.defaultOptions,
-        maxTokens: options.maxTokens,
-        temperature: options.temperature,
-        topP: options.topP
-      };
-      
-      // ドライバーレベルでAPIを選択
-      await this.process.ensureInitialized();
-      const specManager = this.process.getSpecManager();
-      
-      // 前処理とモデル固有処理を適用
-      let processedMessages = specManager.preprocessMessages(mlxMessages);
-      processedMessages = this.applyModelSpecificProcessing(processedMessages);
-      
-      const api = specManager.determineApi(processedMessages);
-      
-      let stream: Readable;
-      if (api === 'completion') {
-        // completion APIを使用
-        const prompt = specManager.generatePrompt(processedMessages);
-        const processedPrompt = this.applyCompletionSpecificProcessing(prompt);
-        stream = await this.process.completion(processedPrompt, mlxOptions);
-      } else {
-        // chat APIを使用
-        stream = await this.process.chat(processedMessages, undefined, mlxOptions);
+
+      // Handle structured outputs if schema is provided
+      let structuredOutputs: unknown[] | undefined;
+      if (prompt.metadata?.outputSchema && content) {
+        const extracted = extractJSON(content, { multiple: false });
+        if (extracted.source !== 'none' && extracted.data !== null) {
+          structuredOutputs = [extracted.data];
+        }
       }
-      
-      // Collect all chunks
-      let content = '';
-      stream.on('data', (chunk) => {
-        content += chunk.toString();
-      });
-      
-      // Wait for stream to end
-      await new Promise<void>((resolve, reject) => {
-        stream.on('end', resolve);
-        stream.on('error', reject);
-      });
-      
+
       return {
         content,
+        structuredOutputs,
         finishReason: 'stop'
       };
     } catch {
@@ -332,7 +272,6 @@ export class MlxDriver implements AIDriver {
       };
     }
   }
-  
   /**
    * Stream query implementation
    */
@@ -341,9 +280,6 @@ export class MlxDriver implements AIDriver {
     options?: QueryOptions
   ): Promise<StreamResult> {
     await this.ensureInitialized();
-
-    const messages = formatPromptAsMessages(prompt, this.getFormatterOptions());
-    const mlxMessages = this.convertMessages(messages);
 
     // Merge options
     const mlxOptions: MlxMlModelOptions = {
@@ -356,10 +292,6 @@ export class MlxDriver implements AIDriver {
     // ドライバーレベルでAPIを選択
     await this.process.ensureInitialized();
     const specManager = this.process.getSpecManager();
-
-    // 前処理とモデル固有処理を適用
-    let processedMessages = specManager.preprocessMessages(mlxMessages);
-    processedMessages = this.applyModelSpecificProcessing(processedMessages);
 
     // MessageElementがあるかチェックしてAPIを決定
     const hasMessageEl = this.hasMessageElement(prompt);
@@ -391,18 +323,26 @@ export class MlxDriver implements AIDriver {
         api = 'chat';
       } else {
         // 両方使える場合はモデルの特性に応じて判定
-        api = specManager.determineApi(processedMessages);
+        // この場合のみメッセージ変換が必要
+        const messages = formatPromptAsMessages(prompt, this.getFormatterOptions());
+        const mlxMessages = this.convertMessages(messages);
+        const preprocessedMessages = specManager.preprocessMessages(mlxMessages);
+        api = specManager.determineApi(preprocessedMessages);
       }
     }
 
     let stream: Readable;
     if (api === 'completion') {
-      // completion APIを使用
-      const promptText = specManager.generatePrompt(processedMessages);
-      const processedPrompt = this.applyCompletionSpecificProcessing(promptText);
+      // completion APIを使用 - Element情報を保持したまま処理
+      const processedPrompt = await this.modelProcessor.formatCompletionPrompt(prompt);
       stream = await this.process.completion(processedPrompt, mlxOptions);
     } else {
-      // chat APIを使用
+      // chat APIを使用 - メッセージ変換して処理
+      const messages = formatPromptAsMessages(prompt, this.getFormatterOptions());
+      const mlxMessages = this.convertMessages(messages);
+      let processedMessages = specManager.preprocessMessages(mlxMessages);
+      // chat APIではチャット処理を適用
+      processedMessages = this.applyChatSpecificProcessing(processedMessages);
       stream = await this.process.chat(processedMessages, undefined, mlxOptions);
     }
 
@@ -446,8 +386,18 @@ export class MlxDriver implements AIDriver {
         throw streamError;
       }
 
+      // Handle structured outputs if schema is provided
+      let structuredOutputs: unknown[] | undefined;
+      if (prompt.metadata?.outputSchema && fullContent) {
+        const extracted = extractJSON(fullContent, { multiple: false });
+        if (extracted.source !== 'none' && extracted.data !== null) {
+          structuredOutputs = [extracted.data];
+        }
+      }
+
       return {
         content: fullContent,
+        structuredOutputs,
         finishReason: 'stop' as const
       };
     })();
