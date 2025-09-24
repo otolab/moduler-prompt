@@ -73,7 +73,7 @@ Moduler Promptは4層のレイヤードアーキテクチャで構成される�
 **実装済みドライバー：**
 - OpenAI（GPT-4, GPT-3.5）- Structured Outputs対応
 - Anthropic（Claude）
-- Google Vertex AI（Gemini）
+- Google Vertex AI（Gemini）- Structured Outputs対応
 - Ollama（ローカルLLM）- Structured Outputs実装可能
 - MLX（Apple Silicon最適化）- Structured Outputs実装可能
 - TestDriver（テスト用）- Structured Outputs対応

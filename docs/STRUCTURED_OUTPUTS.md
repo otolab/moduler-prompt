@@ -94,12 +94,21 @@ if (prompt.metadata?.outputSchema) {
 #### VertexAIDriver
 
 ```typescript
-// responseFormatとjsonSchemaパラメータを使用
-const params = {
-  responseFormat: prompt.metadata?.outputSchema ? 'json' : 'text',
-  jsonSchema: prompt.metadata?.outputSchema,
+// responseMimeTypeとresponseSchemaパラメータを使用
+const generationConfig = {
+  responseMimeType: prompt.metadata?.outputSchema ? 'application/json' : 'text/plain',
+  responseSchema: this.convertJsonSchema(prompt.metadata?.outputSchema),
   // ...
 };
+
+// レスポンスを解析
+if (prompt.metadata?.outputSchema && content) {
+  try {
+    structuredOutputs = [JSON.parse(content)];
+  } catch {
+    // JSONとして解析できない場合は空配列
+  }
+}
 ```
 
 ### 2. JSON抽出型（TestDriver、EchoDriver）
@@ -271,7 +280,7 @@ const data = result.structuredOutputs?.[0] ||
 |----------|---------|---------|-----|
 | OpenAIDriver | ✅ 対応済み | response_format API | v0.2.0〜 |
 | AnthropicDriver | ⚠️ 部分対応 | プロンプト指示 | 改善予定 |
-| VertexAIDriver | ⚠️ 部分対応 | responseFormat/jsonSchema | 検証中 |
+| VertexAIDriver | ✅ 対応済み | responseMimeType/responseSchema | v0.2.0〜 |
 | TestDriver | ✅ 対応済み | JSON抽出 | v0.2.1〜 |
 | EchoDriver | ✅ 対応済み | JSON抽出 | v0.2.1〜 |
 | MlxDriver | ❌ 未対応 | - | 実装可能（JSON抽出方式） |
