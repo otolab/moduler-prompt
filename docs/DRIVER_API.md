@@ -307,7 +307,7 @@ interface EchoDriverConfig {
 #### 特徴
 
 - **複数の出力形式**: テキスト、メッセージ、生データ、両方、デバッグ情報
-- **Structured Outputs対応** (v0.2.1以降): JSON形式（raw、messages、both、debug）の場合に自動的にstructuredOutputsを生成
+- **Structured Outputs対応** (v0.2.1以降): JSON形式（raw、messages、both、debug）の場合に自動的にstructuredOutputを生成
 - **メタデータ付加**: リクエストのメタデータを含めることが可能
 - **カスタムフォーマッターオプション**: 出力形式のカスタマイズ
 - **ストリーミングサポート**: チャンクサイズを指定可能
@@ -353,7 +353,7 @@ interface QueryOptions {
 ```typescript
 interface QueryResult {
   content: string;
-  structuredOutputs?: unknown[];
+  structuredOutput?: unknown;
   usage?: {
     promptTokens: number;
     completionTokens: number;

@@ -124,8 +124,8 @@ const driver = new OpenAIDriver({ apiKey: process.env.OPENAI_API_KEY });
 const result = await driver.query(prompt);
 
 // 構造化データを取得
-if (result.structuredOutputs?.[0]) {
-  const analysis = result.structuredOutputs[0];
+if (result.structuredOutput) {
+  const analysis = result.structuredOutput;
   console.log('Score:', analysis.score);
   console.log('Issues:', analysis.issues);
 }

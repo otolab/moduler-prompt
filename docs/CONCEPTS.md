@@ -142,9 +142,9 @@ prompt.metadata = {
 
 // ドライバーが可能な限り構造化データを返す
 const result = await driver.query(prompt);
-if (result.structuredOutputs?.[0]) {
+if (result.structuredOutput) {
   // 構造化データとして処理
-  const data = result.structuredOutputs[0];
+  const data = result.structuredOutput;
   console.log(data.confidence);
 } else {
   // フォールバック：テキストを手動解析
