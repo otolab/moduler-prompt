@@ -5,9 +5,9 @@
 
 import { readFile } from 'fs/promises';
 import * as yaml from 'js-yaml';
-import type { AIDriver } from '@moduler-prompt/driver';
-import * as Drivers from '@moduler-prompt/driver';
-import { Logger, LogLevel } from '../logger/index.js';
+import type { AIDriver } from '../types.js';
+import * as Drivers from '../index.js';
+import { Logger, LogLevel } from '@moduler-prompt/utils';
 
 import type {
   DriverProvider,

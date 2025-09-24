@@ -177,9 +177,9 @@ export class MlxDriver implements AIDriver {
       // Merge options (キャメルケース形式で渡す - mapOptionsToPythonで変換される)
       const mlxOptions: MlxMlModelOptions = {
         ...this.defaultOptions,
-        maxTokens: options?.maxTokens,
-        temperature: options?.temperature,
-        topP: options?.topP
+        ...(options?.maxTokens !== undefined && { maxTokens: options.maxTokens }),
+        ...(options?.temperature !== undefined && { temperature: options.temperature }),
+        ...(options?.topP !== undefined && { topP: options.topP })
       };
 
       // APIを選択
@@ -281,12 +281,12 @@ export class MlxDriver implements AIDriver {
   ): Promise<StreamResult> {
     await this.ensureInitialized();
 
-    // Merge options
+    // Merge options (only override if explicitly provided)
     const mlxOptions: MlxMlModelOptions = {
       ...this.defaultOptions,
-      maxTokens: options?.maxTokens,
-      temperature: options?.temperature,
-      topP: options?.topP
+      ...(options?.maxTokens !== undefined && { maxTokens: options.maxTokens }),
+      ...(options?.temperature !== undefined && { temperature: options.temperature }),
+      ...(options?.topP !== undefined && { topP: options.topP })
     };
 
     // ドライバーレベルでAPIを選択

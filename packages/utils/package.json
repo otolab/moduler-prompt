@@ -26,7 +26,6 @@
   },
   "dependencies": {
     "@moduler-prompt/core": "*",
-    "@moduler-prompt/driver": "*",
     "js-yaml": "^4.1.0",
     "jsonrepair": "^3.8.1",
     "merge-stream": "^2.0.0"

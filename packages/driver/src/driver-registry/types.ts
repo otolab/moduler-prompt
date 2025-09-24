@@ -3,7 +3,7 @@
  * ドライバレジストリシステムの型定義
  */
 
-import type { AIDriver } from '@moduler-prompt/driver';
+import type { AIDriver } from '../types.js';
 
 /**
  * ドライバプロバイダータイプ

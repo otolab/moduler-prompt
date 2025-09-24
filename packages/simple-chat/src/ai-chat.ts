@@ -7,8 +7,7 @@
 import type { PromptModule} from '@moduler-prompt/core';
 import { compile, createContext, merge } from '@moduler-prompt/core';
 import { withMaterials, type MaterialContext } from '@moduler-prompt/process';
-import { type AIDriver, MlxDriver } from '@moduler-prompt/driver';
-import { DriverRegistry } from '@moduler-prompt/utils';
+import { type AIDriver, MlxDriver, DriverRegistry } from '@moduler-prompt/driver';
 import type { DialogProfile, ChatLog } from './types.js';
 import chalk from 'chalk';
 import { fileURLToPath } from 'url';

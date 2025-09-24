@@ -2,6 +2,19 @@ import { describe, it, expect, beforeAll, afterAll } from 'vitest';
 import { MlxDriver } from './mlx-driver.js';
 import type { CompiledPrompt } from '@moduler-prompt/core';
 
+// Test data types
+interface PersonData {
+  name: string;
+  age: number;
+}
+
+interface StatusData {
+  status: string;
+  count: number;
+}
+
+type StreamData = Record<string, unknown>;
+
 describe('MLXDriver Structured Outputs', () => {
   let driver: MlxDriver | null = null;
 
@@ -16,7 +29,8 @@ describe('MLXDriver Structured Outputs', () => {
       model: 'mlx-community/gemma-3-270m-it-qat-8bit',
       defaultOptions: {
         maxTokens: 100,
-        temperature: 0.1  // Low temperature for more deterministic output
+        temperature: 0.1,  // Low temperature for more deterministic output
+        topP: 0.9  // Default top-p value
       }
     });
   });
@@ -63,7 +77,7 @@ describe('MLXDriver Structured Outputs', () => {
 
       // Check if structured outputs were extracted
       if (result.structuredOutputs && result.structuredOutputs.length > 0) {
-        const data = result.structuredOutputs[0] as any;
+        const data = result.structuredOutputs[0] as PersonData;
         expect(data).toHaveProperty('name');
         expect(data).toHaveProperty('age');
         expect(typeof data.name).toBe('string');
@@ -134,7 +148,7 @@ describe('MLXDriver Structured Outputs', () => {
 
       // Check if structured outputs were extracted
       if (result.structuredOutputs && result.structuredOutputs.length > 0) {
-        const data = result.structuredOutputs[0] as any;
+        const data = result.structuredOutputs[0] as StatusData;
         expect(data).toHaveProperty('status');
         expect(data).toHaveProperty('count');
       } else {
@@ -188,7 +202,7 @@ describe('MLXDriver Structured Outputs', () => {
       console.log('Streamed content:', finalResult.content);
 
       if (finalResult.structuredOutputs && finalResult.structuredOutputs.length > 0) {
-        const data = finalResult.structuredOutputs[0] as any;
+        const data = finalResult.structuredOutputs[0] as StreamData;
         expect(data).toBeDefined();
         console.log('Extracted structured data:', data);
       }

@@ -70,3 +70,20 @@ export {
   formatPromptAsMessages,
   defaultFormatterTexts
 } from './formatter/converter.js';
+
+// Driver Registry exports
+export {
+  DriverRegistry,
+  registerDriverFactories
+} from './driver-registry/index.js';
+
+export type {
+  DriverProvider,
+  DriverCapability,
+  DriverConfig as RegistryDriverConfig,
+  RegistryConfig,
+  DriverSelectionCriteria,
+  DriverSelectionResult,
+  IDriverRegistry,
+  DriverFactory
+} from './driver-registry/types.js';
