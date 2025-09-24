@@ -120,6 +120,14 @@ export class DefaultModelSpecificProcessor implements ModelSpecificProcessor {
           })
         );
         const sectionContent = sectionItems.join('\n');
+
+        // headingトークンが利用可能な場合
+        if (specialTokens?.['heading'] &&
+            typeof specialTokens['heading'] === 'object' &&
+            'start' in specialTokens['heading']) {
+          return `${specialTokens['heading'].start.text}${element.title}${specialTokens['heading'].end.text}\n${sectionContent}\n`;
+        }
+
         return `=== ${element.title} ===\n${sectionContent}\n`;
 
       case 'subsection':
@@ -127,7 +135,38 @@ export class DefaultModelSpecificProcessor implements ModelSpecificProcessor {
         return `--- ${element.title} ---\n${subsectionContent}\n`;
 
       case 'material':
-        return `[Material: ${element.title}]\n${element.content}\n`;
+        // materialは主に引用・参照文書として扱う
+        if (specialTokens) {
+          // 引用トークンが利用可能な場合
+          if (specialTokens['quote'] &&
+              typeof specialTokens['quote'] === 'object' &&
+              'start' in specialTokens['quote']) {
+            return `${specialTokens['quote'].start.text}${element.title}\n${element.content}${specialTokens['quote'].end.text}\n`;
+          }
+          // 参照トークンが利用可能な場合
+          else if (specialTokens['ref'] &&
+                   typeof specialTokens['ref'] === 'object' &&
+                   'start' in specialTokens['ref']) {
+            return `${specialTokens['ref'].start.text}${element.title}\n${element.content}${specialTokens['ref'].end.text}\n`;
+          }
+          // citationトークンが利用可能な場合
+          else if (specialTokens['citation'] &&
+                   typeof specialTokens['citation'] === 'object' &&
+                   'start' in specialTokens['citation']) {
+            return `${specialTokens['citation'].start.text}${element.title}\n${element.content}${specialTokens['citation'].end.text}\n`;
+          }
+          // contextトークンが利用可能な場合
+          else if (specialTokens['context'] &&
+                   typeof specialTokens['context'] === 'object' &&
+                   'start' in specialTokens['context']) {
+            return `${specialTokens['context'].start.text}Material: ${element.title}\n${element.content}${specialTokens['context'].end.text}\n`;
+          }
+        }
+
+        // デフォルト（マークダウン引用形式）
+        const lines = element.content.split('\n');
+        const quotedContent = lines.map(line => `> ${line}`).join('\n');
+        return `### ${element.title}\n\n${quotedContent}\n`;
 
       case 'chunk':
         return `[Chunk ${element.index}/${element.total} of ${element.partOf}]\n${element.content}\n`;
@@ -161,10 +200,28 @@ export class DefaultModelSpecificProcessor implements ModelSpecificProcessor {
       sections.push(dataTexts.join('\n'));
     }
 
-    // Output section
+    // Output section - 特にschemaやJSON出力の場合は特殊トークンを活用
     if (prompt.output.length > 0) {
       const outputTexts = await Promise.all(
-        prompt.output.map(el => this.formatElementWithTokens(el))
+        prompt.output.map(async el => {
+          // schema情報がある場合はJSONブロックとしてマーク
+          if (prompt.metadata?.outputSchema && el.type === 'text') {
+            const specialTokens = await this.getSpecialTokens();
+            // コードブロックトークンを使用（JSONは構造化データ）
+            if (specialTokens?.['code_block_start']) {
+              const start = specialTokens['code_block_start'].text || '```';
+              const end = specialTokens['code_block_end']?.text || '```';
+              return `Output Format (JSON):\n${start}json\n${el.content}\n${end}`;
+            }
+            // 代替：コードトークンを使用
+            else if (specialTokens?.['code'] &&
+                     typeof specialTokens['code'] === 'object' &&
+                     'start' in specialTokens['code']) {
+              return `Output Format (JSON):\n${specialTokens['code'].start.text}\n${el.content}\n${specialTokens['code'].end.text}`;
+            }
+          }
+          return await this.formatElementWithTokens(el);
+        })
       );
       sections.push(outputTexts.join('\n'));
     }
