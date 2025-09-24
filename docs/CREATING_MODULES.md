@@ -113,11 +113,12 @@ interface CompiledPrompt {
 Elementは、プロンプトを構成する基本要素：
 
 ```typescript
-type Element = 
+type Element =
   | TextElement        // テキスト: { type: 'text', content: string }
   | MessageElement     // メッセージ: { type: 'message', role: 'system'|'assistant'|'user', content: string }
-  | MaterialElement    // 資料: { type: 'material', id: string, title: string, content: string }
+  | MaterialElement    // 資料（引用・参照文書）: { type: 'material', id: string, title: string, content: string }
   | ChunkElement      // チャンク: { type: 'chunk', content: string, partOf: string, index?: number }
+  | JSONElement       // JSONスキーマ・構造化データ: { type: 'json', content: object | string }
   | SectionElement    // セクション: { type: 'section', title: string, content: string, items: string[] }
   | SubSectionElement // サブセクション: { type: 'subsection', title: string, items: string[] }
 ```
@@ -157,11 +158,12 @@ type DynamicContent<TContext> = (context: TContext) =>
   | undefined;               // 何も返さない
 
 // DynamicElement: 動的に生成可能な要素（構造要素は除く）
-type DynamicElement = 
+type DynamicElement =
   | TextElement
   | MessageElement
   | MaterialElement
-  | ChunkElement;
+  | ChunkElement
+  | JSONElement;       // JSONスキーマも動的生成可能
   // SectionElementとSubSectionElementは生成不可（構造は静的）
 ```
 
@@ -210,6 +212,24 @@ const module: PromptModule<{ data: any[] }> = {
       type: 'message' as const,
       role: 'user' as const,
       content: `Process these items: ${ctx.data.map(d => d.name).join(', ')}`
+    })
+  ],
+
+  // JSONElementを使った構造化出力の定義
+  schema: [
+    (ctx) => ({
+      type: 'json' as const,
+      content: {
+        type: 'object',
+        properties: {
+          result: { type: 'string' },
+          items: {
+            type: 'array',
+            items: { type: 'string' }
+          }
+        },
+        required: ['result', 'items']
+      }
     })
   ]
 };
@@ -363,7 +383,7 @@ const dbModule = merge(baseDatabaseModule, errorHandlingModule);
 
 - DynamicContentはSection/SubSectionを生成不可
 - 構造は静的に定義する必要がある
-- 生成可能なのは、TextElement、MessageElement、MaterialElement、ChunkElementのみ
+- 生成可能なのは、TextElement、MessageElement、MaterialElement、ChunkElement、JSONElementのみ
 
 ## 次のステップ
 

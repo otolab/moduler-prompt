@@ -171,6 +171,27 @@ export class DefaultModelSpecificProcessor implements ModelSpecificProcessor {
       case 'chunk':
         return `[Chunk ${element.index}/${element.total} of ${element.partOf}]\n${element.content}\n`;
 
+      case 'json':
+        // JSONスキーマ要素は構造化データとして明確にマーク
+        const jsonContent = typeof element.content === 'string'
+          ? element.content
+          : JSON.stringify(element.content, null, 2);
+
+        // コードブロックトークンを使用
+        if (specialTokens?.['code_block_start']) {
+          const start = specialTokens['code_block_start'].text || '```';
+          const end = specialTokens['code_block_end']?.text || '```';
+          return `JSON Schema:\n${start}json\n${jsonContent}\n${end}\n`;
+        }
+        // 代替：codeトークンを使用
+        else if (specialTokens?.['code'] &&
+                 typeof specialTokens['code'] === 'object' &&
+                 'start' in specialTokens['code']) {
+          return `JSON Schema:\n${specialTokens['code'].start.text}\n${jsonContent}\n${specialTokens['code'].end.text}\n`;
+        }
+        // デフォルト
+        return `JSON Schema:\n\`\`\`json\n${jsonContent}\n\`\`\`\n`;
+
       default:
         // 未知の要素はテキストとして扱う
         return JSON.stringify(element);

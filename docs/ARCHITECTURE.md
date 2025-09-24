@@ -110,8 +110,9 @@ Moduler Promptは4層のレイヤードアーキテクチャで構成される�
 Element
 ├── TextElement         # テキスト
 ├── MessageElement      # メッセージ（role付き）
-├── MaterialElement     # 資料
+├── MaterialElement     # 資料（引用・参照文書）
 ├── ChunkElement       # データチャンク
+├── JSONElement        # JSONスキーマ・構造化データ
 ├── SectionElement     # セクション（第1階層）
 └── SubSectionElement  # サブセクション（第2階層）
 ```
