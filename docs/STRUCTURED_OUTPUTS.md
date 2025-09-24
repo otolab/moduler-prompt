@@ -84,9 +84,18 @@ if (prompt.metadata?.outputSchema && params.response_format) {
 #### AnthropicDriver
 
 ```typescript
-// システムプロンプトでJSON生成を指示（実装予定）
+// システムプロンプトでJSON生成を指示
 if (prompt.metadata?.outputSchema) {
-  messages[0].content += '\nRespond with valid JSON matching the schema.';
+  const jsonInstruction = '\n\nYou must respond with valid JSON that matches the provided schema. Output only the JSON object, no additional text or markdown formatting.';
+  system = system ? `${system}${jsonInstruction}` : jsonInstruction;
+}
+
+// レスポンスからJSONを抽出
+if (prompt.metadata?.outputSchema && fullContent) {
+  const extracted = extractJSON(fullContent, { multiple: false });
+  if (extracted.source !== 'none' && extracted.data !== null) {
+    structuredOutput = extracted.data;
+  }
 }
 ```
 
@@ -103,9 +112,9 @@ const generationConfig = {
 // レスポンスを解析
 if (prompt.metadata?.outputSchema && content) {
   try {
-    structuredOutput = [JSON.parse(content)];
+    structuredOutput = JSON.parse(content);
   } catch {
-    // JSONとして解析できない場合は空配列
+    // JSONとして解析できない場合はundefined
   }
 }
 ```
@@ -293,7 +302,7 @@ const data = result.structuredOutput?.[0] ||
 | ドライバー | 対応状況 | 実装方式 | 備考 |
 |----------|---------|---------|-----|
 | OpenAIDriver | ✅ 対応済み | response_format API | v0.2.0〜 |
-| AnthropicDriver | ⚠️ 部分対応 | プロンプト指示 | 改善予定 |
+| AnthropicDriver | ✅ 対応済み | プロンプト指示 + JSON抽出 | v0.2.1〜 |
 | VertexAIDriver | ✅ 対応済み | responseMimeType/responseSchema | v0.2.0〜 |
 | TestDriver | ✅ 対応済み | JSON抽出 | v0.2.1〜 |
 | EchoDriver | ✅ 対応済み | JSON抽出 | v0.2.1〜 |

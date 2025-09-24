@@ -294,10 +294,10 @@ export class VertexAIDriver implements AIDriver {
       const finishReason = finishReasonMap[candidate.finishReason || 'error'];
 
       // Handle structured outputs
-      let structuredOutput: unknown[] | undefined;
+      let structuredOutput: unknown | undefined;
       if (prompt.metadata?.outputSchema && content) {
         try {
-          structuredOutput = JSON.parse(content)];
+          structuredOutput = JSON.parse(content);
         } catch {
           // Keep as text if not valid JSON
         }
@@ -384,10 +384,10 @@ export class VertexAIDriver implements AIDriver {
       const finishReason = finishReasonMap[candidate.finishReason || 'error'];
 
       // Handle structured outputs
-      let structuredOutput: unknown[] | undefined;
+      let structuredOutput: unknown | undefined;
       if (prompt.metadata?.outputSchema && content) {
         try {
-          structuredOutput = JSON.parse(content)];
+          structuredOutput = JSON.parse(content);
         } catch {
           // Keep as text if not valid JSON
         }
