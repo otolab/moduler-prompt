@@ -4,7 +4,7 @@
  */
 
 import type { DriverRegistry } from './registry.js';
-import type { ModelSpec } from './types.js';
+import type { ModelSpec, DriverProvider } from './types.js';
 import type { AIDriver } from '../types.js';
 
 // 個別ドライバーのインポート（型安全性のため）
@@ -52,7 +52,7 @@ export function registerStandardDriverFactories(
       return new Driver({
         apiKey: process.env.OPENAI_API_KEY || '',
         model: spec.model,
-        defaultOptions: spec.metadata as any
+        defaultOptions: spec.metadata as Record<string, unknown>
       });
     });
   }
@@ -64,7 +64,7 @@ export function registerStandardDriverFactories(
       return new Driver({
         apiKey: process.env.ANTHROPIC_API_KEY || '',
         model: spec.model,
-        defaultOptions: spec.metadata as any
+        defaultOptions: spec.metadata as Record<string, unknown>
       });
     });
   }
@@ -77,7 +77,7 @@ export function registerStandardDriverFactories(
         project: process.env.VERTEX_AI_PROJECT,
         location: process.env.VERTEX_AI_LOCATION || 'us-central1',
         model: spec.model,
-        defaultOptions: spec.metadata as any
+        defaultOptions: spec.metadata as Record<string, unknown>
       });
     });
   }
@@ -89,7 +89,7 @@ export function registerStandardDriverFactories(
       return new Driver({
         baseURL: 'http://localhost:11434',
         model: spec.model,
-        defaultOptions: spec.metadata as any
+        defaultOptions: spec.metadata as Record<string, unknown>
       });
     });
   }
@@ -97,7 +97,7 @@ export function registerStandardDriverFactories(
   // Echo Driver (for testing)
   if (drivers.EchoDriver) {
     const Driver = drivers.EchoDriver;
-    registry.registerFactory('echo', (spec: ModelSpec) => {
+    registry.registerFactory('echo', () => {
       return new Driver({
         format: 'text'
       });
@@ -107,8 +107,7 @@ export function registerStandardDriverFactories(
   // Test Driver (for unit testing)
   if (drivers.TestDriver) {
     const Driver = drivers.TestDriver;
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    registry.registerFactory('test' as any, (spec: ModelSpec) => {
+    registry.registerFactory('test' as DriverProvider, () => {
       return new Driver({});
     });
   }

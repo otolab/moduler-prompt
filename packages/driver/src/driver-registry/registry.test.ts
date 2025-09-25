@@ -4,7 +4,7 @@
 
 import { describe, it, expect, beforeEach } from 'vitest';
 import { DriverRegistry } from './registry.js';
-import type { ModelSpec, DriverSelectionCriteria } from './types.js';
+import type { ModelSpec, DriverSelectionCriteria, DriverProvider } from './types.js';
 
 describe('DriverRegistry', () => {
   let registry: DriverRegistry;
@@ -188,7 +188,7 @@ describe('DriverRegistry', () => {
     it('should throw error when no factory registered', async () => {
       const spec: ModelSpec = {
         model: 'test-model',
-        provider: 'unknown-provider' as any,
+        provider: 'unknown-provider' as DriverProvider,
         capabilities: [],
       };
 
@@ -238,7 +238,7 @@ describe('DriverRegistry', () => {
     it('should return null when no factory registered', async () => {
       registry.registerModel({
         model: 'test-model',
-        provider: 'unknown-provider' as any,
+        provider: 'unknown-provider' as DriverProvider,
         capabilities: ['test'],
       });
 

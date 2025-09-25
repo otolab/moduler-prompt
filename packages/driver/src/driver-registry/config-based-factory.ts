@@ -7,8 +7,7 @@
  */
 
 import type { DriverRegistry } from './registry.js';
-import type { ModelSpec, DriverCapability, DriverProvider } from './types.js';
-import type { AIDriver } from '../types.js';
+import type { ModelSpec } from './types.js';
 
 // 個別ドライバーのインポート
 import { MlxDriver } from '../mlx-ml/mlx-driver.js';
@@ -128,7 +127,7 @@ export function registerFactories(
   });
 
   // Echo Driver Factory (for testing)
-  registry.registerFactory('echo', (spec) => {
+  registry.registerFactory('echo', () => {
     return new EchoDriver({
       format: 'text'
     });
@@ -136,7 +135,7 @@ export function registerFactories(
 
   // Test Driver Factory (for unit testing)
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  registry.registerFactory('test' as any, (spec) => {
+  registry.registerFactory('test' as any, () => {
     return new TestDriver({});
   });
 }

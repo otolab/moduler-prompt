@@ -32,14 +32,11 @@ describe('AI Chat E2E Tests', () => {
         });
       });
       
-      registry.registerDriver({
-        id: 'test-chat',
-        name: 'Test Chat Model',
-        model: {
-          model: 'test-chat',
-          provider: 'test' as any,
-          capabilities: ['chat', 'japanese']
-        }
+      registry.registerModel({
+        model: 'test-chat',
+        provider: 'test' as any,
+        capabilities: ['chat', 'japanese'],
+        enabled: true
       });
       
       const profile: DialogProfile = {
@@ -79,14 +76,11 @@ describe('AI Chat E2E Tests', () => {
         });
       });
       
-      registry.registerDriver({
-        id: 'test-chat',
-        name: 'Test Chat Model',
-        model: {
-          model: 'test-chat',
-          provider: 'test' as any,
-          capabilities: ['chat']
-        }
+      registry.registerModel({
+        model: 'test-chat',
+        provider: 'test' as any,
+        capabilities: ['chat'],
+        enabled: true
       });
       
       const profile: DialogProfile = {
@@ -139,14 +133,11 @@ describe('AI Chat E2E Tests', () => {
         });
       });
       
-      registry.registerDriver({
-        id: 'echo-text',
-        name: 'Echo Text Model',
-        model: {
-          model: 'echo-text',
-          provider: 'echo' as any,
-          capabilities: ['chat']
-        }
+      registry.registerModel({
+        model: 'echo-text',
+        provider: 'echo' as any,
+        capabilities: ['chat'],
+        enabled: true
       });
       
       const profile: DialogProfile = {
@@ -186,14 +177,11 @@ describe('AI Chat E2E Tests', () => {
         });
       });
       
-      registry.registerDriver({
-        id: 'echo-messages',
-        name: 'Echo Messages Model',
-        model: {
-          model: 'echo-messages',
-          provider: 'echo' as any,
-          capabilities: ['chat']
-        }
+      registry.registerModel({
+        model: 'echo-messages',
+        provider: 'echo' as any,
+        capabilities: ['chat'],
+        enabled: true
       });
       
       const profile: DialogProfile = {
@@ -244,14 +232,11 @@ describe('AI Chat E2E Tests', () => {
         });
       });
       
-      registry.registerDriver({
-        id: 'echo-debug',
-        name: 'Echo Debug Model',
-        model: {
-          model: 'echo-debug',
-          provider: 'echo' as any,
-          capabilities: ['chat']
-        }
+      registry.registerModel({
+        model: 'echo-debug',
+        provider: 'echo' as any,
+        capabilities: ['chat'],
+        enabled: true
       });
       
       const profile: DialogProfile = {
@@ -321,14 +306,11 @@ describe('AI Chat E2E Tests', () => {
         });
       });
       
-      registry.registerDriver({
-        id: 'test-chat',
-        name: 'Test Chat Model',
-        model: {
-          model: 'test-chat',
-          provider: 'test' as any,
-          capabilities: ['chat']
-        }
+      registry.registerModel({
+        model: 'test-chat',
+        provider: 'test' as any,
+        capabilities: ['chat'],
+        enabled: true
       });
       
       const profile: DialogProfile = {
@@ -387,14 +369,11 @@ describe('AI Chat E2E Tests', () => {
         });
       });
       
-      registry.registerDriver({
-        id: 'echo-both',
-        name: 'Echo Both Model',
-        model: {
-          model: 'echo-both',
-          provider: 'echo' as any,
-          capabilities: ['chat']
-        }
+      registry.registerModel({
+        model: 'echo-both',
+        provider: 'echo' as any,
+        capabilities: ['chat'],
+        enabled: true
       });
       
       const profile: DialogProfile = {
