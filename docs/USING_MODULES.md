@@ -94,8 +94,54 @@ console.log(result.content);
 
 ```typescript
 // ストリーミング対応
-for await (const chunk of driver.streamQuery(compiled)) {
+const { stream, result } = await driver.streamQuery(compiled);
+
+// ストリームをリアルタイムで処理
+for await (const chunk of stream) {
   process.stdout.write(chunk);
+}
+
+// 最終結果を取得
+const finalResult = await result;
+console.log('\nTotal tokens:', finalResult.usage?.totalTokens);
+```
+
+### AIサービスを使った動的ドライバー選択
+
+```typescript
+import { AIService } from '@moduler-prompt/driver';
+
+// AIサービスを設定
+const aiService = new AIService({
+  models: [
+    {
+      model: 'gpt-4o-mini',
+      provider: 'openai',
+      capabilities: ['streaming', 'tools', 'reasoning'],
+      priority: 10
+    },
+    {
+      model: 'llama-3.3-70b',
+      provider: 'mlx',
+      capabilities: ['local', 'fast', 'japanese'],
+      priority: 30
+    }
+  ],
+  drivers: {
+    openai: { apiKey: process.env.OPENAI_API_KEY },
+    mlx: {} // MLXは設定不要
+  }
+});
+
+// タスクに応じて最適なドライバーを選択
+const driver = await aiService.createDriverFromCapabilities(
+  ['japanese', 'fast'],
+  { preferLocal: true }  // ローカル優先
+);
+
+if (driver) {
+  const result = await driver.query(compiled);
+  console.log(result.content);
 }
 ```
 
@@ -250,10 +296,17 @@ console.log(promptText);
 ### DriverRegistryによる自動選択
 
 ```typescript
-import { DriverRegistry } from '@moduler-prompt/utils';
+import { DriverRegistry } from '@moduler-prompt/driver';
 
 const registry = new DriverRegistry();
-await registry.loadConfig('./drivers.yaml');
+
+// モデルを登録
+registry.registerModel({
+  model: 'gpt-4o-mini',
+  provider: 'openai',
+  capabilities: ['japanese', 'streaming'],
+  priority: 10
+});
 
 // 条件に基づいて最適なドライバーを選択
 const driver = await registry.selectAndCreateDriver(

@@ -4,6 +4,7 @@ import { MlxDriver } from './mlx-driver.js';
 // Mock the MlxProcess
 vi.mock('./process/index.js', () => ({
   MlxProcess: vi.fn().mockImplementation(() => ({
+    ensureInitialized: vi.fn().mockResolvedValue(undefined),
     getCapabilities: vi.fn().mockResolvedValue({
       methods: ['chat', 'completion', 'format_test', 'capabilities'],
       special_tokens: {
@@ -41,84 +42,58 @@ vi.mock('./process/index.js', () => ({
         }
       }
     }),
+    getStatus: vi.fn().mockReturnValue({ modelSpec: true }),
+    getSpecManager: vi.fn().mockReturnValue({
+      canUseChat: vi.fn().mockReturnValue(true),
+      canUseCompletion: vi.fn().mockReturnValue(true),
+      preprocessMessages: vi.fn((msgs) => msgs),
+      determineApi: vi.fn().mockReturnValue('chat')
+    }),
     chat: vi.fn(),
+    completion: vi.fn(),
     exit: vi.fn()
   }))
 }));
 
 describe('MlxDriver', () => {
-  describe('getSpecialTokens', () => {
-    it('should retrieve special tokens from the process', async () => {
+  describe('initialization', () => {
+    it('should initialize process and cache capabilities', async () => {
       const driver = new MlxDriver({
         model: 'test-model'
       });
 
-      const tokens = await driver.getSpecialTokens();
+      // Access private method through type assertion for testing
+      // @ts-expect-error - Accessing private method for testing
+      const ensureInitialized = driver.ensureInitialized.bind(driver);
+      await ensureInitialized();
 
-      expect(tokens).toBeDefined();
-      expect(tokens).toHaveProperty('eod');
-      expect(tokens).toHaveProperty('system');
-      expect(tokens).toHaveProperty('user');
-      expect(tokens).toHaveProperty('assistant');
-      expect(tokens).toHaveProperty('code');
-      expect(tokens).toHaveProperty('thinking');
+      // Verify process was initialized
+      // @ts-expect-error - Accessing private property for testing
+      const process = driver.process;
+      expect(process.ensureInitialized).toHaveBeenCalled();
+      expect(process.getCapabilities).toHaveBeenCalled();
     });
 
-    it('should cache capabilities after first retrieval', async () => {
-      const driver = new MlxDriver({
-        model: 'test-model'
-      });
-
-      // First call
-      const tokens1 = await driver.getSpecialTokens();
-      // Second call - should use cached value
-      const tokens2 = await driver.getSpecialTokens();
-
-      expect(tokens1).toBe(tokens2);
-      // Verify getCapabilities was only called once
-      const process = (driver as unknown as { process: { getCapabilities: ReturnType<typeof vi.fn> } }).process;
-      expect(process.getCapabilities).toHaveBeenCalledTimes(1);
-    });
-
-    it('should return null on error', async () => {
+    it('should handle initialization errors gracefully', async () => {
       const driver = new MlxDriver({
         model: 'test-model'
       });
 
       // Mock error
-      const process = (driver as unknown as { process: { getCapabilities: ReturnType<typeof vi.fn> } }).process;
+      // @ts-expect-error - Accessing private property for testing
+      const process = driver.process;
       process.getCapabilities.mockRejectedValueOnce(new Error('Process error'));
 
       const consoleSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
-      const tokens = await driver.getSpecialTokens();
 
-      expect(tokens).toBeNull();
+      // @ts-expect-error - Accessing private method for testing
+      const ensureInitialized = driver.ensureInitialized.bind(driver);
+      await ensureInitialized();
+
       expect(consoleSpy).toHaveBeenCalledWith('Failed to get MLX capabilities:', expect.any(Error));
-      
+
       consoleSpy.mockRestore();
     });
 
-    it('should validate token structure', async () => {
-      const driver = new MlxDriver({
-        model: 'test-model'
-      });
-
-      const tokens = await driver.getSpecialTokens();
-
-      if (tokens) {
-        // Check single token structure
-        expect(tokens.eod).toHaveProperty('text');
-        expect(tokens.eod).toHaveProperty('id');
-
-        // Check paired token structure  
-        const systemToken = tokens.system as { start: { text: string; id: number }; end: { text: string; id: number } };
-        expect(systemToken).toHaveProperty('start');
-        expect(systemToken).toHaveProperty('end');
-        expect(systemToken.start).toHaveProperty('text');
-        expect(systemToken.start).toHaveProperty('id');
-        expect(systemToken.end).toHaveProperty('text');
-        expect(systemToken.end).toHaveProperty('id');
-      }
-    });
   });
 });

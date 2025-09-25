@@ -34,17 +34,14 @@ describe('stream-processing modules', () => {
       };
       
       const result = compile(streamProcessing, context);
-      const stateSection = result.data.find(e => e.type === 'section' && e.title === 'Current State');
-      
-      expect(stateSection).toBeDefined();
-      if (stateSection?.type === 'section') {
-        // chunk要素が文字列に変換されているか確認
-        const stateText = stateSection.items.find(item => 
-          typeof item === 'string' && item.includes('[Chunk from state]')
-        );
-        expect(stateText).toBeDefined();
-        expect(stateText).toContain('Previous iteration result');
-      }
+      const chunkElements = result.data.filter(e => e.type === 'chunk');
+      expect(chunkElements).toHaveLength(1);
+      expect(chunkElements[0]).toEqual({
+        type: 'chunk',
+        partOf: 'state',
+        content: 'Previous iteration result',
+        usage: 150
+      });
     });
 
     it('chunksがある場合Input Chunksセクションを生成', () => {
@@ -65,21 +62,22 @@ describe('stream-processing modules', () => {
       };
       
       const result = compile(streamProcessing, context);
-      const materialsSection = result.data.find(e => e.type === 'section' && e.title === 'Prepared Materials');
-      
-      expect(materialsSection).toBeDefined();
-      if (materialsSection?.type === 'section') {
-        // chunk要素が文字列に変換されているか確認
-        const chunkTexts = materialsSection.items.filter(item => 
-          typeof item === 'string' && item.includes('[Chunk from')
-        );
-        expect(chunkTexts).toHaveLength(2);
-        
-        expect(chunkTexts[0]).toContain('Chunk 1 content');
-        expect(chunkTexts[0]).toContain('Document A');
-        expect(chunkTexts[1]).toContain('Chunk 2 content');
-        expect(chunkTexts[1]).toContain('Document B');
-      }
+      const chunkElements = result.data.filter(e => e.type === 'chunk');
+      expect(chunkElements).toHaveLength(2);
+      expect(chunkElements[0]).toEqual({
+        type: 'chunk',
+        partOf: 'Document A',
+        index: 0,
+        content: 'Chunk 1 content',
+        usage: 50
+      });
+      expect(chunkElements[1]).toEqual({
+        type: 'chunk',
+        partOf: 'Document B',
+        index: 1,
+        content: 'Chunk 2 content',
+        usage: 75
+      });
     });
 
     it('rangeを使用してchunksをスライスできる', () => {
@@ -146,16 +144,11 @@ describe('stream-processing modules', () => {
       };
       
       const result = compile(streamProcessing, context);
-      const methodologySection = result.instructions.find(e => e.type === 'section' && e.title === 'Processing Methodology');
-      
-      if (methodologySection?.type === 'section') {
-        const methodologyTexts = methodologySection.items
-          .map(item => typeof item === 'string' ? item : (item.type === 'text' ? item.content : ''))
-          .join(' ');
-        
-        const hasSizeInstruction = methodologyTexts.includes('1000 tokens');
-        expect(hasSizeInstruction).toBe(true);
-      }
+      const textElements = result.instructions.filter(e => e.type === 'text');
+      const sizeInstruction = textElements.find(e =>
+        e.type === 'text' && e.content.includes('1000 tokens')
+      );
+      expect(sizeInstruction).toBeDefined();
     });
 
     it('使用量が閾値を超える場合は積極的な削減を指示', () => {
@@ -168,16 +161,11 @@ describe('stream-processing modules', () => {
       };
       
       const result = compile(streamProcessing, context);
-      const methodologySection = result.instructions.find(e => e.type === 'section' && e.title === 'Processing Methodology');
-      
-      if (methodologySection?.type === 'section') {
-        const methodologyTexts = methodologySection.items
-          .map(item => typeof item === 'string' ? item : (item.type === 'text' ? item.content : ''))
-          .join(' ');
-        
-        const hasAggressiveReduction = methodologyTexts.includes('aggressively reduce');
-        expect(hasAggressiveReduction).toBe(true);
-      }
+      const textElements = result.instructions.filter(e => e.type === 'text');
+      const reductionInstruction = textElements.find(e =>
+        e.type === 'text' && e.content.includes('aggressively reduce')
+      );
+      expect(reductionInstruction).toBeDefined();
     });
   });
 
@@ -190,15 +178,12 @@ describe('stream-processing modules', () => {
       
       const result = compile(streamProcessing, context);
       
-      // objectiveに最初のイテレーション情報が含まれているか確認
-      const objectiveSection = result.instructions.find(e => e.type === 'section' && e.title === 'Objective and Role');
-      if (objectiveSection?.type === 'section') {
-        const objectiveTexts = objectiveSection.items
-          .filter(item => typeof item === 'string')
-          .join(' ');
-        
-        expect(objectiveTexts).toContain('first iteration');
-      }
+      // TextElementが直接instructions配列に追加される
+      const textElements = result.instructions.filter(e => e.type === 'text');
+      const firstIterationText = textElements.find(e =>
+        e.type === 'text' && e.content.includes('first iteration')
+      );
+      expect(firstIterationText).toBeDefined();
     });
 
     it('最終イテレーションの場合、特別な指示を生成', () => {
@@ -209,14 +194,11 @@ describe('stream-processing modules', () => {
       
       const result = compile(streamProcessing, context);
       
-      const objectiveSection = result.instructions.find(e => e.type === 'section' && e.title === 'Objective and Role');
-      if (objectiveSection?.type === 'section') {
-        const objectiveTexts = objectiveSection.items
-          .filter(item => typeof item === 'string')
-          .join(' ');
-        
-        expect(objectiveTexts).toContain('final iteration');
-      }
+      const textElements = result.instructions.filter(e => e.type === 'text');
+      const finalIterationText = textElements.find(e =>
+        e.type === 'text' && e.content.includes('final iteration')
+      );
+      expect(finalIterationText).toBeDefined();
     });
   });
 });

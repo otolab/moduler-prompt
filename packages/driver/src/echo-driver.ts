@@ -2,6 +2,7 @@ import type { CompiledPrompt } from '@moduler-prompt/core';
 import type { AIDriver, QueryOptions, QueryResult, StreamResult } from './types.js';
 import type { FormatterOptions } from './formatter/types.js';
 import { formatPrompt, formatPromptAsMessages } from './formatter/converter.js';
+import { extractJSON } from '@moduler-prompt/utils';
 
 /**
  * Echo driver configuration
@@ -127,15 +128,36 @@ export class EchoDriver implements AIDriver {
       content = `=== METADATA ===\n${JSON.stringify(metadata, null, 2)}\n\n=== CONTENT ===\n${content}`;
     }
     
+    // Handle structured outputs if schema is provided
+    let structuredOutput: unknown | undefined;
+    if (prompt.metadata?.outputSchema) {
+      // For echo driver, we'll generate a sample based on the format
+      if (this.format === 'raw' || this.format === 'messages' || this.format === 'both' || this.format === 'debug') {
+        // These formats already return JSON, so try to extract
+        const extracted = extractJSON(content, { multiple: false });
+        if (extracted.source !== 'none' && extracted.data !== null) {
+          structuredOutput = extracted.data;
+        }
+      } else if (this.format === 'text') {
+        // For text format, we could simulate a JSON response if schema is provided
+        // For now, we'll just try to extract any JSON that might be in the text
+        const extracted = extractJSON(content, { multiple: false });
+        if (extracted.source !== 'none' && extracted.data !== null) {
+          structuredOutput = extracted.data;
+        }
+      }
+    }
+
     // Simulate usage if requested
     const usage = this.simulateUsage ? {
       promptTokens: Math.ceil(content.length / 4),
       completionTokens: 0,
       totalTokens: Math.ceil(content.length / 4)
     } : undefined;
-    
+
     return {
       content,
+      structuredOutput,
       finishReason: 'stop',
       usage
     };

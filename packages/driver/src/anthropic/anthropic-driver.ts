@@ -1,6 +1,7 @@
 import Anthropic from '@anthropic-ai/sdk';
 import type { CompiledPrompt, Element } from '@moduler-prompt/core';
 import type { AIDriver, QueryOptions, QueryResult, StreamResult } from '../types.js';
+import { extractJSON } from '@moduler-prompt/utils';
 
 /**
  * Anthropic driver configuration
@@ -105,6 +106,12 @@ export class AnthropicDriver implements AIDriver {
       if (instructionContent) {
         system = system ? `${system}\n\n${instructionContent}` : instructionContent;
       }
+    }
+
+    // Add JSON instruction if schema is provided
+    if (prompt.metadata?.outputSchema) {
+      const jsonInstruction = '\n\nYou must respond with valid JSON that matches the provided schema. Output only the JSON object, no additional text or markdown formatting.';
+      system = system ? `${system}${jsonInstruction}` : jsonInstruction;
     }
 
     // Process data as user message
@@ -224,13 +231,18 @@ export class AnthropicDriver implements AIDriver {
 
     // Create result promise
     const resultPromise = processingPromise.then(() => {
-      // Anthropic doesn't have native structured output support yet
-      // Would need to use prompt engineering or tool use
-      let structuredOutputs: unknown[] | undefined;
+      // Extract structured output if schema is provided
+      let structuredOutput: unknown | undefined;
+      if (prompt.metadata?.outputSchema && fullContent) {
+        const extracted = extractJSON(fullContent, { multiple: false });
+        if (extracted.source !== 'none' && extracted.data !== null) {
+          structuredOutput = extracted.data;
+        }
+      }
 
       return {
         content: fullContent,
-        structuredOutputs,
+        structuredOutput,
         usage,
         finishReason
       };

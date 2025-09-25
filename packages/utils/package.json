@@ -1,6 +1,6 @@
 {
   "name": "@moduler-prompt/utils",
-  "version": "0.1.1",
+  "version": "0.1.2",
   "description": "Utility functions for moduler-prompt",
   "type": "module",
   "main": "./dist/index.js",
@@ -25,8 +25,7 @@
     "prepack": "npm run clean && npm run build"
   },
   "dependencies": {
-    "@moduler-prompt/core": "*",
-    "@moduler-prompt/driver": "*",
+    "@moduler-prompt/core": "^0.1.2",
     "js-yaml": "^4.1.0",
     "jsonrepair": "^3.8.1",
     "merge-stream": "^2.0.0"

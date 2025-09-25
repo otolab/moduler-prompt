@@ -168,8 +168,7 @@ export async function runChat(options: SimpleChatOptions): Promise<void> {
     chatLog,
     userMessage,
     materials,
-    undefined,  // customRegistry
-    options.driversPath  // Pass the drivers config path
+    undefined  // customRegistry
   );
   
   // Add assistant response to log

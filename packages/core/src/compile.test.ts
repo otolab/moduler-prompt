@@ -99,11 +99,8 @@ describe('compile', () => {
       
       expect(result.data).toHaveLength(1);
       expect(result.data[0]).toEqual({
-        type: 'section',
-        category: 'data',
-        content: '',
-        title: 'Current State',
-        items: ['Value: test123']
+        type: 'text',
+        content: 'Value: test123'
       });
     });
 
@@ -122,11 +119,9 @@ describe('compile', () => {
       
       expect(result.data).toHaveLength(1);
       expect(result.data[0]).toEqual({
-        type: 'section',
-        category: 'data',
-        content: '',
-        title: 'Messages',
-        items: ['[User]: Hello, AI!']
+        type: 'message',
+        role: 'user',
+        content: 'Hello, AI!'
       });
     });
 
@@ -152,11 +147,10 @@ describe('compile', () => {
       
       expect(result.data).toHaveLength(1);
       expect(result.data[0]).toEqual({
-        type: 'section',
-        category: 'data',
-        content: '',
-        title: 'Prepared Materials',
-        items: ['[Material: API Guide]\nAPI documentation content']
+        type: 'material',
+        id: 'doc1',
+        title: 'API Guide',
+        content: 'API documentation content'
       });
     });
 
@@ -178,16 +172,16 @@ describe('compile', () => {
       };
       const result = compile(module, context);
       
-      expect(result.data).toHaveLength(1);
+      expect(result.data).toHaveLength(2);
       expect(result.data[0]).toEqual({
-        type: 'section',
-        category: 'data',
-        content: '',
-        title: 'Input Chunks',
-        items: [
-          '[Chunk from document.txt]\nPart 1 content',
-          '[Chunk from document.txt]\nPart 2 content'
-        ]
+        type: 'chunk',
+        partOf: 'document.txt',
+        content: 'Part 1 content'
+      });
+      expect(result.data[1]).toEqual({
+        type: 'chunk',
+        partOf: 'document.txt',
+        content: 'Part 2 content'
       });
     });
 
@@ -202,15 +196,21 @@ describe('compile', () => {
       };
       
       const result1 = compile(module, { includeState: true });
+      expect(result1.data).toHaveLength(2);
       expect(result1.data[0]).toEqual({
         type: 'section',
         category: 'data',
         content: '',
         title: 'Current State',
-        items: ['固定の状態', '動的な状態']
+        items: ['固定の状態']
+      });
+      expect(result1.data[1]).toEqual({
+        type: 'text',
+        content: '動的な状態'
       });
       
       const result2 = compile(module, { includeState: false });
+      expect(result2.data).toHaveLength(1);
       expect(result2.data[0]).toEqual({
         type: 'section',
         category: 'data',
@@ -296,7 +296,8 @@ describe('compile', () => {
       
       const result = compile(module, context);
       
-      expect(result.instructions).toHaveLength(1);
+      expect(result.instructions).toHaveLength(4);
+      // 最初のSectionElement（文字列とSubSection）
       expect(result.instructions[0]).toEqual({
         type: 'section',
         category: 'instructions',
@@ -304,9 +305,6 @@ describe('compile', () => {
         title: 'Processing Methodology',
         items: [
           '処理を開始',
-          'ステップ 3/5 を実行中',
-          '詳細1',
-          '詳細2',
           '処理を完了',
           {
             type: 'subsection',
@@ -315,6 +313,21 @@ describe('compile', () => {
             items: ['初期化', '検証', '実行']
           }
         ]
+      });
+      // TextElement（ステップ情報）
+      expect(result.instructions[1]).toEqual({
+        type: 'text',
+        content: 'ステップ 3/5 を実行中'
+      });
+      // TextElement（詳細1）
+      expect(result.instructions[2]).toEqual({
+        type: 'text',
+        content: '詳細1'
+      });
+      // TextElement（詳細2）
+      expect(result.instructions[3]).toEqual({
+        type: 'text',
+        content: '詳細2'
       });
     });
   });
@@ -542,11 +555,18 @@ describe('compile', () => {
       const context = { count: 5 };
       const result = compile(module, context);
       
-      expect(result.instructions[0].items).toEqual([
-        'プロセス開始',
-        '合計: 5件',
-        '詳細情報'
-      ]);
+      expect(result.instructions).toHaveLength(2);
+      expect(result.instructions[0]).toEqual({
+        type: 'section',
+        category: 'instructions',
+        content: '',
+        title: 'Processing Methodology',
+        items: ['プロセス開始', '合計: 5件']
+      });
+      expect(result.instructions[1]).toEqual({
+        type: 'text',
+        content: '詳細情報'
+      });
     });
     
     it('DynamicContentでnull/undefinedを返すと無視される', () => {

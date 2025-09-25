@@ -71,18 +71,26 @@ Moduler Promptは4層のレイヤードアーキテクチャで構成される�
 各AIサービスへの統一インターフェース。
 
 **実装済みドライバー：**
-- OpenAI（GPT-4, GPT-3.5）
+- OpenAI（GPT-4, GPT-3.5）- Structured Outputs対応
 - Anthropic（Claude）
-- Google Vertex AI（Gemini）
-- Ollama（ローカルLLM）
-- MLX（Apple Silicon最適化）
+- Google Vertex AI（Gemini）- Structured Outputs対応
+- Ollama（ローカルLLM）- Structured Outputs実装可能
+- MLX（Apple Silicon最適化）- Structured Outputs対応
+- TestDriver（テスト用）- Structured Outputs対応
+- EchoDriver（デバッグ用）- Structured Outputs対応
+
+**主要機能：**
+- 統一されたクエリインターフェース
+- ストリーミングレスポンス
+- 構造化出力（Structured Outputs）- JSONスキーマベースの応答取得
 
 ### @moduler-prompt/utils
 共通ユーティリティとヘルパー機能。
 
 **主要機能：**
-- DriverRegistry：ドライバーの動的選択
 - Formatter：プロンプトのテキスト変換
+- JSON Extractor：様々な形式からのJSON抽出（Structured Outputs用）
+- Logger：統一ログシステム
 - デフォルト設定とテキスト
 
 ### @moduler-prompt/process
@@ -102,8 +110,9 @@ Moduler Promptは4層のレイヤードアーキテクチャで構成される�
 Element
 ├── TextElement         # テキスト
 ├── MessageElement      # メッセージ（role付き）
-├── MaterialElement     # 資料
+├── MaterialElement     # 資料（引用・参照文書）
 ├── ChunkElement       # データチャンク
+├── JSONElement        # JSONスキーマ・構造化データ
 ├── SectionElement     # セクション（第1階層）
 └── SubSectionElement  # サブセクション（第2階層）
 ```
@@ -167,6 +176,59 @@ const customModule: PromptModule = {
   objective: ['カスタム処理'],
   instructions: ['独自の指示']
 };
+```
+
+## ドライバーレジストリとAIサービス
+
+### AIService
+
+ケイパビリティベースでドライバーを動的選択・作成するハイレベルAPI。
+
+```typescript
+import { AIService } from '@moduler-prompt/driver';
+
+const aiService = new AIService({
+  models: [
+    {
+      model: 'gpt-4o-mini',
+      provider: 'openai',
+      capabilities: ['streaming', 'tools', 'reasoning'],
+      priority: 10
+    },
+    {
+      model: 'claude-3-haiku',
+      provider: 'anthropic',
+      capabilities: ['streaming', 'fast'],
+      priority: 20
+    }
+  ],
+  drivers: {
+    openai: { apiKey: process.env.OPENAI_API_KEY },
+    anthropic: { apiKey: process.env.ANTHROPIC_API_KEY }
+  }
+});
+
+// ケイパビリティに基づいてドライバーを作成
+const driver = await aiService.createDriverFromCapabilities(
+  ['streaming', 'fast'],
+  { preferLocal: true }
+);
+```
+
+### ModelSpec
+
+モデルの仕様を定義する中心的な型。
+
+```typescript
+interface ModelSpec {
+  model: string;                    // モデル識別子
+  provider: DriverProvider;         // プロバイダー
+  capabilities: DriverCapability[]; // モデルの能力
+  maxInputTokens?: number;         // 最大入力トークン数
+  maxOutputTokens?: number;        // 最大出力トークン数
+  priority?: number;                // 優先度
+  enabled?: boolean;                // 有効/無効フラグ
+}
 ```
 
 ## パフォーマンス考慮事項

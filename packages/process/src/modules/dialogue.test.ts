@@ -27,15 +27,18 @@ describe('dialogue modules', () => {
       expect(objectiveSection).toBeDefined();
       
       // messagesセクションの確認
-      const messagesSection = result.data.find(
-        e => e.type === 'section' && e.title === 'Messages'
-      );
-      expect(messagesSection).toBeDefined();
-      if (messagesSection?.type === 'section') {
-        expect(messagesSection.items).toHaveLength(2);
-        expect(messagesSection.items[0]).toContain('[User]: Hello');
-        expect(messagesSection.items[1]).toContain('[Assistant]: Hi there!');
-      }
+      const messageElements = result.data.filter(e => e.type === 'message');
+      expect(messageElements).toHaveLength(2);
+      expect(messageElements[0]).toEqual({
+        type: 'message',
+        role: 'user',
+        content: 'Hello'
+      });
+      expect(messageElements[1]).toEqual({
+        type: 'message',
+        role: 'assistant',
+        content: 'Hi there!'
+      });
     });
 
     it('rangeを使用してメッセージをスライスできる', () => {
@@ -102,13 +105,11 @@ describe('dialogue modules', () => {
       const result = compile(secondOfTwoPassResponse, context);
       
       // preparationNoteセクションの確認
-      const prepSection = result.instructions.find(
-        e => e.type === 'section' && e.title === 'Response Preparation Note'
+      const textElements = result.instructions.filter(e => e.type === 'text');
+      const prepNote = textElements.find(e =>
+        e.type === 'text' && e.content.includes('Analysis of user intent')
       );
-      expect(prepSection).toBeDefined();
-      if (prepSection?.type === 'section') {
-        expect(prepSection.items[0]).toContain('Analysis of user intent');
-      }
+      expect(prepNote).toBeDefined();
     });
   });
 
@@ -124,13 +125,11 @@ describe('dialogue modules', () => {
       const result = compile(withTalkState, context);
       
       // stateセクションの確認
-      const stateSection = result.data.find(
-        e => e.type === 'section' && e.title === 'Current State'
+      const textElements = result.data.filter(e => e.type === 'text');
+      const talkState = textElements.find(e =>
+        e.type === 'text' && e.content.includes('Current conversation summary')
       );
-      expect(stateSection).toBeDefined();
-      if (stateSection?.type === 'section') {
-        expect(stateSection.items[0]).toContain('Current conversation summary');
-      }
+      expect(talkState).toBeDefined();
     });
   });
 });

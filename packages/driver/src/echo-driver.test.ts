@@ -187,11 +187,173 @@ describe('EchoDriver', () => {
           }
         }
       });
-      
+
       const result = await driver.query(samplePrompt);
-      
+
       expect(result.content).toContain('CUSTOM PREAMBLE');
       expect(result.content).toContain('CUSTOM INSTRUCTIONS DESC');
+    });
+  });
+
+  describe('structured outputs', () => {
+    it('extracts JSON from raw format when outputSchema is provided', async () => {
+      const driver = new EchoDriver({ format: 'raw' });
+      const promptWithSchema: CompiledPrompt = {
+        ...samplePrompt,
+        metadata: {
+          outputSchema: {
+            type: 'object',
+            properties: {
+              instructions: { type: 'array' },
+              data: { type: 'array' }
+            }
+          }
+        }
+      };
+
+      const result = await driver.query(promptWithSchema);
+
+      // Raw format returns the prompt as JSON
+      expect(result.structuredOutput).toBeDefined();
+      expect(result.structuredOutput).toHaveProperty('instructions');
+      expect(result.structuredOutput).toHaveProperty('data');
+    });
+
+    it('extracts JSON from messages format when outputSchema is provided', async () => {
+      const driver = new EchoDriver({ format: 'messages' });
+      const promptWithSchema: CompiledPrompt = {
+        ...samplePrompt,
+        metadata: {
+          outputSchema: {
+            type: 'array',
+            items: { type: 'object' }
+          }
+        }
+      };
+
+      const result = await driver.query(promptWithSchema);
+
+      // Messages format returns an array of messages as JSON
+      expect(result.structuredOutput).toBeDefined();
+      expect(Array.isArray(result.structuredOutput)).toBe(true);
+      expect((result.structuredOutput as any[]).length).toBeGreaterThan(0);
+    });
+
+    it('extracts JSON from both format when outputSchema is provided', async () => {
+      const driver = new EchoDriver({ format: 'both' });
+      const promptWithSchema: CompiledPrompt = {
+        ...samplePrompt,
+        metadata: {
+          outputSchema: {
+            type: 'object',
+            properties: {
+              text: { type: 'string' },
+              messages: { type: 'array' }
+            }
+          }
+        }
+      };
+
+      const result = await driver.query(promptWithSchema);
+
+      // Both format returns an object with text and messages
+      expect(result.structuredOutput).toBeDefined();
+      expect(result.structuredOutput).toHaveProperty('text');
+      expect(result.structuredOutput).toHaveProperty('messages');
+    });
+
+    it('extracts JSON from debug format when outputSchema is provided', async () => {
+      const driver = new EchoDriver({ format: 'debug' });
+      const promptWithSchema: CompiledPrompt = {
+        ...samplePrompt,
+        metadata: {
+          outputSchema: {
+            type: 'object',
+            properties: {
+              raw: { type: 'object' },
+              formatted: { type: 'object' },
+              metadata: { type: 'object' }
+            }
+          }
+        }
+      };
+
+      const result = await driver.query(promptWithSchema);
+
+      // Debug format returns detailed debug info as JSON
+      expect(result.structuredOutput).toBeDefined();
+      expect(result.structuredOutput).toHaveProperty('raw');
+      expect(result.structuredOutput).toHaveProperty('formatted');
+      expect(result.structuredOutput).toHaveProperty('metadata');
+    });
+
+    it('returns undefined structuredOutput for text format', async () => {
+      const driver = new EchoDriver({ format: 'text' });
+      const promptWithSchema: CompiledPrompt = {
+        ...samplePrompt,
+        metadata: {
+          outputSchema: { type: 'object' }
+        }
+      };
+
+      const result = await driver.query(promptWithSchema);
+
+      // Text format doesn't contain JSON, so no structured output
+      expect(result.structuredOutput).toBeUndefined();
+    });
+
+    it('returns undefined structuredOutput when no schema provided', async () => {
+      const driver = new EchoDriver({ format: 'raw' });
+
+      const result = await driver.query(samplePrompt);
+
+      // No schema means no structured outputs
+      expect(result.structuredOutput).toBeUndefined();
+    });
+
+    it('handles structured outputs in streamQuery', async () => {
+      const driver = new EchoDriver({ format: 'both' });
+      const promptWithSchema: CompiledPrompt = {
+        ...samplePrompt,
+        metadata: {
+          outputSchema: {
+            type: 'object',
+            properties: {
+              text: { type: 'string' },
+              messages: { type: 'array' }
+            }
+          }
+        }
+      };
+
+      const { result } = await driver.streamQuery(promptWithSchema);
+      const queryResult = await result;
+
+      expect(queryResult.structuredOutput).toBeDefined();
+      expect(queryResult.structuredOutput).toHaveProperty('text');
+      expect(queryResult.structuredOutput).toHaveProperty('messages');
+    });
+
+    it('handles metadata inclusion with structured outputs', async () => {
+      const driver = new EchoDriver({
+        format: 'raw',
+        includeMetadata: true
+      });
+      const promptWithSchema: CompiledPrompt = {
+        ...samplePrompt,
+        metadata: {
+          outputSchema: { type: 'object' }
+        }
+      };
+
+      const result = await driver.query(promptWithSchema);
+
+      // With metadata, content has metadata wrapper but JSON extraction should still work
+      expect(result.content).toContain('=== METADATA ===');
+      expect(result.content).toContain('=== CONTENT ===');
+
+      // JSON extraction should find the JSON in the CONTENT section
+      expect(result.structuredOutput).toBeDefined();
     });
   });
 });

@@ -7,19 +7,22 @@
 
 import { describe, it, expect, beforeAll, afterAll } from 'vitest';
 import { MlxDriver } from './mlx-driver.js';
-import type { ChatMessage, CompiledPrompt } from '@moduler-prompt/core';
+import type { CompiledPrompt } from '@moduler-prompt/core';
 import { platform } from 'os';
 
-// MLXはApple Silicon専用なので、他のプラットフォームではスキップ
-const isMacOS = platform() === 'darwin';
+// MLXはApple Silicon専用なので、CI環境や非対応環境ではスキップ
+const shouldSkipMLX =
+  platform() !== 'darwin' ||
+  process.env.CI === 'true' ||
+  process.env.SKIP_MLX_TESTS === 'true';
 
-describe.skipIf(!isMacOS)('MLX Driver Parameters Integration', () => {
+describe.skipIf(shouldSkipMLX)('MLX Driver Parameters Integration', () => {
   let driver: MlxDriver | null = null;
 
   beforeAll(async () => {
-    // 小さなテスト用モデルを使用
+    // ダウンロード済みのモデルを使用
     driver = new MlxDriver({
-      model: 'mlx-community/gemma-3-270m-it-qat-8bit'
+      model: 'mlx-community/gemma-3-27b-it-qat-4bit'
     });
   });
 
@@ -29,17 +32,51 @@ describe.skipIf(!isMacOS)('MLX Driver Parameters Integration', () => {
     }
   });
 
+  it('should work without any parameters', async () => {
+    if (!driver) {
+      throw new Error('Driver not initialized');
+    }
+
+    const compiledPrompt: CompiledPrompt = {
+      instructions: [],
+      data: [
+        {
+          type: 'message',
+          role: 'user',
+          content: 'Say: TEST'
+        }
+      ],
+      output: []
+    };
+
+    // パラメータなしで実行
+    const result = await driver.query(compiledPrompt);
+
+    expect(result).toBeDefined();
+    expect(result.content).toBeDefined();
+    expect(typeof result.content).toBe('string');
+  }, 60000); // 60秒のタイムアウト
+
   it('should accept temperature parameter without error', async () => {
     if (!driver) {
       throw new Error('Driver not initialized');
     }
 
-    const messages: ChatMessage[] = [
-      { role: 'user', content: 'Say exactly: TEST' }
-    ];
+    // MessageElementsを含むCompiledPromptを作成
+    const compiledPrompt: CompiledPrompt = {
+      instructions: [],
+      data: [
+        {
+          type: 'message',
+          role: 'user',
+          content: 'Say exactly: TEST'
+        }
+      ],
+      output: []
+    };
 
     // temperatureパラメータを渡してエラーが出ないことを確認
-    const result = await driver.queryWithMessages(messages, {
+    const result = await driver.query(compiledPrompt, {
       maxTokens: 5,
       temperature: 0.1  // 低い温度で決定的な出力に近づける
     });
@@ -48,19 +85,27 @@ describe.skipIf(!isMacOS)('MLX Driver Parameters Integration', () => {
     expect(result).toBeDefined();
     expect(result.content).toBeDefined();
     expect(typeof result.content).toBe('string');
-  }, 30000); // 30秒のタイムアウト
+  }, 60000); // 60秒のタイムアウト
 
   it('should accept multiple parameters without error', async () => {
     if (!driver) {
       throw new Error('Driver not initialized');
     }
 
-    const messages: ChatMessage[] = [
-      { role: 'user', content: 'Hi' }
-    ];
+    const compiledPrompt: CompiledPrompt = {
+      instructions: [],
+      data: [
+        {
+          type: 'message',
+          role: 'user',
+          content: 'Hi'
+        }
+      ],
+      output: []
+    };
 
     // 複数のパラメータを同時に渡す
-    const result = await driver.queryWithMessages(messages, {
+    const result = await driver.query(compiledPrompt, {
       maxTokens: 10,
       temperature: 0.5,
       topP: 0.9
@@ -69,7 +114,7 @@ describe.skipIf(!isMacOS)('MLX Driver Parameters Integration', () => {
     // エラーなく結果が返ることを確認
     expect(result).toBeDefined();
     expect(result.content).toBeDefined();
-  }, 30000); // 30秒のタイムアウト
+  }, 60000); // 60秒のタイムアウト
 
   it('should work with completion API and temperature', async () => {
     if (!driver) {
@@ -79,8 +124,8 @@ describe.skipIf(!isMacOS)('MLX Driver Parameters Integration', () => {
     // シンプルなテキストプロンプトを使用（MessageElementなし）
     // これによりcompletion APIが自動選択される
     const compiledPrompt: CompiledPrompt = {
-      instructions: ['Complete this:'],
-      data: ['Hello'],
+      instructions: [{ type: 'text', content: 'Complete this:' }],
+      data: [{ type: 'text', content: 'Hello' }],
       output: []
     };
 
@@ -91,24 +136,32 @@ describe.skipIf(!isMacOS)('MLX Driver Parameters Integration', () => {
 
     expect(result).toBeDefined();
     expect(result.content).toBeDefined();
-  }, 30000); // 30秒のタイムアウト
+  }, 60000); // 60秒のタイムアウト
 
   it('should handle temperature=0 (deterministic)', async () => {
     if (!driver) {
       throw new Error('Driver not initialized');
     }
 
-    const messages: ChatMessage[] = [
-      { role: 'user', content: '1+1=' }
-    ];
+    const compiledPrompt: CompiledPrompt = {
+      instructions: [],
+      data: [
+        {
+          type: 'message',
+          role: 'user',
+          content: '1+1='
+        }
+      ],
+      output: []
+    };
 
     // temperature=0で決定的な出力
-    const result = await driver.queryWithMessages(messages, {
+    const result = await driver.query(compiledPrompt, {
       maxTokens: 3,
       temperature: 0
     });
 
     expect(result).toBeDefined();
     expect(result.content).toBeDefined();
-  }, 30000); // 30秒のタイムアウト
+  }, 60000); // 60秒のタイムアウト
 });

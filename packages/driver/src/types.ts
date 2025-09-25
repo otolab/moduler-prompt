@@ -26,12 +26,11 @@ export interface QueryResult {
   content: string;
 
   /**
-   * Structured outputs extracted from the response
-   * - undefined: no schema was specified
-   * - []: schema was specified but no valid JSON found
-   * - [...]: extracted JSON objects/arrays
+   * Structured output extracted from the response
+   * - undefined: no schema was specified or no valid JSON found
+   * - object/array: extracted JSON matching the schema
    */
-  structuredOutputs?: unknown[];
+  structuredOutput?: unknown;
 
   usage?: {
     promptTokens: number;

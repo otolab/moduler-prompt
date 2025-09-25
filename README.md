@@ -16,6 +16,7 @@
 - **モジュール化** - プロンプトを再利用可能なモジュールとして構築
 - **動的生成** - 実行時のコンテキストに基づいたプロンプト生成
 - **マルチモデル対応** - OpenAI、Anthropic、Google、ローカルLLMに対応
+- **構造化出力** - JSONスキーマに基づく構造化データの取得（ベストエフォート）
 - **ストリーム処理** - 大規模データの効率的な処理
 - **型安全** - TypeScriptによる完全な型定義
 - **柔軟なマージ** - モジュールの再帰的統合と順序制御
@@ -42,6 +43,7 @@
 - [モジュールの使い方](./docs/USING_MODULES.md) - モジュールの実行とドライバー連携
 - [動作確認手順](./docs/VERIFYING_MODULES.md) - モジュールのテストとデバッグ
 - [ドライバーAPI](./docs/DRIVER_API.md) - AIモデルドライバーのAPI仕様
+- [Structured Outputs](./docs/STRUCTURED_OUTPUTS.md) - 構造化出力（JSON）の仕様と使用方法
 - [ユーティリティ](./docs/UTILITIES.md) - ログシステムとその他のユーティリティ
 
 ### 開発者向けドキュメント
@@ -96,6 +98,74 @@ context.sourceCode = 'const example = () => { ... }';
 const compiled = compile(analysisModule, context);
 // compiledは instructions, data, output のElement配列を含む
 ```
+
+### AIサービスを使った動的ドライバー選択
+
+ケイパビリティベースで最適なAIモデルを自動選択：
+
+```typescript
+import { AIService } from '@moduler-prompt/driver';
+
+// AIサービスを設定
+const aiService = new AIService({
+  models: [
+    {
+      model: 'gpt-4o-mini',
+      provider: 'openai',
+      capabilities: ['streaming', 'tools', 'reasoning'],
+      priority: 10
+    },
+    {
+      model: 'llama-3.3-70b',
+      provider: 'mlx',
+      capabilities: ['local', 'fast', 'japanese'],
+      priority: 30
+    }
+  ],
+  drivers: {
+    openai: { apiKey: process.env.OPENAI_API_KEY },
+    mlx: {} // MLXは設定不要
+  }
+});
+
+// ローカル実行を優先して高速ドライバーを選択
+const driver = await aiService.createDriverFromCapabilities(
+  ['fast'],
+  { preferLocal: true }
+);
+
+if (driver) {
+  const compiled = compile(module, context);
+  const result = await driver.query(compiled);
+  console.log(result.content);
+}
+```
+
+### 構造化出力（Structured Outputs）
+
+AIからの応答を構造化されたJSONとして取得：
+
+```typescript
+const prompt = compile(module, context);
+prompt.metadata = {
+  outputSchema: {
+    type: 'object',
+    properties: {
+      issues: { type: 'array', items: { type: 'string' } },
+      score: { type: 'number' }
+    }
+  }
+};
+
+const result = await driver.query(prompt);
+if (result.structuredOutput) {
+  const analysis = result.structuredOutput;
+  console.log('Score:', analysis.score);
+  console.log('Issues:', analysis.issues);
+}
+```
+
+詳細は[Structured Outputs仕様](./docs/STRUCTURED_OUTPUTS.md)を参照してください。
 
 ## 開発
 

@@ -7,12 +7,9 @@
 import type { PromptModule} from '@moduler-prompt/core';
 import { compile, createContext, merge } from '@moduler-prompt/core';
 import { withMaterials, type MaterialContext } from '@moduler-prompt/process';
-import { type AIDriver, MlxDriver } from '@moduler-prompt/driver';
-import { DriverRegistry } from '@moduler-prompt/utils';
+import { type AIDriver, type DriverCapability, MlxDriver, DriverRegistry } from '@moduler-prompt/driver';
 import type { DialogProfile, ChatLog } from './types.js';
 import chalk from 'chalk';
-import { fileURLToPath } from 'url';
-import { dirname, join } from 'path';
 import { Spinner } from './spinner.js';
 
 /**
@@ -98,21 +95,9 @@ export const chatPromptModule = merge(baseChatModule, withMaterials);
 let driverRegistry: DriverRegistry | null = null;
 
 /**
- * Initialize driver registry with optional custom config path
+ * Initialize driver registry
  */
-async function initializeRegistry(customConfigPath?: string): Promise<DriverRegistry> {
-  // カスタム設定パスが指定されている場合は、新しいレジストリを作成
-  if (customConfigPath) {
-    const registry = new DriverRegistry();
-    try {
-      await registry.loadConfig(customConfigPath);
-      console.log(chalk.green(`✓ Loaded drivers from: ${customConfigPath}`));
-    } catch (error) {
-      throw new Error(`Failed to load drivers config from ${customConfigPath}: ${error}`);
-    }
-    return registry;
-  }
-
+function initializeRegistry(): DriverRegistry {
   // 既存のレジストリがあれば再利用
   if (driverRegistry) {
     return driverRegistry;
@@ -120,27 +105,14 @@ async function initializeRegistry(customConfigPath?: string): Promise<DriverRegi
 
   driverRegistry = new DriverRegistry();
 
-  // デフォルト設定ファイルを読み込み
-  const __filename = fileURLToPath(import.meta.url);
-  const __dirname = dirname(__filename);
-  const configPath = join(__dirname, '..', 'drivers.yaml');
-
-  try {
-    await driverRegistry.loadConfig(configPath);
-  } catch {
-    console.warn(chalk.yellow('Warning: drivers.yaml not found, using built-in defaults'));
-    // デフォルトドライバを手動で登録
-    driverRegistry.registerDriver({
-      id: 'mlx-default',
-      name: 'MLX Default',
-      model: {
-        model: 'mlx-community/gemma-3-270m-it-qat-4bit',
-        provider: 'mlx',
-        capabilities: ['local', 'streaming', 'chat'],
-        enabled: true
-      }
-    });
-  }
+  // デフォルトモデルを登録
+  driverRegistry.registerModel({
+    model: 'mlx-community/gemma-3-270m-it-qat-4bit',
+    provider: 'mlx',
+    capabilities: ['local', 'streaming', 'chat'],
+    enabled: true,
+    priority: 10
+  });
 
   return driverRegistry;
 }
@@ -148,34 +120,54 @@ async function initializeRegistry(customConfigPath?: string): Promise<DriverRegi
 /**
  * Create driver from profile
  */
-export async function createDriver(profile: DialogProfile, customRegistry?: DriverRegistry, customConfigPath?: string): Promise<AIDriver> {
-  const registry = customRegistry || await initializeRegistry(customConfigPath);
-  
+export async function createDriver(profile: DialogProfile, customRegistry?: DriverRegistry): Promise<AIDriver> {
+  const registry = customRegistry || initializeRegistry();
+
   // プロファイルで明示的にモデルが指定されている場合
   if (profile.model) {
-    // 指定されたモデルのドライバを探す
-    const drivers = registry.getAllDrivers();
-    const driver = drivers.find((d: any) => d.model.model === profile.model);
-    
-    if (driver) {
-      return await registry.createDriver(driver);
+    // モデル名でドライバを選択して作成
+    // test-chat -> test provider
+    // echo-* -> echo provider
+    // それ以外 -> mlx provider
+    let provider: any = 'mlx';
+    if (profile.model.startsWith('test-')) {
+      provider = 'test';
+    } else if (profile.model.startsWith('echo-')) {
+      provider = 'echo';
     }
-    
-    // 見つからない場合は、MLXドライバとして直接作成を試みる
-    console.warn(chalk.yellow(`Model ${profile.model} not found in registry, attempting direct creation`));
+
+    try {
+      const modelSpec = {
+        model: profile.model,
+        provider,
+        capabilities: ['chat'] as DriverCapability[]
+      };
+      return await registry.createDriver(modelSpec);
+    } catch {
+      // 見つからない場合は、MLXドライバとして直接作成
+      console.warn(chalk.yellow(`Model ${profile.model} not found in registry, using MLX driver directly`));
+      return new MlxDriver({
+        model: profile.model,
+        defaultOptions: profile.options
+      });
+    }
+  }
+
+  // モデルが指定されていない場合、チャット対応の最適なドライバを選択
+  const driver = await registry.selectAndCreateDriver(
+    ['chat'],
+    { preferLocal: true }
+  );
+
+  if (!driver) {
+    // フォールバック: MLXドライバを直接作成
     return new MlxDriver({
-      model: profile.model,
+      model: 'mlx-community/gemma-3-270m-it-qat-4bit',
       defaultOptions: profile.options
     });
   }
-  
-  // モデルが指定されていない場合、デフォルトドライバを使用
-  const defaultDriver = registry.getDefaultDriver();
-  if (!defaultDriver) {
-    throw new Error('No default driver configured');
-  }
-  
-  return await registry.createDriver(defaultDriver);
+
+  return driver;
 }
 
 /**
@@ -186,14 +178,13 @@ export async function performAIChat(
   chatLog: ChatLog,
   userMessage: string,
   materials?: MaterialContext['materials'],
-  customRegistry?: DriverRegistry,
-  customConfigPath?: string
+  customRegistry?: DriverRegistry
 ): Promise<{ response: string; driver: AIDriver }> {
   const spinner = new Spinner();
 
   // Start spinner while creating driver
   spinner.start('Initializing AI driver...');
-  const driver = await createDriver(profile, customRegistry, customConfigPath);
+  const driver = await createDriver(profile, customRegistry);
 
   try {
     // Update spinner for context creation

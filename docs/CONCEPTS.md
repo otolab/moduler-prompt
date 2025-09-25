@@ -100,23 +100,78 @@ const result = await driver.query(compiledPrompt);
 - タスクに最適なモデルの選択が困難
 
 **解決アプローチ**：
-**ModelSpecとDriverRegistryによる最適化**：
+**AIServiceとModelSpecによる最適化**：
 
 ```typescript
-// モデルの特性を定義
-const modelSpec = {
-  model: 'gpt-4o-mini',
-  maxInputTokens: 128000,
-  capabilities: ['japanese', 'coding', 'streaming'],
-  costPerKToken: 0.15
-};
+// AIサービスにモデルを登録
+const aiService = new AIService({
+  models: [
+    {
+      model: 'gpt-4o-mini',
+      provider: 'openai',
+      capabilities: ['japanese', 'coding', 'streaming'],
+      maxInputTokens: 128000,
+      cost: { input: 0.00015, output: 0.0006 },
+      priority: 10
+    },
+    {
+      model: 'llama-3.3-70b',
+      provider: 'mlx',
+      capabilities: ['japanese', 'local', 'fast'],
+      priority: 30
+    }
+  ],
+  drivers: {
+    openai: { apiKey: process.env.OPENAI_API_KEY },
+    mlx: {} // ローカル実行
+  }
+});
 
 // 条件に基づいて最適なモデルを自動選択
-const driver = registry.selectDriver(
-  ['japanese', 'local'],  // 必要な能力
-  { preferCheaper: true }  // 選択基準
+const driver = await aiService.createDriverFromCapabilities(
+  ['japanese', 'local'],   // 必要な能力
+  { preferLocal: true }     // ローカル実行を優先
 );
 ```
+
+### 6. 構造化されたデータ取得の難しさ
+
+**課題**：
+- AIからの応答がテキストのみで、プログラムで処理しづらい
+- JSONを生成させても形式が不安定
+- モデルごとに構造化出力の対応が異なる
+
+**解決アプローチ**：
+**Structured Outputs（構造化出力）のベストエフォート実装**：
+
+```typescript
+// スキーマを定義
+prompt.metadata = {
+  outputSchema: {
+    type: 'object',
+    properties: {
+      result: { type: 'string' },
+      confidence: { type: 'number' }
+    }
+  }
+};
+
+// ドライバーが可能な限り構造化データを返す
+const result = await driver.query(prompt);
+if (result.structuredOutput) {
+  // 構造化データとして処理
+  const data = result.structuredOutput;
+  console.log(data.confidence);
+} else {
+  // フォールバック：テキストを手動解析
+  const data = parseText(result.content);
+}
+```
+
+各ドライバーがベストエフォートで対応：
+- ネイティブサポート（OpenAI、VertexAI）
+- プロンプト指示による生成（Anthropic）
+- JSON抽出ユーティリティ（TestDriver、EchoDriver）
 
 ## コア設計思想
 
