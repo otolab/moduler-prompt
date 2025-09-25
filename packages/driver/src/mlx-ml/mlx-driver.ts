@@ -10,6 +10,90 @@ import { createModelSpecificProcessor } from './process/model-specific.js';
 import type { CompiledPrompt } from '@moduler-prompt/core';
 import { extractJSON } from '@moduler-prompt/utils';
 
+// ========================================================================
+// Utility Functions (exported for testing)
+// ========================================================================
+
+/**
+ * Check if the prompt contains MessageElement
+ */
+export function hasMessageElement(prompt: CompiledPrompt): boolean {
+  const checkElements = (elements: unknown[]): boolean => {
+    if (!elements) return false;
+    return elements.some(element => {
+      const el = element as { type?: string };
+      return el?.type === 'message';
+    });
+  };
+
+  return checkElements(prompt.instructions) ||
+    checkElements(prompt.data) ||
+    checkElements(prompt.output);
+}
+
+/**
+ * Convert ChatMessage format to MLX format
+ */
+export function convertMessages(messages: ChatMessage[]): MlxMessage[] {
+  return messages.map(msg => ({
+    role: msg.role as 'system' | 'user' | 'assistant',
+    content: msg.content
+  }));
+}
+
+/**
+ * Determine which API to use based on prompt and model capabilities
+ * Exported for testing purposes
+ */
+export function determineApiSelection(
+  prompt: CompiledPrompt,
+  specManager: {
+    canUseChat: () => boolean;
+    canUseCompletion: () => boolean;
+    preprocessMessages: (messages: MlxMessage[]) => MlxMessage[];
+    determineApi: (messages: MlxMessage[]) => 'chat' | 'completion';
+  },
+  formatterOptions: FormatterOptions
+): 'chat' | 'completion' {
+  const canUseChat = specManager.canUseChat();
+  const canUseCompletion = specManager.canUseCompletion();
+
+  if (!canUseChat && !canUseCompletion) {
+    throw new Error('Model supports neither chat nor completion API');
+  }
+
+  const hasMessageEl = hasMessageElement(prompt);
+
+  if (hasMessageEl) {
+    // MessageElementがある場合はchatを優先
+    if (canUseChat) {
+      return 'chat';
+    } else {
+      // chatが使えない場合はcompletionにフォールバック
+      return 'completion';
+    }
+  } else {
+    // MessageElementがない場合
+    if (!canUseChat) {
+      // chatが使えない場合はcompletion
+      return 'completion';
+    } else if (!canUseCompletion) {
+      // completionが使えない場合はchat
+      return 'chat';
+    } else {
+      // 両方使える場合はモデルの特性に応じて判定
+      const messages = formatPromptAsMessages(prompt, formatterOptions);
+      const mlxMessages = convertMessages(messages);
+      const preprocessedMessages = specManager.preprocessMessages(mlxMessages);
+      return specManager.determineApi(preprocessedMessages);
+    }
+  }
+}
+
+// ========================================================================
+// Main Class
+// ========================================================================
+
 /**
  * MLX ML driver configuration
  */
@@ -22,46 +106,39 @@ export interface MlxDriverConfig {
 }
 
 /**
- * Stream wrapper for converting chunks to async iterable
+ * Creates an async iterable from a readable stream with content collection
  */
-class StreamToAsyncIterable {
-  private stream: Readable;
-  private chunks: string[] = [];
-  private finished = false;
-  private error: Error | null = null;
-  
-  constructor(stream: Readable) {
-    this.stream = stream;
-    
-    stream.on('data', (chunk) => {
-      this.chunks.push(chunk.toString());
-    });
-    
-    stream.on('end', () => {
-      this.finished = true;
-    });
-    
-    stream.on('error', (err) => {
-      this.error = err;
-      this.finished = true;
-    });
-  }
-  
-  async *[Symbol.asyncIterator](): AsyncIterator<string> {
-    while (true) {
-      if (this.chunks.length > 0) {
-        yield this.chunks.shift()!;
-      } else if (this.finished) {
-        if (this.error) {
-          throw this.error;
+function createStreamIterable(stream: Readable): {
+  iterable: AsyncIterable<string>;
+  completion: Promise<{ content: string; error: Error | null }>;
+} {
+  const chunks: string[] = [];
+  let resolveCompletion: (value: { content: string; error: Error | null }) => void;
+
+  const completion = new Promise<{ content: string; error: Error | null }>((resolve) => {
+    resolveCompletion = resolve;
+  });
+
+  // Create async iterable that collects chunks and handles completion
+  const iterable = {
+    async *[Symbol.asyncIterator](): AsyncIterator<string> {
+      try {
+        for await (const chunk of stream) {
+          const str = chunk.toString();
+          chunks.push(str);
+          yield str;
         }
-        break;
-      } else {
-        // Wait for more data
-        await new Promise(resolve => setTimeout(resolve, 10));
+        // Stream ended successfully
+        resolveCompletion({ content: chunks.join(''), error: null });
+      } catch (error) {
+        // Stream errored
+        resolveCompletion({ content: chunks.join(''), error: error as Error });
+        throw error;
       }
     }
-  }
+  };
+
+  return { iterable, completion };
 }
 
 /**
@@ -76,26 +153,6 @@ export class MlxDriver implements AIDriver {
   private formatterOptions: FormatterOptions;
   private preferMessageFormat: boolean = true;
   
-  /**
-   * CompiledPromptにMessageElementが含まれているかチェック
-   */
-  private hasMessageElement(prompt: CompiledPrompt): boolean {
-    const checkElements = (elements: unknown[]): boolean => {
-      if (!elements) return false;
-      return elements.some(element => {
-        if (typeof element === 'object' && element !== null && 'type' in element && element.type === 'message') {
-          return true;
-        }
-        return false;
-      });
-    };
-    
-    return (
-      checkElements(prompt.instructions) ||
-      checkElements(prompt.data) ||
-      checkElements(prompt.output)
-    );
-  }
   
   constructor(config: MlxDriverConfig) {
     this.model = config.model;
@@ -108,169 +165,59 @@ export class MlxDriver implements AIDriver {
   }
 
   /**
-   * Get formatter options for this driver
-   */
-  protected getFormatterOptions(): FormatterOptions {
-    return this.formatterOptions;
-  }
-  
-  /**
-   * Initialize spec manager if not already initialized
+   * Initialize process and cache capabilities
    */
   private async ensureInitialized(): Promise<void> {
-    // Delegate to process's initialization
-    const status = this.process.getStatus();
-    if (!status.modelSpec) {
-      // Force initialization by calling getCapabilities
-      await this.getCapabilities();
-    }
-  }
-  
-  /**
-   * Get capabilities from the MLX process
-   */
-  async getCapabilities(): Promise<MlxCapabilities | null> {
+    // Ensure process is initialized
+    await this.process.ensureInitialized();
+
+    // Cache capabilities if not already cached
     if (!this.capabilities) {
       try {
         this.capabilities = await this.process.getCapabilities();
       } catch (error) {
         console.error('Failed to get MLX capabilities:', error);
-        return null;
       }
     }
-    return this.capabilities;
   }
   
   /**
-   * Get special tokens from the MLX process
+   * Execute query and return stream
+   * Common logic for query and streamQuery
    */
-  async getSpecialTokens(): Promise<MlxCapabilities['special_tokens'] | null> {
-    const capabilities = await this.getCapabilities();
-    return capabilities?.special_tokens || null;
+  private async executeQuery(
+    prompt: CompiledPrompt,
+    mlxOptions: MlxMlModelOptions
+  ): Promise<Readable> {
+    // APIを選択
+    const specManager = this.process.getSpecManager();
+    const api = determineApiSelection(prompt, specManager, this.formatterOptions);
+
+    let stream: Readable;
+    if (api === 'completion') {
+      // completion APIを使用 - Element情報を保持したまま処理
+      const processedPrompt = await this.modelProcessor.formatCompletionPrompt(prompt);
+      stream = await this.process.completion(processedPrompt, mlxOptions);
+    } else {
+      // chat APIを使用 - メッセージ変換して処理
+      const messages = formatPromptAsMessages(prompt, this.formatterOptions);
+      const mlxMessages = convertMessages(messages);
+      let processedMessages = specManager.preprocessMessages(mlxMessages);
+      // chat APIではチャット処理を適用
+      processedMessages = this.modelProcessor.applyChatSpecificProcessing(processedMessages);
+      stream = await this.process.chat(processedMessages, undefined, mlxOptions);
+    }
+
+    return stream;
   }
-  
-  /**
-   * Convert our ChatMessage format to MLX format
-   */
-  private convertMessages(messages: ChatMessage[]): MlxMessage[] {
-    return messages.map(msg => ({
-      role: msg.role as 'system' | 'user' | 'assistant',
-      content: msg.content
-    }));
-  }
-  
-  /**
-   * Apply chat-specific processing to messages
-   */
-  private applyChatSpecificProcessing(messages: MlxMessage[]): MlxMessage[] {
-    return this.modelProcessor.applyChatSpecificProcessing(messages);
-  }
-  
-  
+
   /**
    * Query the AI model with a compiled prompt
    */
   async query(prompt: CompiledPrompt, options?: QueryOptions): Promise<QueryResult> {
-    try {
-      await this.ensureInitialized();
-
-      // Merge options (キャメルケース形式で渡す - mapOptionsToPythonで変換される)
-      const mlxOptions: MlxMlModelOptions = {
-        ...this.defaultOptions,
-        ...(options?.maxTokens !== undefined && { maxTokens: options.maxTokens }),
-        ...(options?.temperature !== undefined && { temperature: options.temperature }),
-        ...(options?.topP !== undefined && { topP: options.topP })
-      };
-
-      // APIを選択
-      await this.process.ensureInitialized();
-      const specManager = this.process.getSpecManager();
-
-      // MessageElementがあるかチェックしてAPIを決定
-      const hasMessageEl = this.hasMessageElement(prompt);
-      let api: 'chat' | 'completion';
-      
-      // まずモデルの制約を確認
-      const canUseChat = specManager.canUseChat();
-      const canUseCompletion = specManager.canUseCompletion();
-      
-      if (!canUseChat && !canUseCompletion) {
-        throw new Error('Model supports neither chat nor completion API');
-      }
-      
-      if (hasMessageEl) {
-        // MessageElementがある場合はchatを優先
-        if (canUseChat) {
-          api = 'chat';
-        } else {
-          // chatが使えない場合はcompletionにフォールバック
-          api = 'completion';
-        }
-      } else {
-        // MessageElementがない場合
-        if (!canUseChat) {
-          // chatが使えない場合はcompletion
-          api = 'completion';
-        } else if (!canUseCompletion) {
-          // completionが使えない場合はchat
-          api = 'chat';
-        } else {
-          // 両方使える場合はモデルの特性に応じて判定
-          // この場合のみメッセージ変換が必要
-          const messages = formatPromptAsMessages(prompt, this.getFormatterOptions());
-          const mlxMessages = this.convertMessages(messages);
-          const preprocessedMessages = specManager.preprocessMessages(mlxMessages);
-          api = specManager.determineApi(preprocessedMessages);
-        }
-      }
-      
-      let stream: Readable;
-      if (api === 'completion') {
-        // completion APIを使用 - Element情報を保持したまま処理
-        const processedPrompt = await this.modelProcessor.formatCompletionPrompt(prompt);
-        stream = await this.process.completion(processedPrompt, mlxOptions);
-      } else {
-        // chat APIを使用 - メッセージ変換して処理
-        const messages = formatPromptAsMessages(prompt, this.getFormatterOptions());
-        const mlxMessages = this.convertMessages(messages);
-        let processedMessages = specManager.preprocessMessages(mlxMessages);
-        // chat APIではチャット処理を適用
-        processedMessages = this.applyChatSpecificProcessing(processedMessages);
-        stream = await this.process.chat(processedMessages, undefined, mlxOptions);
-      }
-      
-      // Collect all chunks
-      let content = '';
-      stream.on('data', (chunk) => {
-        content += chunk.toString();
-      });
-      
-      // Wait for stream to end
-      await new Promise<void>((resolve, reject) => {
-        stream.on('end', resolve);
-        stream.on('error', reject);
-      });
-
-      // Handle structured output if schema is provided
-      let structuredOutput: unknown | undefined;
-      if (prompt.metadata?.outputSchema && content) {
-        const extracted = extractJSON(content, { multiple: false });
-        if (extracted.source !== 'none' && extracted.data !== null) {
-          structuredOutput = extracted.data;
-        }
-      }
-
-      return {
-        content,
-        structuredOutput,
-        finishReason: 'stop'
-      };
-    } catch {
-      return {
-        content: '',
-        finishReason: 'error'
-      };
-    }
+    // Use streamQuery for consistency with other drivers
+    const { result } = await this.streamQuery(prompt, options);
+    return result;
   }
   /**
    * Stream query implementation
@@ -289,121 +236,37 @@ export class MlxDriver implements AIDriver {
       ...(options?.topP !== undefined && { topP: options.topP })
     };
 
-    // ドライバーレベルでAPIを選択
-    await this.process.ensureInitialized();
-    const specManager = this.process.getSpecManager();
+    // Use executeQuery for the actual stream generation
+    const stream = await this.executeQuery(prompt, mlxOptions);
 
-    // MessageElementがあるかチェックしてAPIを決定
-    const hasMessageEl = this.hasMessageElement(prompt);
-    let api: 'chat' | 'completion';
-
-    // まずモデルの制約を確認
-    const canUseChat = specManager.canUseChat();
-    const canUseCompletion = specManager.canUseCompletion();
-
-    if (!canUseChat && !canUseCompletion) {
-      throw new Error('Model supports neither chat nor completion API');
-    }
-
-    if (hasMessageEl) {
-      // MessageElementがある場合はchatを優先
-      if (canUseChat) {
-        api = 'chat';
-      } else {
-        // chatが使えない場合はcompletionにフォールバック
-        api = 'completion';
-      }
-    } else {
-      // MessageElementがない場合
-      if (!canUseChat) {
-        // chatが使えない場合はcompletion
-        api = 'completion';
-      } else if (!canUseCompletion) {
-        // completionが使えない場合はchat
-        api = 'chat';
-      } else {
-        // 両方使える場合はモデルの特性に応じて判定
-        // この場合のみメッセージ変換が必要
-        const messages = formatPromptAsMessages(prompt, this.getFormatterOptions());
-        const mlxMessages = this.convertMessages(messages);
-        const preprocessedMessages = specManager.preprocessMessages(mlxMessages);
-        api = specManager.determineApi(preprocessedMessages);
-      }
-    }
-
-    let stream: Readable;
-    if (api === 'completion') {
-      // completion APIを使用 - Element情報を保持したまま処理
-      const processedPrompt = await this.modelProcessor.formatCompletionPrompt(prompt);
-      stream = await this.process.completion(processedPrompt, mlxOptions);
-    } else {
-      // chat APIを使用 - メッセージ変換して処理
-      const messages = formatPromptAsMessages(prompt, this.getFormatterOptions());
-      const mlxMessages = this.convertMessages(messages);
-      let processedMessages = specManager.preprocessMessages(mlxMessages);
-      // chat APIではチャット処理を適用
-      processedMessages = this.applyChatSpecificProcessing(processedMessages);
-      stream = await this.process.chat(processedMessages, undefined, mlxOptions);
-    }
-
-    // Track accumulated content for the result
-    let fullContent = '';
-    const chunks: string[] = [];
-    let streamCompleted = false;
-    let streamError: Error | null = null;
-
-    // Convert stream to async iterable
-    const iterable = new StreamToAsyncIterable(stream);
-
-    // Create a spy generator that passes through chunks while collecting them
-    async function* streamGenerator(): AsyncIterable<string> {
-      try {
-        for await (const chunk of iterable) {
-          fullContent += chunk;
-          chunks.push(chunk);
-          yield chunk; // Pass through the chunk immediately
-        }
-        streamCompleted = true;
-      } catch (error) {
-        streamError = error as Error;
-        streamCompleted = true;
-        throw error;
-      }
-    }
-
-    // Create the actual stream that can be consumed
-    const actualStream = streamGenerator();
+    // Convert stream to async iterable with collection
+    const { iterable, completion } = createStreamIterable(stream);
 
     // Create result promise that waits for stream completion
-    const resultPromise = (async (): Promise<QueryResult> => {
-      // Wait for stream to complete
-      while (!streamCompleted) {
-        await new Promise(resolve => setTimeout(resolve, 10));
-      }
-
+    const resultPromise = completion.then(({ content, error }) => {
       // If there was an error, throw it
-      if (streamError) {
-        throw streamError;
+      if (error) {
+        throw error;
       }
 
       // Handle structured output if schema is provided
       let structuredOutput: unknown | undefined;
-      if (prompt.metadata?.outputSchema && fullContent) {
-        const extracted = extractJSON(fullContent, { multiple: false });
+      if (prompt.metadata?.outputSchema && content) {
+        const extracted = extractJSON(content, { multiple: false });
         if (extracted.source !== 'none' && extracted.data !== null) {
           structuredOutput = extracted.data;
         }
       }
 
       return {
-        content: fullContent,
+        content,
         structuredOutput,
         finishReason: 'stop' as const
       };
-    })();
+    });
 
     return {
-      stream: actualStream,
+      stream: iterable,
       result: resultPromise
     };
   }
