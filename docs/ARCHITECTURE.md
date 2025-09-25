@@ -88,9 +88,9 @@ Moduler Promptは4層のレイヤードアーキテクチャで構成される�
 共通ユーティリティとヘルパー機能。
 
 **主要機能：**
-- DriverRegistry：ドライバーの動的選択
 - Formatter：プロンプトのテキスト変換
 - JSON Extractor：様々な形式からのJSON抽出（Structured Outputs用）
+- Logger：統一ログシステム
 - デフォルト設定とテキスト
 
 ### @moduler-prompt/process
@@ -176,6 +176,59 @@ const customModule: PromptModule = {
   objective: ['カスタム処理'],
   instructions: ['独自の指示']
 };
+```
+
+## ドライバーレジストリとAIサービス
+
+### AIService
+
+ケイパビリティベースでドライバーを動的選択・作成するハイレベルAPI。
+
+```typescript
+import { AIService } from '@moduler-prompt/driver';
+
+const aiService = new AIService({
+  models: [
+    {
+      model: 'gpt-4o-mini',
+      provider: 'openai',
+      capabilities: ['streaming', 'tools', 'reasoning'],
+      priority: 10
+    },
+    {
+      model: 'claude-3-haiku',
+      provider: 'anthropic',
+      capabilities: ['streaming', 'fast'],
+      priority: 20
+    }
+  ],
+  drivers: {
+    openai: { apiKey: process.env.OPENAI_API_KEY },
+    anthropic: { apiKey: process.env.ANTHROPIC_API_KEY }
+  }
+});
+
+// ケイパビリティに基づいてドライバーを作成
+const driver = await aiService.createDriverFromCapabilities(
+  ['streaming', 'fast'],
+  { preferLocal: true }
+);
+```
+
+### ModelSpec
+
+モデルの仕様を定義する中心的な型。
+
+```typescript
+interface ModelSpec {
+  model: string;                    // モデル識別子
+  provider: DriverProvider;         // プロバイダー
+  capabilities: DriverCapability[]; // モデルの能力
+  maxInputTokens?: number;         // 最大入力トークン数
+  maxOutputTokens?: number;        // 最大出力トークン数
+  priority?: number;                // 優先度
+  enabled?: boolean;                // 有効/無効フラグ
+}
 ```
 
 ## パフォーマンス考慮事項

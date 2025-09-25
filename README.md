@@ -99,31 +99,65 @@ const compiled = compile(analysisModule, context);
 // compiledは instructions, data, output のElement配列を含む
 ```
 
-### 構造化出力（Structured Outputs）
+### AIサービスを使った動的ドライバー選択
 
-AIからの応答を構造化されたJSONとして取得できます：
+ケイパビリティベースで最適なAIモデルを自動選択：
 
 ```typescript
-import { OpenAIDriver } from '@moduler-prompt/driver';
+import { AIService } from '@moduler-prompt/driver';
 
-// スキーマを定義してプロンプトに含める
+// AIサービスを設定
+const aiService = new AIService({
+  models: [
+    {
+      model: 'gpt-4o-mini',
+      provider: 'openai',
+      capabilities: ['streaming', 'tools', 'reasoning'],
+      priority: 10
+    },
+    {
+      model: 'llama-3.3-70b',
+      provider: 'mlx',
+      capabilities: ['local', 'fast', 'japanese'],
+      priority: 30
+    }
+  ],
+  drivers: {
+    openai: { apiKey: process.env.OPENAI_API_KEY },
+    mlx: {} // MLXは設定不要
+  }
+});
+
+// ローカル実行を優先して高速ドライバーを選択
+const driver = await aiService.createDriverFromCapabilities(
+  ['fast'],
+  { preferLocal: true }
+);
+
+if (driver) {
+  const compiled = compile(module, context);
+  const result = await driver.query(compiled);
+  console.log(result.content);
+}
+```
+
+### 構造化出力（Structured Outputs）
+
+AIからの応答を構造化されたJSONとして取得：
+
+```typescript
 const prompt = compile(module, context);
 prompt.metadata = {
   outputSchema: {
     type: 'object',
     properties: {
       issues: { type: 'array', items: { type: 'string' } },
-      score: { type: 'number' },
-      suggestions: { type: 'array', items: { type: 'string' } }
+      score: { type: 'number' }
     }
   }
 };
 
-// ドライバーで実行
-const driver = new OpenAIDriver({ apiKey: process.env.OPENAI_API_KEY });
 const result = await driver.query(prompt);
-
-// 構造化データを取得
 if (result.structuredOutput) {
   const analysis = result.structuredOutput;
   console.log('Score:', analysis.score);

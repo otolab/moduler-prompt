@@ -137,17 +137,25 @@ logger.setDebug(false);
 
 ## DriverRegistryでの使用例
 
-DriverRegistryクラスは内部でLoggerを使用して、ドライバの選択と作成プロセスを追跡します：
+DriverRegistryクラスは内部でLoggerを使用して、モデルの選択とドライバー作成プロセスを追跡します：
 
 ```typescript
-import { DriverRegistry, LogLevel } from '@moduler-prompt/utils';
+import { DriverRegistry } from '@moduler-prompt/driver';
+import { LogLevel } from '@moduler-prompt/utils';
 
 // ログレベルを指定してRegistryを作成
 const registry = new DriverRegistry(LogLevel.DEBUG);
 
-// ドライバ選択時のログ出力例
-// [DriverRegistry] Selected driver: MLX Driver (mlx-driver)
-// [DriverRegistry] Reason: Best match for requested capabilities
+// モデルを登録
+registry.registerModel({
+  model: 'llama-3.3-70b',
+  provider: 'mlx',
+  capabilities: ['local', 'fast', 'japanese']
+});
+
+// モデル選択時のログ出力例
+// [DriverRegistry] Selected model: llama-3.3-70b (mlx)
+// [DriverRegistry] Reason: Local execution preferred
 ```
 
 ## 使用パターン
@@ -315,7 +323,8 @@ logger.debug('Data summary:', {
 ## 実装ファイル
 
 - **Logger実装**: `packages/utils/src/logger/index.ts`
-- **DriverRegistry**: `packages/utils/src/driver-registry/registry.ts`
+- **DriverRegistry**: `packages/driver/src/driver-registry/registry.ts`
+- **AIService**: `packages/driver/src/driver-registry/ai-service.ts`
 - **型定義**: `packages/utils/src/logger/index.ts`
 
 ## 関連ドキュメント

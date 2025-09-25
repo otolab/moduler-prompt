@@ -381,18 +381,77 @@ interface StreamResult {
 }
 ```
 
-### DriverConfig
+### ModelSpec
 
-ドライバー設定の基本型。
+モデル仕様の定義。
 
 ```typescript
-interface DriverConfig {
-  provider: 'openai' | 'anthropic' | 'ollama' | 'test';
-  model?: string;
-  apiKey?: string;
-  baseURL?: string;
-  defaultOptions?: QueryOptions;
+interface ModelSpec {
+  /** モデル識別子 */
+  model: string;
+
+  /** プロバイダー名 */
+  provider: DriverProvider;
+
+  /** モデルの能力 */
+  capabilities: DriverCapability[];
+
+  /** 最大入力トークン数 */
+  maxInputTokens?: number;
+
+  /** 最大出力トークン数 */
+  maxOutputTokens?: number;
+
+  /** 優先度（高いほど優先） */
+  priority?: number;
+
+  /** コスト情報 */
+  cost?: {
+    input: number;   // 1Kトークンあたりのコスト（ドル）
+    output: number;
+  };
+
+  /** 有効/無効フラグ */
+  enabled?: boolean;
 }
+```
+
+### DriverCapability
+
+ドライバーの能力を表すフラグ。
+
+```typescript
+type DriverCapability =
+  | 'streaming'      // ストリーミング応答
+  | 'local'          // ローカル実行
+  | 'fast'           // 高速応答
+  | 'large-context'  // 大規模コンテキスト
+  | 'multilingual'   // 多言語対応
+  | 'japanese'       // 日本語特化
+  | 'coding'         // コーディング特化
+  | 'reasoning'      // 推論・思考特化
+  | 'chat'           // チャット特化
+  | 'tools'          // ツール使用
+  | 'vision'         // 画像認識
+  | 'audio'          // 音声処理
+  | 'structured'     // 構造化出力
+  | 'json'           // JSON出力
+  | 'function-calling'; // 関数呼び出し
+```
+
+### DriverProvider
+
+利用可能なプロバイダー。
+
+```typescript
+type DriverProvider =
+  | 'openai'
+  | 'anthropic'
+  | 'vertexai'
+  | 'mlx'
+  | 'ollama'
+  | 'echo'   // テスト用
+  | 'test';  // ユニットテスト用
 ```
 
 ## ユーティリティ
@@ -547,32 +606,99 @@ export class CustomDriver implements AIDriver {
 }
 ```
 
-### プロバイダー切り替え
+### AIServiceを使ったドライバー管理
+
+#### 基本的な使用方法
 
 ```typescript
-function createDriver(provider: string, config: any): AIDriver {
-  switch (provider) {
-    case 'openai':
-      return new OpenAIDriver(config);
-    case 'anthropic':
-      return new AnthropicDriver(config);
-    case 'vertexai':
-      return new VertexAIDriver(config);
-    case 'ollama':
-      return new OllamaDriver(config);
-    default:
-      throw new Error(`Unknown provider: ${provider}`);
-  }
-}
+import { AIService } from '@moduler-prompt/driver';
+import type { ModelSpec } from '@moduler-prompt/driver';
 
-// 環境変数で制御
-const driver = createDriver(
-  process.env.AI_PROVIDER || 'openai',
+// AIサービスの初期化
+const aiService = new AIService({
+  models: [
+    {
+      model: 'gpt-4o-mini',
+      provider: 'openai',
+      capabilities: ['streaming', 'tools', 'reasoning'],
+      maxInputTokens: 128000,
+      priority: 10
+    },
+    {
+      model: 'claude-3-haiku',
+      provider: 'anthropic',
+      capabilities: ['streaming', 'fast', 'large-context'],
+      maxInputTokens: 200000,
+      priority: 20
+    },
+    {
+      model: 'llama-3.3-70b',
+      provider: 'mlx',
+      capabilities: ['local', 'fast', 'japanese'],
+      priority: 30
+    }
+  ],
+  drivers: {
+    openai: { apiKey: process.env.OPENAI_API_KEY },
+    anthropic: { apiKey: process.env.ANTHROPIC_API_KEY },
+    mlx: { /* MLXは設定不要 */ }
+  },
+  defaultOptions: {
+    temperature: 0.7,
+    maxTokens: 2000
+  }
+});
+```
+
+#### ケイパビリティベースのドライバー選択
+
+```typescript
+// ストリーミング対応の高速ドライバーを選択
+const driver = await aiService.createDriverFromCapabilities(
+  ['streaming', 'fast'],  // 必須ケイパビリティ
   {
-    apiKey: process.env.API_KEY,
-    model: process.env.MODEL
+    preferLocal: true,     // ローカル実行を優先
+    excludeProviders: ['vertexai']  // 特定プロバイダーを除外
   }
 );
+
+if (driver) {
+  const result = await driver.query(prompt);
+  console.log(result.content);
+}
+```
+
+#### 特定モデルの直接指定
+
+```typescript
+// 特定モデルを直接指定してドライバー作成
+const driver = await aiService.createDriver('gpt-4o-mini');
+
+// またはプロバイダーとモデルを指定
+const driver2 = await aiService.createDriverByProvider(
+  'anthropic',
+  'claude-3-haiku'
+);
+```
+
+#### モデル選択の詳細制御
+
+```typescript
+// 詳細な選択条件を指定
+const models = aiService.selectModels(
+  ['streaming'],           // 必須ケイパビリティ
+  {
+    preferredCapabilities: ['japanese', 'fast'],  // 望ましいケイパビリティ
+    minInputTokens: 100000,                      // 最小入力トークン数
+    maxCost: { input: 0.001, output: 0.002 },    // コスト上限
+    providers: ['openai', 'anthropic']           // プロバイダーを限定
+  }
+);
+
+// 最適なモデルでドライバーを作成
+if (models.length > 0) {
+  const driver = await aiService.registry.createDriver(models[0]);
+}
 ```
 
 ## 注意事項

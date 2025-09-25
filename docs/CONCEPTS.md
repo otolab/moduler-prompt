@@ -100,21 +100,37 @@ const result = await driver.query(compiledPrompt);
 - タスクに最適なモデルの選択が困難
 
 **解決アプローチ**：
-**ModelSpecとDriverRegistryによる最適化**：
+**AIServiceとModelSpecによる最適化**：
 
 ```typescript
-// モデルの特性を定義
-const modelSpec = {
-  model: 'gpt-4o-mini',
-  maxInputTokens: 128000,
-  capabilities: ['japanese', 'coding', 'streaming'],
-  costPerKToken: 0.15
-};
+// AIサービスにモデルを登録
+const aiService = new AIService({
+  models: [
+    {
+      model: 'gpt-4o-mini',
+      provider: 'openai',
+      capabilities: ['japanese', 'coding', 'streaming'],
+      maxInputTokens: 128000,
+      cost: { input: 0.00015, output: 0.0006 },
+      priority: 10
+    },
+    {
+      model: 'llama-3.3-70b',
+      provider: 'mlx',
+      capabilities: ['japanese', 'local', 'fast'],
+      priority: 30
+    }
+  ],
+  drivers: {
+    openai: { apiKey: process.env.OPENAI_API_KEY },
+    mlx: {} // ローカル実行
+  }
+});
 
 // 条件に基づいて最適なモデルを自動選択
-const driver = registry.selectDriver(
-  ['japanese', 'local'],  // 必要な能力
-  { preferCheaper: true }  // 選択基準
+const driver = await aiService.createDriverFromCapabilities(
+  ['japanese', 'local'],   // 必要な能力
+  { preferLocal: true }     // ローカル実行を優先
 );
 ```
 
