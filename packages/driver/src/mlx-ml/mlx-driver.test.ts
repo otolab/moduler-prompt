@@ -63,11 +63,13 @@ describe('MlxDriver', () => {
       });
 
       // Access private method through type assertion for testing
-      const ensureInitialized = (driver as any).ensureInitialized.bind(driver);
+      // @ts-expect-error - Accessing private method for testing
+      const ensureInitialized = driver.ensureInitialized.bind(driver);
       await ensureInitialized();
 
       // Verify process was initialized
-      const process = (driver as any).process;
+      // @ts-expect-error - Accessing private property for testing
+      const process = driver.process;
       expect(process.ensureInitialized).toHaveBeenCalled();
       expect(process.getCapabilities).toHaveBeenCalled();
     });
@@ -78,12 +80,14 @@ describe('MlxDriver', () => {
       });
 
       // Mock error
-      const process = (driver as any).process;
+      // @ts-expect-error - Accessing private property for testing
+      const process = driver.process;
       process.getCapabilities.mockRejectedValueOnce(new Error('Process error'));
 
       const consoleSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
 
-      const ensureInitialized = (driver as any).ensureInitialized.bind(driver);
+      // @ts-expect-error - Accessing private method for testing
+      const ensureInitialized = driver.ensureInitialized.bind(driver);
       await ensureInitialized();
 
       expect(consoleSpy).toHaveBeenCalledWith('Failed to get MLX capabilities:', expect.any(Error));

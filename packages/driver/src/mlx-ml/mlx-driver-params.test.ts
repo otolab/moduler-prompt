@@ -96,8 +96,8 @@ describe.skipIf(!isMacOS)('MLX Driver Parameters Integration', () => {
     // シンプルなテキストプロンプトを使用（MessageElementなし）
     // これによりcompletion APIが自動選択される
     const compiledPrompt: CompiledPrompt = {
-      instructions: ['Complete this:'],
-      data: ['Hello'],
+      instructions: [{ type: 'text', content: 'Complete this:' }],
+      data: [{ type: 'text', content: 'Hello' }],
       output: []
     };
 

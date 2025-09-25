@@ -2,6 +2,7 @@ import { describe, it, expect } from 'vitest';
 import { hasMessageElement, convertMessages, determineApiSelection } from './mlx-driver.js';
 import type { CompiledPrompt } from '@moduler-prompt/core';
 import type { ChatMessage } from '../formatter/types.js';
+import type { MlxMessage } from './process/types.js';
 
 describe('MLXDriver Utility Functions', () => {
   describe('hasMessageElement', () => {
@@ -79,7 +80,7 @@ describe('MLXDriver Utility Functions', () => {
     const createMockSpecManager = (canChat: boolean, canCompletion: boolean) => ({
       canUseChat: () => canChat,
       canUseCompletion: () => canCompletion,
-      preprocessMessages: (msgs: any) => msgs,
+      preprocessMessages: (msgs: MlxMessage[]) => msgs,
       determineApi: () => 'chat' as const
     });
 
@@ -157,7 +158,7 @@ describe('MLXDriver Utility Functions', () => {
       const mockSpecManager = {
         canUseChat: () => true,
         canUseCompletion: () => true,
-        preprocessMessages: (msgs: any) => msgs,
+        preprocessMessages: (msgs: MlxMessage[]) => msgs,
         determineApi: () => 'completion' as const
       };
 

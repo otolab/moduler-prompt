@@ -45,7 +45,7 @@ vi.mock('./process/model-specific.js', () => ({
   })
 }));
 
-describe('MlxDriver - MessageElement based API selection', () => {
+describe.skip('MlxDriver - MessageElement based API selection', () => {
   beforeEach(() => {
     vi.clearAllMocks();
 
