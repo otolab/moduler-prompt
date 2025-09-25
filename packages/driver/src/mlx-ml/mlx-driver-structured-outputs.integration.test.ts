@@ -1,4 +1,4 @@
-import { describe, it, expect, beforeAll, afterAll } from 'vitest';
+import { describe, it, expect, beforeAll, afterAll, skip } from 'vitest';
 import { MlxDriver } from './mlx-driver.js';
 import type { CompiledPrompt } from '@moduler-prompt/core';
 
@@ -42,9 +42,9 @@ describe('MLXDriver Structured Outputs', () => {
   });
 
   describe('query with structured outputs', () => {
-    it('should extract JSON when outputSchema is provided', async function() {
+    it('should extract JSON when outputSchema is provided', async () => {
       if (!driver) {
-        this.skip();
+        skip('MLX driver not available');
         return;
       }
 
@@ -88,9 +88,9 @@ describe('MLXDriver Structured Outputs', () => {
       }
     }, 30000); // Increase timeout for model loading
 
-    it('should return undefined structuredOutput when no schema provided', async function() {
+    it('should return undefined structuredOutput when no schema provided', async () => {
       if (!driver) {
-        this.skip();
+        skip('MLX driver not available');
         return;
       }
 
@@ -110,9 +110,9 @@ describe('MLXDriver Structured Outputs', () => {
       expect(result.structuredOutput).toBeUndefined();
     }, 30000);
 
-    it('should handle JSON in markdown code blocks', async function() {
+    it('should handle JSON in markdown code blocks', async () => {
       if (!driver) {
-        this.skip();
+        skip('MLX driver not available');
         return;
       }
 
@@ -158,9 +158,9 @@ describe('MLXDriver Structured Outputs', () => {
   });
 
   describe('streamQuery with structured outputs', () => {
-    it('should extract JSON in streaming mode', async function() {
+    it('should extract JSON in streaming mode', async () => {
       if (!driver) {
-        this.skip();
+        skip('MLX driver not available');
         return;
       }
 

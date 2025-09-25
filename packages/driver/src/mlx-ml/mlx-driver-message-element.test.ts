@@ -3,6 +3,13 @@ import { MlxDriver } from './mlx-driver.js';
 import type { CompiledPrompt } from '@moduler-prompt/core';
 import { Readable } from 'stream';
 
+// Mock the formatter
+vi.mock('../formatter/converter.js', () => ({
+  formatPromptAsMessages: vi.fn().mockReturnValue([
+    { role: 'user', content: 'test message' }
+  ])
+}));
+
 // Mock the MlxProcess
 const mockChat = vi.fn();
 const mockCompletion = vi.fn();
@@ -23,7 +30,8 @@ vi.mock('./process/index.js', () => ({
     exit: vi.fn(),
     ensureInitialized: vi.fn().mockResolvedValue(undefined),
     getSpecManager: mockGetSpecManager,
-    getStatus: vi.fn().mockReturnValue({ modelSpec: true })
+    getStatus: vi.fn().mockReturnValue({ modelSpec: true }),
+    initialize: vi.fn().mockResolvedValue(undefined)
   }))
 }));
 
@@ -31,7 +39,9 @@ vi.mock('./process/index.js', () => ({
 vi.mock('./process/model-specific.js', () => ({
   createModelSpecificProcessor: vi.fn().mockReturnValue({
     applyModelSpecificProcessing: (messages: unknown) => messages,
-    applyCompletionSpecificProcessing: (prompt: string) => prompt
+    applyCompletionSpecificProcessing: (prompt: string) => prompt,
+    applyChatSpecificProcessing: (messages: unknown) => messages,
+    formatCompletionPrompt: vi.fn().mockResolvedValue('formatted prompt')
   })
 }));
 
@@ -42,7 +52,16 @@ describe('MlxDriver - MessageElement based API selection', () => {
     // Setup mock spec manager
     mockGetSpecManager.mockReturnValue({
       preprocessMessages: (messages: unknown) => messages,
-      determineApi: vi.fn().mockReturnValue('completion'),
+      determineApi: vi.fn().mockImplementation((prompt: CompiledPrompt) => {
+        // Check if there are any MessageElements in the prompt
+        const hasMessageElement = [
+          ...prompt.instructions,
+          ...prompt.data,
+          ...prompt.output
+        ].some(element => element.type === 'message');
+
+        return hasMessageElement ? 'chat' : 'completion';
+      }),
       canUseChat: vi.fn().mockReturnValue(true),
       canUseCompletion: vi.fn().mockReturnValue(true),
       generatePrompt: () => 'generated prompt'
