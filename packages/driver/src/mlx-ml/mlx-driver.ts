@@ -216,7 +216,14 @@ export class MlxDriver implements AIDriver {
    */
   async query(prompt: CompiledPrompt, options?: QueryOptions): Promise<QueryResult> {
     // Use streamQuery for consistency with other drivers
-    const { result } = await this.streamQuery(prompt, options);
+    const { stream, result } = await this.streamQuery(prompt, options);
+
+    // Consume the stream to trigger completion
+    // This is necessary because the result promise only resolves when the stream is fully consumed
+    for await (const _ of stream) {
+      // Just consume the stream, don't need to do anything with the chunks
+    }
+
     return result;
   }
   /**

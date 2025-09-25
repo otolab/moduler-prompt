@@ -17,9 +17,9 @@ describe.skipIf(!isMacOS)('MLX Driver Parameters Integration', () => {
   let driver: MlxDriver | null = null;
 
   beforeAll(async () => {
-    // 小さなテスト用モデルを使用
+    // ダウンロード済みのモデルを使用
     driver = new MlxDriver({
-      model: 'mlx-community/gemma-3-270m-it-qat-8bit'
+      model: 'mlx-community/gemma-3-27b-it-qat-4bit'
     });
   });
 
@@ -28,6 +28,31 @@ describe.skipIf(!isMacOS)('MLX Driver Parameters Integration', () => {
       await driver.close();
     }
   });
+
+  it('should work without any parameters', async () => {
+    if (!driver) {
+      throw new Error('Driver not initialized');
+    }
+
+    const compiledPrompt: CompiledPrompt = {
+      instructions: [],
+      data: [
+        {
+          type: 'message',
+          role: 'user',
+          content: 'Say: TEST'
+        }
+      ],
+      output: []
+    };
+
+    // パラメータなしで実行
+    const result = await driver.query(compiledPrompt);
+
+    expect(result).toBeDefined();
+    expect(result.content).toBeDefined();
+    expect(typeof result.content).toBe('string');
+  }, 60000); // 60秒のタイムアウト
 
   it('should accept temperature parameter without error', async () => {
     if (!driver) {
@@ -57,7 +82,7 @@ describe.skipIf(!isMacOS)('MLX Driver Parameters Integration', () => {
     expect(result).toBeDefined();
     expect(result.content).toBeDefined();
     expect(typeof result.content).toBe('string');
-  }, 30000); // 30秒のタイムアウト
+  }, 60000); // 60秒のタイムアウト
 
   it('should accept multiple parameters without error', async () => {
     if (!driver) {
@@ -86,7 +111,7 @@ describe.skipIf(!isMacOS)('MLX Driver Parameters Integration', () => {
     // エラーなく結果が返ることを確認
     expect(result).toBeDefined();
     expect(result.content).toBeDefined();
-  }, 30000); // 30秒のタイムアウト
+  }, 60000); // 60秒のタイムアウト
 
   it('should work with completion API and temperature', async () => {
     if (!driver) {
@@ -108,7 +133,7 @@ describe.skipIf(!isMacOS)('MLX Driver Parameters Integration', () => {
 
     expect(result).toBeDefined();
     expect(result.content).toBeDefined();
-  }, 30000); // 30秒のタイムアウト
+  }, 60000); // 60秒のタイムアウト
 
   it('should handle temperature=0 (deterministic)', async () => {
     if (!driver) {
@@ -135,5 +160,5 @@ describe.skipIf(!isMacOS)('MLX Driver Parameters Integration', () => {
 
     expect(result).toBeDefined();
     expect(result.content).toBeDefined();
-  }, 30000); // 30秒のタイムアウト
+  }, 60000); // 60秒のタイムアウト
 });
