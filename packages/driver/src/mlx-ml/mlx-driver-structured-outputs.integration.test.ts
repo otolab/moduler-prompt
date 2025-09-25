@@ -1,4 +1,4 @@
-import { describe, it, expect, beforeAll, afterAll, skip } from 'vitest';
+import { describe, it, expect, beforeAll, afterAll } from 'vitest';
 import { MlxDriver } from './mlx-driver.js';
 import type { CompiledPrompt } from '@moduler-prompt/core';
 import { platform } from 'os';

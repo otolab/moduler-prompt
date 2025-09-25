@@ -7,14 +7,13 @@
     "packages/*"
   ],
   "scripts": {
-    "build": "npm run build --workspaces",
-    "build:ordered": "npm run build -w @moduler-prompt/core && npm run build -w @moduler-prompt/utils && npm run build -w @moduler-prompt/driver && npm run build -w @moduler-prompt/process && npm run build -w @moduler-prompt/simple-chat",
-    "test": "npm run test --workspaces",
+    "build": "npm run build -w @moduler-prompt/core && npm run build -w @moduler-prompt/utils && npm run build -w @moduler-prompt/driver && npm run build -w @moduler-prompt/process && npm run build -w @moduler-prompt/simple-chat",
+    "test": "npm test -w @moduler-prompt/core && npm test -w @moduler-prompt/utils && npm test -w @moduler-prompt/driver && npm test -w @moduler-prompt/process && npm test -w @moduler-prompt/simple-chat",
     "test:run": "npm run test:run --workspaces --if-present",
     "clean": "npm run clean --workspaces",
     "clean:all": "npm run clean --workspaces && rm -rf node_modules packages/*/node_modules",
     "dev": "npm run dev --workspace=@moduler-prompt/core",
-    "lint": "npm run lint --workspaces",
+    "lint": "npm run lint -w @moduler-prompt/core && npm run lint -w @moduler-prompt/utils && npm run lint -w @moduler-prompt/driver && npm run lint -w @moduler-prompt/process && npm run lint -w @moduler-prompt/simple-chat",
     "typecheck": "npm run typecheck --workspaces",
     "prepack:all": "npm run prepack --workspaces --if-present",
     "chat": "node packages/simple-chat/dist/cli.js",

@@ -220,7 +220,8 @@ export class MlxDriver implements AIDriver {
 
     // Consume the stream to trigger completion
     // This is necessary because the result promise only resolves when the stream is fully consumed
-    for await (const _ of stream) {
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
+    for await (const _chunk of stream) {
       // Just consume the stream, don't need to do anything with the chunks
     }
 
