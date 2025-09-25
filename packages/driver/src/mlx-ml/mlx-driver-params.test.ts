@@ -10,10 +10,13 @@ import { MlxDriver } from './mlx-driver.js';
 import type { CompiledPrompt } from '@moduler-prompt/core';
 import { platform } from 'os';
 
-// MLXはApple Silicon専用なので、他のプラットフォームではスキップ
-const isMacOS = platform() === 'darwin';
+// MLXはApple Silicon専用なので、CI環境や非対応環境ではスキップ
+const shouldSkipMLX =
+  platform() !== 'darwin' ||
+  process.env.CI === 'true' ||
+  process.env.SKIP_MLX_TESTS === 'true';
 
-describe.skipIf(!isMacOS)('MLX Driver Parameters Integration', () => {
+describe.skipIf(shouldSkipMLX)('MLX Driver Parameters Integration', () => {
   let driver: MlxDriver | null = null;
 
   beforeAll(async () => {

@@ -1,6 +1,7 @@
 import { describe, it, expect, beforeAll, afterAll, skip } from 'vitest';
 import { MlxDriver } from './mlx-driver.js';
 import type { CompiledPrompt } from '@moduler-prompt/core';
+import { platform } from 'os';
 
 // Test data types
 interface PersonData {
@@ -15,16 +16,16 @@ interface StatusData {
 
 type StreamData = Record<string, unknown>;
 
-describe('MLXDriver Structured Outputs', () => {
-  let driver: MlxDriver | null = null;
+// MLXはApple Silicon専用なので、CI環境や非対応環境ではスキップ
+const shouldSkipMLX =
+  platform() !== 'darwin' ||
+  process.env.CI === 'true' ||
+  process.env.SKIP_MLX_TESTS === 'true';
+
+describe.skipIf(shouldSkipMLX)('MLXDriver Structured Outputs', () => {
+  let driver: MlxDriver;
 
   beforeAll(() => {
-    // Skip these tests if MLX environment is not available
-    if (process.env.CI || process.env.SKIP_MLX_TESTS) {
-      console.log('Skipping MLX structured outputs tests in CI or when SKIP_MLX_TESTS is set');
-      return;
-    }
-
     driver = new MlxDriver({
       model: 'mlx-community/gemma-3-270m-it-qat-8bit',
       defaultOptions: {
@@ -36,17 +37,11 @@ describe('MLXDriver Structured Outputs', () => {
   });
 
   afterAll(async () => {
-    if (driver) {
-      await driver.close();
-    }
+    await driver?.close();
   });
 
   describe('query with structured outputs', () => {
     it('should extract JSON when outputSchema is provided', async () => {
-      if (!driver) {
-        skip('MLX driver not available');
-        return;
-      }
 
       const prompt: CompiledPrompt = {
         instructions: [
@@ -89,10 +84,6 @@ describe('MLXDriver Structured Outputs', () => {
     }, 30000); // Increase timeout for model loading
 
     it('should return undefined structuredOutput when no schema provided', async () => {
-      if (!driver) {
-        skip('MLX driver not available');
-        return;
-      }
 
       const prompt: CompiledPrompt = {
         instructions: [
@@ -111,10 +102,6 @@ describe('MLXDriver Structured Outputs', () => {
     }, 30000);
 
     it('should handle JSON in markdown code blocks', async () => {
-      if (!driver) {
-        skip('MLX driver not available');
-        return;
-      }
 
       const prompt: CompiledPrompt = {
         instructions: [
@@ -159,10 +146,6 @@ describe('MLXDriver Structured Outputs', () => {
 
   describe('streamQuery with structured outputs', () => {
     it('should extract JSON in streaming mode', async () => {
-      if (!driver) {
-        skip('MLX driver not available');
-        return;
-      }
 
       const prompt: CompiledPrompt = {
         instructions: [
