@@ -215,9 +215,8 @@ describe('EchoDriver', () => {
 
       // Raw format returns the prompt as JSON
       expect(result.structuredOutput).toBeDefined();
-      expect(result.structuredOutput).toHaveLength(1);
-      expect(result.structuredOutput![0]).toHaveProperty('instructions');
-      expect(result.structuredOutput![0]).toHaveProperty('data');
+      expect(result.structuredOutput).toHaveProperty('instructions');
+      expect(result.structuredOutput).toHaveProperty('data');
     });
 
     it('extracts JSON from messages format when outputSchema is provided', async () => {
@@ -236,8 +235,8 @@ describe('EchoDriver', () => {
 
       // Messages format returns an array of messages as JSON
       expect(result.structuredOutput).toBeDefined();
-      expect(result.structuredOutput).toHaveLength(1);
-      expect(Array.isArray(result.structuredOutput![0])).toBe(true);
+      expect(Array.isArray(result.structuredOutput)).toBe(true);
+      expect((result.structuredOutput as any[]).length).toBeGreaterThan(0);
     });
 
     it('extracts JSON from both format when outputSchema is provided', async () => {
@@ -259,9 +258,8 @@ describe('EchoDriver', () => {
 
       // Both format returns an object with text and messages
       expect(result.structuredOutput).toBeDefined();
-      expect(result.structuredOutput).toHaveLength(1);
-      expect(result.structuredOutput![0]).toHaveProperty('text');
-      expect(result.structuredOutput![0]).toHaveProperty('messages');
+      expect(result.structuredOutput).toHaveProperty('text');
+      expect(result.structuredOutput).toHaveProperty('messages');
     });
 
     it('extracts JSON from debug format when outputSchema is provided', async () => {
@@ -284,10 +282,9 @@ describe('EchoDriver', () => {
 
       // Debug format returns detailed debug info as JSON
       expect(result.structuredOutput).toBeDefined();
-      expect(result.structuredOutput).toHaveLength(1);
-      expect(result.structuredOutput![0]).toHaveProperty('raw');
-      expect(result.structuredOutput![0]).toHaveProperty('formatted');
-      expect(result.structuredOutput![0]).toHaveProperty('metadata');
+      expect(result.structuredOutput).toHaveProperty('raw');
+      expect(result.structuredOutput).toHaveProperty('formatted');
+      expect(result.structuredOutput).toHaveProperty('metadata');
     });
 
     it('returns undefined structuredOutput for text format', async () => {
@@ -333,9 +330,8 @@ describe('EchoDriver', () => {
       const queryResult = await result;
 
       expect(queryResult.structuredOutput).toBeDefined();
-      expect(queryResult.structuredOutput).toHaveLength(1);
-      expect(queryResult.structuredOutput![0]).toHaveProperty('text');
-      expect(queryResult.structuredOutput![0]).toHaveProperty('messages');
+      expect(queryResult.structuredOutput).toHaveProperty('text');
+      expect(queryResult.structuredOutput).toHaveProperty('messages');
     });
 
     it('handles metadata inclusion with structured outputs', async () => {

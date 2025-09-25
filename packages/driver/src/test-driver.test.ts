@@ -272,7 +272,7 @@ describe('TestDriver', () => {
 
       const result = await driver.query(prompt);
       expect(result.content).toBe('{"name": "Alice", "age": 30}');
-      expect(result.structuredOutput).toEqual([{ name: 'Alice', age: 30 }]);
+      expect(result.structuredOutput).toEqual({ name: 'Alice', age: 30 });
     });
 
     it('handles JSON in markdown code blocks', async () => {
@@ -296,7 +296,7 @@ describe('TestDriver', () => {
       };
 
       const result = await driver.query(prompt);
-      expect(result.structuredOutput).toEqual([{ status: 'success', count: 42 }]);
+      expect(result.structuredOutput).toEqual({ status: 'success', count: 42 });
     });
 
     it('returns undefined structuredOutput when no schema provided', async () => {
@@ -357,7 +357,7 @@ describe('TestDriver', () => {
       const queryResult = await result;
 
       expect(queryResult.content).toBe('{"items": [1, 2, 3]}');
-      expect(queryResult.structuredOutput).toEqual([{ items: [1, 2, 3] }]);
+      expect(queryResult.structuredOutput).toEqual({ items: [1, 2, 3] });
     });
 
     it('works with response provider function', async () => {
@@ -380,7 +380,7 @@ describe('TestDriver', () => {
       };
 
       const result = await driver.query(promptWithSchema);
-      expect(result.structuredOutput).toEqual([{ result: 'structured' }]);
+      expect(result.structuredOutput).toEqual({ result: 'structured' });
 
       const promptWithoutSchema: CompiledPrompt = {
         instructions: [{ type: 'text', content: 'Generate' }],
