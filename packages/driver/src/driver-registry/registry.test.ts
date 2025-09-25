@@ -4,7 +4,7 @@
 
 import { describe, it, expect, beforeEach } from 'vitest';
 import { DriverRegistry } from './registry.js';
-import type { DriverConfig, DriverSelectionCriteria } from './types.js';
+import type { ModelSpec, DriverSelectionCriteria } from './types.js';
 
 describe('DriverRegistry', () => {
   let registry: DriverRegistry;
@@ -13,142 +13,128 @@ describe('DriverRegistry', () => {
     registry = new DriverRegistry();
   });
 
-  describe('registerDriver', () => {
-    it('should register a driver configuration', () => {
-      const config: DriverConfig = {
-        id: 'test-driver',
-        name: 'Test Driver',
-        model: {
-          model: 'test-model',
-          provider: 'echo',
-          capabilities: ['local', 'fast'],
-          maxInputTokens: 1000,
-          maxOutputTokens: 500,
-        },
+  describe('registerModel', () => {
+    it('should register a model specification', () => {
+      const spec: ModelSpec = {
+        model: 'test-model',
+        provider: 'echo',
+        capabilities: ['local', 'fast'],
+        maxInputTokens: 1000,
+        maxOutputTokens: 500,
       };
 
-      registry.registerDriver(config);
-      const retrieved = registry.getDriver('test-driver');
-      
-      expect(retrieved).toBeDefined();
-      expect(retrieved?.id).toBe('test-driver');
-      expect(retrieved?.model.capabilities).toContain('local');
+      registry.registerModel(spec);
+
+      // selectModelを使って登録されたことを確認
+      const result = registry.selectModel({
+        requiredCapabilities: ['local', 'fast']
+      });
+
+      expect(result).toBeDefined();
+      expect(result?.model.model).toBe('test-model');
+      expect(result?.model.capabilities).toContain('local');
     });
 
     it('should set default values for enabled and priority', () => {
-      const config: DriverConfig = {
-        id: 'test-driver',
-        name: 'Test Driver',
-        model: {
-          model: 'test-model',
-          provider: 'echo',
-          capabilities: [],
-        },
+      const spec: ModelSpec = {
+        model: 'test-model',
+        provider: 'echo',
+        capabilities: [],
       };
 
-      registry.registerDriver(config);
-      const retrieved = registry.getDriver('test-driver');
-      
-      expect(retrieved?.model.enabled).toBe(true);
-      expect(retrieved?.model.priority).toBe(0);
+      registry.registerModel(spec);
+
+      const result = registry.selectModel({});
+
+      expect(result?.model.enabled).toBe(true);
+      expect(result?.model.priority).toBe(0);
     });
   });
 
-  describe('selectDriver', () => {
+  describe('selectModel', () => {
     beforeEach(() => {
-      // Register test drivers
-      registry.registerDriver({
-        id: 'local-fast',
-        name: 'Local Fast Driver',
-        model: {
-          model: 'local-fast-model',
-          provider: 'mlx',
-          capabilities: ['local', 'fast', 'streaming'],
-          priority: 10,
-        },
+      // Register test models
+      registry.registerModel({
+        model: 'local-fast-model',
+        provider: 'mlx',
+        capabilities: ['local', 'fast', 'streaming'],
+        priority: 10,
       });
 
-      registry.registerDriver({
-        id: 'cloud-powerful',
-        name: 'Cloud Powerful Driver',
-        model: {
-          model: 'cloud-model',
-          provider: 'openai',
-          capabilities: ['streaming', 'tools', 'reasoning', 'large-context'],
-          maxInputTokens: 128000,
-          priority: 20,
-        },
+      registry.registerModel({
+        model: 'cloud-model',
+        provider: 'openai',
+        capabilities: ['streaming', 'tools', 'reasoning', 'large-context'],
+        maxInputTokens: 128000,
+        priority: 20,
       });
 
-      registry.registerDriver({
-        id: 'japanese-specialized',
-        name: 'Japanese Specialized Driver',
-        model: {
-          model: 'japanese-model',
-          provider: 'mlx',
-          capabilities: ['local', 'japanese', 'chat'],
-          priority: 15,
-        },
+      registry.registerModel({
+        model: 'japanese-model',
+        provider: 'mlx',
+        capabilities: ['local', 'japanese', 'chat'],
+        priority: 15,
       });
     });
 
-    it('should select driver with required capabilities', () => {
+    it('should select model with required capabilities', () => {
       const criteria: DriverSelectionCriteria = {
         requiredCapabilities: ['local', 'fast'],
       };
 
-      const result = registry.selectDriver(criteria);
-      
+      const result = registry.selectModel(criteria);
+
       expect(result).toBeDefined();
-      expect(result?.driver.id).toBe('local-fast');
-      expect(result?.score).toBeGreaterThan(0);
+      expect(result?.model.model).toBe('local-fast-model');
+      expect(result?.model.capabilities).toContain('local');
+      expect(result?.model.capabilities).toContain('fast');
     });
 
-    it('should prefer driver with higher priority', () => {
+    it('should prefer model with higher priority', () => {
       const criteria: DriverSelectionCriteria = {
         requiredCapabilities: ['streaming'],
       };
 
-      const result = registry.selectDriver(criteria);
-      
+      const result = registry.selectModel(criteria);
+
       expect(result).toBeDefined();
-      expect(result?.driver.id).toBe('cloud-powerful'); // Higher priority
+      // cloud-model has priority 20, higher than local-fast-model's 10
+      expect(result?.model.model).toBe('cloud-model');
+      expect(result?.model.priority).toBe(20);
     });
 
-    it('should exclude drivers with excluded capabilities', () => {
+    it('should exclude models with excluded capabilities', () => {
       const criteria: DriverSelectionCriteria = {
-        requiredCapabilities: ['streaming'],
-        excludeCapabilities: ['tools'],
+        requiredCapabilities: ['local'],
+        excludeCapabilities: ['japanese'],
       };
 
-      const result = registry.selectDriver(criteria);
-      
+      const result = registry.selectModel(criteria);
+
       expect(result).toBeDefined();
-      expect(result?.driver.id).toBe('local-fast');
+      expect(result?.model.model).toBe('local-fast-model');
     });
 
     it('should filter by provider', () => {
       const criteria: DriverSelectionCriteria = {
-        providers: ['mlx'],
-        requiredCapabilities: ['local'],
+        providers: ['openai'],
       };
 
-      const result = registry.selectDriver(criteria);
-      
+      const result = registry.selectModel(criteria);
+
       expect(result).toBeDefined();
-      expect(result?.driver.model.provider).toBe('mlx');
+      expect(result?.model.provider).toBe('openai');
     });
 
     it('should exclude specific providers', () => {
       const criteria: DriverSelectionCriteria = {
         excludeProviders: ['openai'],
-        requiredCapabilities: ['streaming'],
       };
 
-      const result = registry.selectDriver(criteria);
-      
+      const result = registry.selectModel(criteria);
+
       expect(result).toBeDefined();
-      expect(result?.driver.model.provider).not.toBe('openai');
+      expect(result?.model.provider).not.toBe('openai');
     });
 
     it('should check minimum token requirements', () => {
@@ -156,10 +142,11 @@ describe('DriverRegistry', () => {
         minInputTokens: 100000,
       };
 
-      const result = registry.selectDriver(criteria);
-      
+      const result = registry.selectModel(criteria);
+
       expect(result).toBeDefined();
-      expect(result?.driver.id).toBe('cloud-powerful');
+      expect(result?.model.model).toBe('cloud-model');
+      expect(result?.model.maxInputTokens).toBeGreaterThanOrEqual(100000);
     });
 
     it('should prefer local when preferLocal is true', () => {
@@ -167,159 +154,96 @@ describe('DriverRegistry', () => {
         preferLocal: true,
       };
 
-      const result = registry.selectDriver(criteria);
-      
+      const result = registry.selectModel(criteria);
+
       expect(result).toBeDefined();
-      expect(result?.driver.model.capabilities).toContain('local');
+      expect(result?.model.capabilities).toContain('local');
     });
 
-    it('should return null when no driver matches', () => {
+    it('should return null when no model matches', () => {
       const criteria: DriverSelectionCriteria = {
         requiredCapabilities: ['non-existent-capability'],
       };
 
-      const result = registry.selectDriver(criteria);
-      
+      const result = registry.selectModel(criteria);
+
       expect(result).toBeNull();
     });
 
     it('should include warnings for missing preferred capabilities', () => {
       const criteria: DriverSelectionCriteria = {
         requiredCapabilities: ['local'],
-        preferredCapabilities: ['tools', 'vision'],
+        preferredCapabilities: ['fast', 'non-existent'],
       };
 
-      const result = registry.selectDriver(criteria);
-      
+      const result = registry.selectModel(criteria);
+
       expect(result).toBeDefined();
       expect(result?.warnings).toBeDefined();
-      expect(result?.warnings?.[0]).toContain('Missing preferred capabilities');
-    });
-  });
-
-  describe('getDefaultDriver', () => {
-    it('should return first enabled driver when no default is set', () => {
-      registry.registerDriver({
-        id: 'driver1',
-        name: 'Driver 1',
-        model: {
-          model: 'model1',
-          provider: 'echo',
-          capabilities: [],
-          enabled: false,
-        },
-      });
-
-      registry.registerDriver({
-        id: 'driver2',
-        name: 'Driver 2',
-        model: {
-          model: 'model2',
-          provider: 'echo',
-          capabilities: [],
-          enabled: true,
-        },
-      });
-
-      const defaultDriver = registry.getDefaultDriver();
-      
-      expect(defaultDriver).toBeDefined();
-      expect(defaultDriver?.id).toBe('driver2');
+      expect(result?.warnings?.[0]).toContain('non-existent');
     });
   });
 
   describe('createDriver', () => {
     it('should throw error when no factory registered', async () => {
-      const config: DriverConfig = {
-        id: 'test',
-        name: 'Test',
-        model: {
-          model: 'test',
-          // eslint-disable-next-line @typescript-eslint/no-explicit-any
-          provider: 'unknown-provider' as any,  // 存在しないプロバイダー
-          capabilities: [],
-        },
+      const spec: ModelSpec = {
+        model: 'test-model',
+        provider: 'unknown-provider' as any,
+        capabilities: [],
       };
 
-      await expect(registry.createDriver(config)).rejects.toThrow(
+      await expect(registry.createDriver(spec)).rejects.toThrow(
         'No factory registered for provider: unknown-provider'
       );
     });
 
     it('should create driver when factory is registered', async () => {
-      // モックファクトリを登録
-      const mockDriver = {
-        query: async () => ({ content: 'test' }),
-        streamQuery: undefined,
-        close: undefined
-      };
-      
-      registry.registerFactory('echo', async () => mockDriver);
-      
-      const config: DriverConfig = {
-        id: 'echo-test',
-        name: 'Echo Test',
-        model: {
-          model: 'echo',
-          provider: 'echo',
-          capabilities: ['local'],
-        },
+      const spec: ModelSpec = {
+        model: 'test-model',
+        provider: 'echo',
+        capabilities: [],
       };
 
-      const driver = await registry.createDriver(config);
-      
+      // Echo driver factory is registered by default
+      const driver = await registry.createDriver(spec);
+
       expect(driver).toBeDefined();
-      expect(driver).toBe(mockDriver);
+      expect(driver.query).toBeDefined();
+      expect(driver.streamQuery).toBeDefined();
     });
   });
 
   describe('selectAndCreateDriver', () => {
-    it('should return null when no factory registered', async () => {
-      registry.registerDriver({
-        id: 'test-driver',
-        name: 'Test Driver',
-        model: {
-          model: 'test',
-          // eslint-disable-next-line @typescript-eslint/no-explicit-any
-          provider: 'unknown-provider' as any,  // 存在しないプロバイダー
-          capabilities: ['local', 'fast'],
-        },
-      });
+    it('should return null when no matching model', async () => {
+      const driver = await registry.selectAndCreateDriver(
+        ['non-existent-capability']
+      );
 
-      const driver = await registry.selectAndCreateDriver(['local', 'fast']);
-      
       expect(driver).toBeNull();
     });
 
-    it('should select and create driver when factory is registered', async () => {
-      // モックファクトリを登録
-      const mockDriver = {
-        query: async () => ({ content: 'test' }),
-        streamQuery: undefined,
-        close: undefined
-      };
-      
-      registry.registerFactory('echo', async () => mockDriver);
-      
-      registry.registerDriver({
-        id: 'test-driver',
-        name: 'Test Driver',
-        model: {
-          model: 'test',
-          provider: 'echo',
-          capabilities: ['local', 'fast'],
-        },
+    it('should select and create driver when model matches', async () => {
+      registry.registerModel({
+        model: 'test-model',
+        provider: 'echo',
+        capabilities: ['test'],
       });
 
-      const driver = await registry.selectAndCreateDriver(['local', 'fast']);
-      
+      const driver = await registry.selectAndCreateDriver(['test']);
+
       expect(driver).toBeDefined();
-      expect(driver).toBe(mockDriver);
+      expect(driver?.query).toBeDefined();
     });
 
-    it('should return null when no matching driver', async () => {
-      const driver = await registry.selectAndCreateDriver(['non-existent']);
-      
+    it('should return null when no factory registered', async () => {
+      registry.registerModel({
+        model: 'test-model',
+        provider: 'unknown-provider' as any,
+        capabilities: ['test'],
+      });
+
+      const driver = await registry.selectAndCreateDriver(['test']);
+
       expect(driver).toBeNull();
     });
   });

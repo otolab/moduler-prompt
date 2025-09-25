@@ -8,12 +8,14 @@ import type { AIDriver } from '../types.js';
 /**
  * ドライバプロバイダータイプ
  */
-export type DriverProvider = 
+export type DriverProvider =
   | 'openai'
   | 'anthropic'
   | 'vertexai'
   | 'mlx'
-  | 'echo'; // テスト用
+  | 'ollama'
+  | 'echo'  // テスト用
+  | 'test'; // ユニットテスト用
 
 /**
  * ドライバ能力フラグ
@@ -37,106 +39,55 @@ export type DriverCapability =
   | 'function-calling'; // 関数呼び出し対応
 
 /**
- * モデル定義
+ * モデル仕様（code-bugsのModelSpecと同等）
  */
-export interface ModelDefinition {
+export interface ModelSpec {
   /** モデル識別子（プロバイダ内でユニーク） */
   model: string;
-  
+
   /** プロバイダー名 */
   provider: DriverProvider;
-  
+
   /** モデルの能力フラグ */
   capabilities: DriverCapability[];
-  
+
   /** 最大入力トークン数 */
   maxInputTokens?: number;
-  
+
   /** 最大出力トークン数 */
   maxOutputTokens?: number;
-  
+
   /** 合計最大トークン数（入力＋出力） */
   maxTotalTokens?: number;
-  
+
   /** 分あたりのトークン制限 (TPM: Tokens Per Minute) */
   tokensPerMinute?: number;
-  
+
   /** 分あたりのリクエスト制限 (RPM: Requests Per Minute) */
   requestsPerMinute?: number;
-  
+
   /** コスト情報（1Kトークンあたりのドル） */
   cost?: {
     input: number;   // 入力トークンのコスト
     output: number;  // 出力トークンのコスト
   };
-  
+
   /** 優先度（高いほど優先される） */
   priority?: number;
-  
+
   /** このモデルが有効かどうか */
   enabled?: boolean;
-  
+
   /** カスタムメタデータ */
   metadata?: Record<string, unknown>;
 }
 
 /**
- * ドライバ設定
+ * ドライバファクトリ関数の型
+ * ModelSpecを直接受け取ってドライバを作成
  */
-export interface DriverConfig {
-  /** ドライバ識別子（グローバルにユニーク） */
-  id: string;
-  
-  /** 表示名 */
-  name: string;
-  
-  /** モデル定義 */
-  model: ModelDefinition;
-  
-  /** ドライバー固有の設定 */
-  options?: Record<string, unknown>;
-  
-  /** 環境変数やシークレットの参照 */
-  credentials?: {
-    apiKey?: string;
-    endpoint?: string;
-    project?: string;
-    location?: string;
-    [key: string]: string | undefined;
-  };
-}
+export type DriverFactory = (spec: ModelSpec) => AIDriver | Promise<AIDriver>;
 
-/**
- * レジストリ設定ファイル構造
- */
-export interface RegistryConfig {
-  /** バージョン */
-  version: string;
-  
-  /** デフォルトドライバID */
-  defaultDriver?: string;
-  
-  /** ドライバ設定のリスト */
-  drivers: DriverConfig[];
-  
-  /** グローバル設定 */
-  global?: {
-    /** デフォルトの温度パラメータ */
-    temperature?: number;
-    
-    /** デフォルトの最大トークン数 */
-    maxTokens?: number;
-    
-    /** タイムアウト（ミリ秒） */
-    timeout?: number;
-    
-    /** リトライ回数 */
-    retryCount?: number;
-    
-    /** リトライ間隔（ミリ秒） */
-    retryDelay?: number;
-  };
-}
 
 /**
  * ドライバ選択条件
@@ -177,49 +128,39 @@ export interface DriverSelectionCriteria {
 }
 
 /**
- * ドライバ選択結果
+ * モデル選択結果
  */
 export interface DriverSelectionResult {
-  /** 選択されたドライバ設定 */
-  driver: DriverConfig;
-  
+  /** 選択されたモデル仕様 */
+  model: ModelSpec;
+
   /** 選択理由 */
   reason: string;
-  
+
   /** スコア（適合度） */
   score: number;
-  
+
   /** 警告メッセージ */
   warnings?: string[];
 }
 
-/**
- * ドライバファクトリ関数の型
- */
-export type DriverFactory = (config: DriverConfig) => AIDriver | Promise<AIDriver>;
 
 /**
  * ドライバレジストリインターフェース
  */
 export interface IDriverRegistry {
-  /** 設定を読み込む */
-  loadConfig(configPath: string): Promise<void>;
+  /** モデルを登録 */
+  registerModel(spec: ModelSpec): void;
   
-  /** ドライバを登録 */
-  registerDriver(config: DriverConfig): void;
-  
-  /** 条件に基づいてドライバを選択 */
-  selectDriver(criteria: DriverSelectionCriteria): DriverSelectionResult | null;
-  
-  /** IDでドライバを取得 */
-  getDriver(id: string): DriverConfig | undefined;
-  
-  /** すべてのドライバを取得 */
-  getAllDrivers(): DriverConfig[];
-  
-  /** ドライバインスタンスを作成 */
-  createDriver(config: DriverConfig): Promise<AIDriver>;
-  
-  /** デフォルトドライバを取得 */
-  getDefaultDriver(): DriverConfig | undefined;
+  /** 条件に基づいてモデルを選択 */
+  selectModel(criteria: DriverSelectionCriteria): DriverSelectionResult | null;
+
+  /** モデル仕様からドライバインスタンスを作成 */
+  createDriver(spec: ModelSpec): Promise<AIDriver>;
+
+  /** ファクトリーを登録 */
+  registerFactory(provider: DriverProvider, factory: DriverFactory): void;
+
+  /** ファクトリーを取得 */
+  getFactory(provider: DriverProvider): DriverFactory | undefined;
 }

@@ -1,120 +1,149 @@
 /**
  * Driver Factory Helper
  * ドライバファクトリの登録を支援するヘルパー関数
- * 
- * 使用例:
- * ```typescript
- * import { MlxDriver, OpenAIDriver } from '@moduler-prompt/driver';
- * import { DriverRegistry, registerDriverFactories } from '@moduler-prompt/utils';
- * 
- * const registry = new DriverRegistry();
- * registerDriverFactories(registry, {
- *   MlxDriver,
- *   OpenAIDriver,
- *   // ... 他のドライバクラス
- * });
- * ```
  */
 
 import type { DriverRegistry } from './registry.js';
-import type { DriverConfig } from './types.js';
+import type { ModelSpec } from './types.js';
+import type { AIDriver } from '../types.js';
+
+// 個別ドライバーのインポート（型安全性のため）
+import type { MlxDriver } from '../mlx-ml/mlx-driver.js';
+import type { OpenAIDriver } from '../openai/openai-driver.js';
+import type { AnthropicDriver } from '../anthropic/anthropic-driver.js';
+import type { VertexAIDriver } from '../vertexai/vertexai-driver.js';
+import type { OllamaDriver } from '../ollama/ollama-driver.js';
+import type { EchoDriver } from '../echo-driver.js';
+import type { TestDriver } from '../test-driver.js';
 
 /**
- * ドライバクラスのマップ型
+ * 標準ドライバーのファクトリー関数を登録
+ *
+ * 各ドライバーのコンストラクタは異なるシグネチャを持つため、
+ * 個別にファクトリー関数を定義して登録する
  */
-export interface DriverClasses {
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  MlxDriver?: any;
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  OpenAIDriver?: any;
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  AnthropicDriver?: any;
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  VertexAIDriver?: any;
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  EchoDriver?: any;
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  TestDriver?: any;
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  [key: string]: any;
-}
-
-/**
- * 標準ドライバファクトリを登録
- */
-export function registerDriverFactories(
+export function registerStandardDriverFactories(
   registry: DriverRegistry,
-  drivers: DriverClasses
+  drivers: {
+    MlxDriver?: typeof MlxDriver;
+    OpenAIDriver?: typeof OpenAIDriver;
+    AnthropicDriver?: typeof AnthropicDriver;
+    VertexAIDriver?: typeof VertexAIDriver;
+    OllamaDriver?: typeof OllamaDriver;
+    EchoDriver?: typeof EchoDriver;
+    TestDriver?: typeof TestDriver;
+  }
 ): void {
   // MLX Driver
   if (drivers.MlxDriver) {
-    registry.registerFactory('mlx', (config: DriverConfig) => {
-      return new drivers.MlxDriver({
-        model: config.model.model,
-        defaultOptions: config.options
+    const Driver = drivers.MlxDriver;
+    registry.registerFactory('mlx', (spec: ModelSpec) => {
+      return new Driver({
+        model: spec.model,
+        defaultOptions: spec.metadata as Partial<import('../mlx-ml/types.js').MlxMlModelOptions>
       });
     });
   }
 
   // OpenAI Driver
   if (drivers.OpenAIDriver) {
-    registry.registerFactory('openai', (config: DriverConfig) => {
-      return new drivers.OpenAIDriver({
-        apiKey: config.credentials?.apiKey || process.env.OPENAI_API_KEY || '',
-        model: config.model.model,
-        defaultOptions: config.options
+    const Driver = drivers.OpenAIDriver;
+    registry.registerFactory('openai', (spec: ModelSpec) => {
+      return new Driver({
+        apiKey: process.env.OPENAI_API_KEY || '',
+        model: spec.model,
+        defaultOptions: spec.metadata as any
       });
     });
   }
 
   // Anthropic Driver
   if (drivers.AnthropicDriver) {
-    registry.registerFactory('anthropic', (config: DriverConfig) => {
-      return new drivers.AnthropicDriver({
-        apiKey: config.credentials?.apiKey || process.env.ANTHROPIC_API_KEY || '',
-        model: config.model.model,
-        defaultOptions: config.options
+    const Driver = drivers.AnthropicDriver;
+    registry.registerFactory('anthropic', (spec: ModelSpec) => {
+      return new Driver({
+        apiKey: process.env.ANTHROPIC_API_KEY || '',
+        model: spec.model,
+        defaultOptions: spec.metadata as any
       });
     });
   }
 
   // VertexAI Driver
   if (drivers.VertexAIDriver) {
-    registry.registerFactory('vertexai', (config: DriverConfig) => {
-      return new drivers.VertexAIDriver({
-        project: config.credentials?.project || process.env.VERTEX_AI_PROJECT,
-        location: config.credentials?.location || process.env.VERTEX_AI_LOCATION || 'us-central1',
-        model: config.model.model,
-        defaultOptions: config.options
+    const Driver = drivers.VertexAIDriver;
+    registry.registerFactory('vertexai', (spec: ModelSpec) => {
+      return new Driver({
+        project: process.env.VERTEX_AI_PROJECT,
+        location: process.env.VERTEX_AI_LOCATION || 'us-central1',
+        model: spec.model,
+        defaultOptions: spec.metadata as any
+      });
+    });
+  }
+
+  // Ollama Driver
+  if (drivers.OllamaDriver) {
+    const Driver = drivers.OllamaDriver;
+    registry.registerFactory('ollama', (spec: ModelSpec) => {
+      return new Driver({
+        baseURL: 'http://localhost:11434',
+        model: spec.model,
+        defaultOptions: spec.metadata as any
       });
     });
   }
 
   // Echo Driver (for testing)
   if (drivers.EchoDriver) {
-    registry.registerFactory('echo', (config: DriverConfig) => {
-      return new drivers.EchoDriver({
-        format: config.options?.format || 'text',
-        includeMetadata: config.options?.includeMetadata,
-        simulateUsage: config.options?.simulateUsage,
-        formatterOptions: config.options?.formatterOptions,
-        streamChunkSize: config.options?.streamChunkSize
+    const Driver = drivers.EchoDriver;
+    registry.registerFactory('echo', (spec: ModelSpec) => {
+      return new Driver({
+        format: 'text'
       });
     });
   }
 
   // Test Driver (for unit testing)
   if (drivers.TestDriver) {
+    const Driver = drivers.TestDriver;
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    registry.registerFactory('test' as any, (config: DriverConfig) => {
-      return new drivers.TestDriver({
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        responses: config.options?.responses as any,
-        delay: config.options?.delay as number,
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        formatterOptions: config.options?.formatterOptions as any,
-        preferMessageFormat: config.options?.preferMessageFormat as boolean
-      });
+    registry.registerFactory('test' as any, (spec: ModelSpec) => {
+      return new Driver({});
     });
   }
+}
+
+/**
+ * 下位互換性のための旧API
+ * @deprecated Use registerStandardDriverFactories instead
+ */
+export function registerDriverFactories(
+  registry: DriverRegistry,
+  drivers: Record<string, unknown>
+): void {
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  registerStandardDriverFactories(registry, drivers as any);
+}
+
+/**
+ * 単一のドライバーファクトリーを登録する汎用関数
+ *
+ * 使用例：
+ * ```typescript
+ * registerDriverFactory(registry, 'custom', (config) => {
+ *   return new CustomDriver({
+ *     apiKey: config.credentials?.apiKey,
+ *     // ... カスタム設定
+ *   });
+ * });
+ * ```
+ */
+export function registerDriverFactory(
+  registry: DriverRegistry,
+  name: string,
+  factory: (spec: ModelSpec) => AIDriver
+): void {
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  registry.registerFactory(name as any, factory);
 }

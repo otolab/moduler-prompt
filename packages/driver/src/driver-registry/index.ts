@@ -4,16 +4,17 @@
  */
 
 export { DriverRegistry } from './registry.js';
-export { registerDriverFactories } from './factory-helper.js';
-export type { DriverClasses } from './factory-helper.js';
+export {
+  registerFactories,
+  type ApplicationConfig
+} from './config-based-factory.js';
+export {
+  AIService,
+  type SelectionOptions
+} from './ai-service.js';
 export type {
   DriverProvider,
   DriverCapability,
-  ModelDefinition,
-  DriverConfig,
-  RegistryConfig,
-  DriverSelectionCriteria,
-  DriverSelectionResult,
-  IDriverRegistry,
+  ModelSpec,
   DriverFactory
 } from './types.js';

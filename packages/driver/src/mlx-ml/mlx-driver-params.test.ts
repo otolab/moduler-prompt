@@ -7,7 +7,7 @@
 
 import { describe, it, expect, beforeAll, afterAll } from 'vitest';
 import { MlxDriver } from './mlx-driver.js';
-import type { ChatMessage, CompiledPrompt } from '@moduler-prompt/core';
+import type { CompiledPrompt } from '@moduler-prompt/core';
 import { platform } from 'os';
 
 // MLXはApple Silicon専用なので、他のプラットフォームではスキップ
@@ -34,12 +34,21 @@ describe.skipIf(!isMacOS)('MLX Driver Parameters Integration', () => {
       throw new Error('Driver not initialized');
     }
 
-    const messages: ChatMessage[] = [
-      { role: 'user', content: 'Say exactly: TEST' }
-    ];
+    // MessageElementsを含むCompiledPromptを作成
+    const compiledPrompt: CompiledPrompt = {
+      instructions: [],
+      data: [
+        {
+          type: 'message',
+          role: 'user',
+          content: 'Say exactly: TEST'
+        }
+      ],
+      output: []
+    };
 
     // temperatureパラメータを渡してエラーが出ないことを確認
-    const result = await driver.queryWithMessages(messages, {
+    const result = await driver.query(compiledPrompt, {
       maxTokens: 5,
       temperature: 0.1  // 低い温度で決定的な出力に近づける
     });
@@ -55,12 +64,20 @@ describe.skipIf(!isMacOS)('MLX Driver Parameters Integration', () => {
       throw new Error('Driver not initialized');
     }
 
-    const messages: ChatMessage[] = [
-      { role: 'user', content: 'Hi' }
-    ];
+    const compiledPrompt: CompiledPrompt = {
+      instructions: [],
+      data: [
+        {
+          type: 'message',
+          role: 'user',
+          content: 'Hi'
+        }
+      ],
+      output: []
+    };
 
     // 複数のパラメータを同時に渡す
-    const result = await driver.queryWithMessages(messages, {
+    const result = await driver.query(compiledPrompt, {
       maxTokens: 10,
       temperature: 0.5,
       topP: 0.9
@@ -98,12 +115,20 @@ describe.skipIf(!isMacOS)('MLX Driver Parameters Integration', () => {
       throw new Error('Driver not initialized');
     }
 
-    const messages: ChatMessage[] = [
-      { role: 'user', content: '1+1=' }
-    ];
+    const compiledPrompt: CompiledPrompt = {
+      instructions: [],
+      data: [
+        {
+          type: 'message',
+          role: 'user',
+          content: '1+1='
+        }
+      ],
+      output: []
+    };
 
     // temperature=0で決定的な出力
-    const result = await driver.queryWithMessages(messages, {
+    const result = await driver.query(compiledPrompt, {
       maxTokens: 3,
       temperature: 0
     });

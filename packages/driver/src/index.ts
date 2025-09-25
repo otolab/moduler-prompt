@@ -71,19 +71,18 @@ export {
   defaultFormatterTexts
 } from './formatter/converter.js';
 
-// Driver Registry exports
+// Driver Registry and AI Service exports
 export {
+  AIService,
   DriverRegistry,
-  registerDriverFactories
+  registerFactories,
+  type SelectionOptions,
+  type ApplicationConfig
 } from './driver-registry/index.js';
 
 export type {
   DriverProvider,
   DriverCapability,
-  DriverConfig as RegistryDriverConfig,
-  RegistryConfig,
-  DriverSelectionCriteria,
-  DriverSelectionResult,
-  IDriverRegistry,
+  ModelSpec,
   DriverFactory
-} from './driver-registry/types.js';
+} from './driver-registry/index.js';

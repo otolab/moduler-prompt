@@ -3,31 +3,34 @@
  * ドライバレジストリの実装
  */
 
-import { readFile } from 'fs/promises';
-import * as yaml from 'js-yaml';
 import type { AIDriver } from '../types.js';
-import * as Drivers from '../index.js';
 import { Logger, LogLevel } from '@moduler-prompt/utils';
+
+// 標準ドライバーを個別インポート
+import { MlxDriver } from '../mlx-ml/mlx-driver.js';
+import { OpenAIDriver } from '../openai/openai-driver.js';
+import { AnthropicDriver } from '../anthropic/anthropic-driver.js';
+import { VertexAIDriver } from '../vertexai/vertexai-driver.js';
+import { OllamaDriver } from '../ollama/ollama-driver.js';
+import { EchoDriver } from '../echo-driver.js';
+import { TestDriver } from '../test-driver.js';
 
 import type {
   DriverProvider,
   DriverCapability,
-  DriverConfig,
-  RegistryConfig,
+  ModelSpec,
   DriverSelectionCriteria,
   DriverSelectionResult,
   IDriverRegistry,
   DriverFactory
 } from './types.js';
-import { registerDriverFactories } from './factory-helper.js';
+import { registerStandardDriverFactories } from './factory-helper.js';
 
 /**
  * ドライバレジストリクラス
  */
 export class DriverRegistry implements IDriverRegistry {
-  private drivers: Map<string, DriverConfig> = new Map();
-  private defaultDriverId?: string;
-  private globalConfig?: RegistryConfig['global'];
+  private models: Map<string, ModelSpec> = new Map();
   private factories: Map<DriverProvider, DriverFactory> = new Map();
   private logger: Logger;
 
@@ -44,8 +47,16 @@ export class DriverRegistry implements IDriverRegistry {
    * デフォルトのドライバファクトリを登録
    */
   private registerDefaultFactories(): void {
-    // ヘルパー関数を使用してデフォルトドライバを登録
-    registerDriverFactories(this, Drivers);
+    // 標準ドライバーを登録
+    registerStandardDriverFactories(this, {
+      MlxDriver,
+      OpenAIDriver,
+      AnthropicDriver,
+      VertexAIDriver,
+      OllamaDriver,
+      EchoDriver,
+      TestDriver
+    });
   }
 
   /**
@@ -56,81 +67,65 @@ export class DriverRegistry implements IDriverRegistry {
   }
 
   /**
-   * YAMLファイルから設定を読み込む
+   * ファクトリを取得
    */
-  async loadConfig(configPath: string): Promise<void> {
-    try {
-      const content = await readFile(configPath, 'utf-8');
-      const config = yaml.load(content) as RegistryConfig;
-      
-      // バージョンチェック
-      if (!config.version) {
-        throw new Error('Configuration version is required');
-      }
-
-      // グローバル設定を保存
-      this.globalConfig = config.global;
-      this.defaultDriverId = config.defaultDriver;
-
-      // ドライバを登録
-      for (const driverConfig of config.drivers) {
-        this.registerDriver(driverConfig);
-      }
-    } catch (error) {
-      throw new Error(`Failed to load configuration: ${error}`);
-    }
+  getFactory(provider: DriverProvider): DriverFactory | undefined {
+    return this.factories.get(provider);
   }
 
+
   /**
-   * ドライバを登録
+   * モデルを登録
    */
-  registerDriver(config: DriverConfig): void {
+  registerModel(spec: ModelSpec): void {
     // デフォルト値を設定
-    if (config.model.enabled === undefined) {
-      config.model.enabled = true;
+    if (spec.enabled === undefined) {
+      spec.enabled = true;
     }
-    if (config.model.priority === undefined) {
-      config.model.priority = 0;
+    if (spec.priority === undefined) {
+      spec.priority = 0;
     }
 
-    this.drivers.set(config.id, config);
+    const key = `${spec.provider}:${spec.model}`;
+    this.models.set(key, spec);
   }
 
+
   /**
-   * 条件に基づいてドライバを選択
+   * 条件に基づいてモデルを選択
    */
-  selectDriver(criteria: DriverSelectionCriteria): DriverSelectionResult | null {
+  selectModel(criteria: DriverSelectionCriteria): DriverSelectionResult | null {
     const candidates: DriverSelectionResult[] = [];
 
-    for (const [, config] of this.drivers) {
-      // 無効なドライバはスキップ
-      if (!config.model.enabled) {
+    for (const [, spec] of this.models) {
+      // 無効なモデルはスキップ
+      if (!spec.enabled) {
         continue;
       }
 
       // プロバイダーフィルタ
-      if (criteria.providers && !criteria.providers.includes(config.model.provider)) {
+      if (criteria.providers && !criteria.providers.includes(spec.provider)) {
         continue;
       }
-      if (criteria.excludeProviders?.includes(config.model.provider)) {
+      if (criteria.excludeProviders?.includes(spec.provider)) {
         continue;
       }
 
       // トークン数チェック
-      if (criteria.minInputTokens && 
-          config.model.maxInputTokens && 
-          config.model.maxInputTokens < criteria.minInputTokens) {
+      if (criteria.minInputTokens &&
+          spec.maxInputTokens &&
+          spec.maxInputTokens < criteria.minInputTokens) {
         continue;
       }
-      if (criteria.minOutputTokens && 
-          config.model.maxOutputTokens && 
-          config.model.maxOutputTokens < criteria.minOutputTokens) {
+      if (criteria.minOutputTokens &&
+          spec.maxOutputTokens &&
+          spec.maxOutputTokens < criteria.minOutputTokens) {
         continue;
       }
 
       // コストチェック
       if (criteria.maxCost) {
-        const cost = config.model.cost;
+        const cost = spec.cost;
         if (cost) {
           if (criteria.maxCost.input && cost.input > criteria.maxCost.input) {
             continue;
@@ -142,9 +137,9 @@ export class DriverRegistry implements IDriverRegistry {
       }
 
       // 能力チェックとスコア計算
-      let score = config.model.priority || 0;
+      let score = spec.priority || 0;
       const warnings: string[] = [];
-      const capabilities = config.model.capabilities;
+      const capabilities = spec.capabilities;
 
       // 必須能力チェック
       if (criteria.requiredCapabilities) {
@@ -173,7 +168,7 @@ export class DriverRegistry implements IDriverRegistry {
           cap => capabilities.includes(cap)
         );
         score += matched.length * 5;
-        
+
         const missing = criteria.preferredCapabilities.filter(
           cap => !capabilities.includes(cap)
         );
@@ -192,7 +187,7 @@ export class DriverRegistry implements IDriverRegistry {
 
       // 選択理由を生成
       const reasons: string[] = [];
-      if (config.model.provider === 'mlx' && criteria.preferLocal) {
+      if (spec.provider === 'mlx' && criteria.preferLocal) {
         reasons.push('Local execution preferred');
       }
       if (capabilities.includes('fast') && criteria.preferFast) {
@@ -201,12 +196,12 @@ export class DriverRegistry implements IDriverRegistry {
       if (criteria.requiredCapabilities?.length) {
         reasons.push(`Meets all required capabilities: ${criteria.requiredCapabilities.join(', ')}`);
       }
-      if (config.model.priority && config.model.priority > 0) {
-        reasons.push(`High priority (${config.model.priority})`);
+      if (spec.priority && spec.priority > 0) {
+        reasons.push(`High priority (${spec.priority})`);
       }
 
       candidates.push({
-        driver: config,
+        model: spec,
         reason: reasons.join('; ') || 'Default selection',
         score,
         warnings: warnings.length > 0 ? warnings : undefined
@@ -220,45 +215,15 @@ export class DriverRegistry implements IDriverRegistry {
   }
 
   /**
-   * IDでドライバを取得
+   * モデル仕様からドライバインスタンスを作成
    */
-  getDriver(id: string): DriverConfig | undefined {
-    return this.drivers.get(id);
-  }
-
-  /**
-   * すべてのドライバを取得
-   */
-  getAllDrivers(): DriverConfig[] {
-    return Array.from(this.drivers.values());
-  }
-
-  /**
-   * ドライバインスタンスを作成
-   */
-  async createDriver(config: DriverConfig): Promise<AIDriver> {
-    const factory = this.factories.get(config.model.provider);
+  async createDriver(spec: ModelSpec): Promise<AIDriver> {
+    const factory = this.factories.get(spec.provider);
     if (!factory) {
-      throw new Error(`No factory registered for provider: ${config.model.provider}`);
+      throw new Error(`No factory registered for provider: ${spec.provider}`);
     }
-    
-    return await factory(config);
-  }
 
-  /**
-   * デフォルトドライバを取得
-   */
-  getDefaultDriver(): DriverConfig | undefined {
-    if (!this.defaultDriverId) {
-      // デフォルトが設定されていない場合は最初の有効なドライバを返す
-      for (const config of this.drivers.values()) {
-        if (config.model.enabled) {
-          return config;
-        }
-      }
-      return undefined;
-    }
-    return this.drivers.get(this.defaultDriverId);
+    return await factory(spec);
   }
 
   /**
@@ -278,7 +243,7 @@ export class DriverRegistry implements IDriverRegistry {
       ...options
     };
 
-    const result = this.selectDriver(criteria);
+    const result = this.selectModel(criteria);
     if (!result) {
       return null;
     }
@@ -288,11 +253,11 @@ export class DriverRegistry implements IDriverRegistry {
       this.logger.warn('Driver selection warnings:', result.warnings);
     }
 
-    this.logger.info(`Selected driver: ${result.driver.name} (${result.driver.id})`);
+    this.logger.info(`Selected model: ${result.model.model} (${result.model.provider})`);
     this.logger.debug(`Reason: ${result.reason}`);
 
     try {
-      return await this.createDriver(result.driver);
+      return await this.createDriver(result.model);
     } catch (error) {
       this.logger.error(`Failed to create driver: ${error}`);
       return null;
