@@ -5,6 +5,15 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [Unreleased]
+
+### Changed
+- **Driver Package (Breaking Change)**
+  - Section/SubSection要素の自動箇条書き変換を削除
+  - Section/SubSectionのitemsは自動的に箇条書きフォーマット（`- `プレフィックス）が付加されなくなりました
+  - 箇条書きが必要な場合は、items内で明示的に`- `を付ける必要があります
+  - 例: `items: ['- item1', '- item2']`
+
 ## [0.1.2] - 2025-09-10
 
 ### Fixed

@@ -203,26 +203,24 @@ export class DefaultFormatter implements ElementFormatter {
   private formatSection(element: SectionElement): string {
     const { lineBreak } = this.options;
     const lines: string[] = [];
-    
+
     lines.push(`## ${element.title}`);
     lines.push('');
-    
-    // Format items
+
+    // Format items without automatic bullet points
     for (const item of element.items) {
       if (typeof item === 'string') {
-        lines.push(`- ${item}`);
+        lines.push(item);
       } else if (typeof item === 'function') {
         // Skip DynamicContent functions - they should be resolved before formatting
         continue;
       } else {
         // Subsection element
         const formatted = this.format(item);
-        lines.push(...formatted.split(lineBreak).map(line => 
-          line.startsWith('#') ? line : `  ${line}`
-        ));
+        lines.push(formatted);
       }
     }
-    
+
     return lines.join(lineBreak);
   }
   
@@ -253,14 +251,14 @@ export class DefaultFormatter implements ElementFormatter {
     lines.push(`### ${element.title}`);
     lines.push('');
 
-    // Format items as bullet list
+    // Format items without automatic bullet points
     for (const item of element.items) {
-      lines.push(`- ${item}`);
+      lines.push(item);
     }
-    
+
     // Add subsection end marker if provided
     if (markers.subsectionEnd) lines.push(markers.subsectionEnd);
-    
+
     return lines.join(lineBreak);
   }
 }

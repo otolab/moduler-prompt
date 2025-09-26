@@ -34,7 +34,7 @@ describe('EchoDriver', () => {
       expect(result.content).toContain('# Instructions');
       expect(result.content).toContain('You are a helpful assistant.');
       expect(result.content).toContain('## Guidelines');
-      expect(result.content).toContain('- Be concise');
+      expect(result.content).toContain('Be concise');
       expect(result.content).toContain('# Data');
       expect(result.content).toContain('User input data');
       expect(result.content).toContain('### Reference');
