@@ -355,5 +355,180 @@ describe('EchoDriver', () => {
       // JSON extraction should find the JSON in the CONTENT section
       expect(result.structuredOutput).toBeDefined();
     });
+
+    describe('edge cases and performance', () => {
+      it('handles structured outputs with custom formatter options', async () => {
+        const driver = new EchoDriver({
+          format: 'raw',
+          formatterOptions: {
+            preamble: 'CUSTOM PREAMBLE',
+            markers: {
+              materialStart: '<<<',
+              materialEnd: '>>>'
+            }
+          }
+        });
+
+        const promptWithSchema: CompiledPrompt = {
+          ...samplePrompt,
+          metadata: {
+            outputSchema: { type: 'object' }
+          }
+        };
+
+        const result = await driver.query(promptWithSchema);
+        // Raw format still returns JSON regardless of formatter options
+        expect(result.structuredOutput).toBeDefined();
+        expect(result.structuredOutput).toHaveProperty('instructions');
+      });
+
+      it('combines simulateUsage with structured outputs', async () => {
+        const driver = new EchoDriver({
+          format: 'raw',
+          simulateUsage: true
+        });
+
+        const promptWithSchema: CompiledPrompt = {
+          ...samplePrompt,
+          metadata: {
+            outputSchema: { type: 'object' }
+          }
+        };
+
+        const result = await driver.query(promptWithSchema);
+        expect(result.structuredOutput).toBeDefined();
+        expect(result.usage).toBeDefined();
+        expect(result.usage?.promptTokens).toBeGreaterThan(0);
+      });
+
+      it('handles empty prompt gracefully', async () => {
+        const driver = new EchoDriver({ format: 'raw' });
+        const emptyPrompt: CompiledPrompt = {
+          instructions: [],
+          data: [],
+          output: [],
+          metadata: {
+            outputSchema: { type: 'object' }
+          }
+        };
+
+        const result = await driver.query(emptyPrompt);
+        // Raw format returns the entire CompiledPrompt as JSON, including metadata
+        expect(result.structuredOutput).toHaveProperty('instructions');
+        expect(result.structuredOutput).toHaveProperty('data');
+        expect(result.structuredOutput).toHaveProperty('output');
+        expect((result.structuredOutput as any).instructions).toEqual([]);
+        expect((result.structuredOutput as any).data).toEqual([]);
+        expect((result.structuredOutput as any).output).toEqual([]);
+      });
+
+      it('handles very large prompts', async () => {
+        const largeArray = Array(1000).fill(null).map((_, i) => ({
+          type: 'text' as const,
+          content: `Item ${i}: ${'x'.repeat(100)}`
+        }));
+
+        const driver = new EchoDriver({ format: 'raw' });
+        const largePrompt: CompiledPrompt = {
+          instructions: largeArray,
+          data: [],
+          output: [],
+          metadata: {
+            outputSchema: { type: 'object' }
+          }
+        };
+
+        const result = await driver.query(largePrompt);
+        expect(result.structuredOutput).toBeDefined();
+        expect((result.structuredOutput as any).instructions).toHaveLength(1000);
+      });
+
+      it('handles different stream chunk sizes', async () => {
+        const driver1 = new EchoDriver({
+          format: 'both',
+          streamChunkSize: 10
+        });
+        const driver2 = new EchoDriver({
+          format: 'both',
+          streamChunkSize: 1000
+        });
+
+        const promptWithSchema: CompiledPrompt = {
+          ...samplePrompt,
+          metadata: {
+            outputSchema: { type: 'object' }
+          }
+        };
+
+        const { stream: stream1, result: result1 } = await driver1.streamQuery(promptWithSchema);
+        const { stream: stream2, result: result2 } = await driver2.streamQuery(promptWithSchema);
+
+        const chunks1: string[] = [];
+        const chunks2: string[] = [];
+
+        for await (const chunk of stream1) {
+          chunks1.push(chunk);
+        }
+        for await (const chunk of stream2) {
+          chunks2.push(chunk);
+        }
+
+        // Different chunk sizes should produce different chunk counts
+        expect(chunks1.length).toBeGreaterThan(chunks2.length);
+
+        // But final results should be the same
+        const final1 = await result1;
+        const final2 = await result2;
+        expect(final1.structuredOutput).toEqual(final2.structuredOutput);
+      });
+
+      it('handles complex nested prompt structures', async () => {
+        const driver = new EchoDriver({ format: 'raw' });
+        const complexPrompt: CompiledPrompt = {
+          instructions: [
+            { type: 'text', content: 'Text instruction' },
+            {
+              type: 'section',
+              title: 'Section 1',
+              items: [
+                'Item 1',
+                {
+                  type: 'subsection',
+                  title: 'Subsection',
+                  items: ['Sub item 1', 'Sub item 2']
+                }
+              ]
+            }
+          ],
+          data: [
+            {
+              type: 'material',
+              id: 'mat-1',
+              title: 'Material',
+              content: 'Content'
+            },
+            {
+              type: 'chunk',
+              content: 'Chunk data',
+              partOf: 'dataset',
+              index: 0
+            }
+          ],
+          output: [
+            { type: 'text', content: 'Output instruction' }
+          ],
+          metadata: {
+            outputSchema: { type: 'object' }
+          }
+        };
+
+        const result = await driver.query(complexPrompt);
+        expect(result.structuredOutput).toBeDefined();
+        const output = result.structuredOutput as any;
+        expect(output.instructions).toHaveLength(2);
+        expect(output.data).toHaveLength(2);
+        expect(output.output).toHaveLength(1);
+      });
+    });
   });
 });
