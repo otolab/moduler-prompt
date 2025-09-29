@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest';
 import { compile } from './compile.js';
-import type { PromptModule, CompiledPrompt } from './types.js';
+import type { PromptModule } from './types.js';
 
 describe('compile with static Elements', () => {
   describe('JSONElement', () => {
