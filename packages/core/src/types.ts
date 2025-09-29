@@ -45,7 +45,6 @@ export interface ChunkElement {
 export interface SectionElement<TContext = any> {
   type: 'section';
   category: SectionType;  // 配置先の大セクション（instructions/data/output）
-  content: string;
   title: string;
   items: (string | SubSectionElement | DynamicContent<TContext>)[];
 }
@@ -53,7 +52,6 @@ export interface SectionElement<TContext = any> {
 // サブセクション要素（第2階層）
 export interface SubSectionElement<TContext = any> {
   type: 'subsection';
-  content: string;
   title: string;
   items: (string | SimpleDynamicContent<TContext>)[];
 }

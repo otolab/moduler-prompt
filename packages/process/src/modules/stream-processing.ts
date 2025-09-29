@@ -93,7 +93,6 @@ export const streamProcessing: PromptModule<StreamProcessingContext> = {
     {
       type: 'subsection',
       title: 'State Management',
-      content: '',
       items: [
         'The Current State represents cumulative results from all previous iterations.',
         'Each iteration processes only a portion of the entire Source Text.',

@@ -42,6 +42,8 @@ function mergeTwo<T1 = any, T2 = any>(
     }
   }
 
+  // >>> schemaをマージします。単純に名前で浅いマージを行えば十分です。深いマージをしないことはコメント・ドキュメントに記載してください。
+
   return result;
 }
 

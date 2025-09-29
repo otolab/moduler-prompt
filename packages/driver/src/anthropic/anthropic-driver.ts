@@ -76,14 +76,12 @@ export class AnthropicDriver implements AIDriver {
           } else if (el.type === 'section' || el.type === 'subsection') {
             // Process section content
             if (el.title) content.push(`## ${el.title}`);
-            if (el.content) content.push(el.content);
             if (el.items) {
               for (const item of el.items) {
                 if (typeof item === 'string') {
                   content.push(item);
                 } else if (typeof item === 'object' && item !== null && 'type' in item && item.type === 'subsection') {
                   if (item.title) content.push(`### ${item.title}`);
-                  if (item.content) content.push(item.content);
                   if ('items' in item && item.items) {
                     content.push(...item.items.filter((i) => typeof i === 'string'));
                   }

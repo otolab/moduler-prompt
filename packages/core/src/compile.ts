@@ -127,7 +127,6 @@ function compileSectionToElements<TContext>(
     const sectionElement: SectionElement = {
       type: 'section',
       category,
-      content: '',
       title,
       items: [...plainItems, ...subsections]
     };

@@ -253,7 +253,10 @@ export class DefaultFormatter implements ElementFormatter {
 
     // Format items without automatic bullet points
     for (const item of element.items) {
-      lines.push(item);
+      if (typeof item === 'string') {
+        lines.push(item);
+      }
+      // SimpleDynamicContent functions should be resolved before formatting
     }
 
     // Add subsection end marker if provided
