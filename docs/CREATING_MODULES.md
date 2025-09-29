@@ -80,9 +80,20 @@ const myModule: PromptModule<MyContext> = {
       type: 'subsection',
       title: 'Processing Steps',
       items: [
-        'Input Chunksのデータを検証',
-        (ctx) => ctx.options?.verbose ? 'デバッグ情報を出力' : null,
-        '処理結果を生成'
+        '1. Input Chunksのデータを検証',
+        (ctx) => ctx.options?.verbose ? '2. デバッグ情報を出力' : null,
+        '3. 処理結果を生成'
+      ]
+    },
+    // 箇条書きが必要な場合は明示的に記述
+    {
+      type: 'subsection',
+      title: 'Guidelines',
+      items: [
+        '以下の観点で判定：',
+        '- リクエストの種類',
+        '- 必要なアクション',
+        '- 発行すべきイベント'
       ]
     }
   ]
@@ -119,7 +130,7 @@ type Element =
   | MaterialElement    // 資料（引用・参照文書）: { type: 'material', id: string, title: string, content: string }
   | ChunkElement      // チャンク: { type: 'chunk', content: string, partOf: string, index?: number }
   | JSONElement       // JSONスキーマ・構造化データ: { type: 'json', content: object | string }
-  | SectionElement    // セクション: { type: 'section', title: string, content: string, items: string[] }
+  | SectionElement    // セクション: { type: 'section', title: string, items: (string | SubSectionElement)[] }
   | SubSectionElement // サブセクション: { type: 'subsection', title: string, items: string[] }
 ```
 
