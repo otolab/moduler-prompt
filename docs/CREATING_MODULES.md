@@ -22,6 +22,24 @@ interface PromptModule<TContext = any> {
 }
 ```
 
+## SectionContent型（v0.2.0で拡張）
+
+標準セクションに配置できる要素の型：
+
+```typescript
+// v0.2.0以降
+type SectionContent<TContext> = (
+  | string                        // プレーンテキスト
+  | Element                       // 任意のElement（静的配置）
+  | DynamicContent<TContext>      // 動的生成関数
+)[];
+```
+
+これにより、以下のような柔軟な記述が可能：
+- **文字列**: 単純なテキスト
+- **Element**: TextElement、MessageElement、MaterialElement、ChunkElement、JSONElement、SubSectionElementを直接配置
+- **DynamicContent**: コンテキストに基づく動的生成
+
 ## モジュール作成の手順
 
 ### 1. コンテキスト型の定義
@@ -80,9 +98,20 @@ const myModule: PromptModule<MyContext> = {
       type: 'subsection',
       title: 'Processing Steps',
       items: [
-        'Input Chunksのデータを検証',
-        (ctx) => ctx.options?.verbose ? 'デバッグ情報を出力' : null,
-        '処理結果を生成'
+        '1. Input Chunksのデータを検証',
+        (ctx) => ctx.options?.verbose ? '2. デバッグ情報を出力' : null,
+        '3. 処理結果を生成'
+      ]
+    },
+    // 箇条書きが必要な場合は明示的に記述
+    {
+      type: 'subsection',
+      title: 'Guidelines',
+      items: [
+        '以下の観点で判定：',
+        '- リクエストの種類',
+        '- 必要なアクション',
+        '- 発行すべきイベント'
       ]
     }
   ]
@@ -119,7 +148,7 @@ type Element =
   | MaterialElement    // 資料（引用・参照文書）: { type: 'material', id: string, title: string, content: string }
   | ChunkElement      // チャンク: { type: 'chunk', content: string, partOf: string, index?: number }
   | JSONElement       // JSONスキーマ・構造化データ: { type: 'json', content: object | string }
-  | SectionElement    // セクション: { type: 'section', title: string, content: string, items: string[] }
+  | SectionElement    // セクション: { type: 'section', title: string, items: (string | SubSectionElement)[] }
   | SubSectionElement // サブセクション: { type: 'subsection', title: string, items: string[] }
 ```
 
@@ -175,17 +204,25 @@ const module: PromptModule<{ data: any[] }> = {
     // 文字列を返す
     (ctx) => ctx.data.length > 0 ? 'データあり' : 'データなし'
   ],
-  
+
   // シンプルな入力データはinputsセクションへ
   inputs: [
     (ctx) => ctx.data ? JSON.stringify(ctx.data) : null
   ],
-  
-  // MaterialElementを返す
+
+  // MaterialElementを直接配置（v0.2.0以降）
   materials: [
+    // 静的なMaterialElement
+    {
+      type: 'material',
+      id: 'static-doc',
+      title: 'API Documentation',
+      content: 'APIドキュメントの内容'
+    },
+    // 動的なMaterialElement
     (ctx) => {
       if (!ctx.data || ctx.data.length === 0) return null;
-      
+
       // MaterialElement型のオブジェクトを返す
       return {
         type: 'material' as const,
@@ -215,10 +252,11 @@ const module: PromptModule<{ data: any[] }> = {
     })
   ],
 
-  // JSONElementを使った構造化出力の定義
+  // JSONElementを使った構造化出力の定義（v0.2.0以降）
   schema: [
-    (ctx) => ({
-      type: 'json' as const,
+    // 静的なJSONElement（contextを使わない場合）
+    {
+      type: 'json',
       content: {
         type: 'object',
         properties: {
@@ -230,7 +268,18 @@ const module: PromptModule<{ data: any[] }> = {
         },
         required: ['result', 'items']
       }
-    })
+    },
+    // 動的なJSONElement（contextに基づく場合）
+    (ctx) => ctx.needsDetailedSchema ? {
+      type: 'json' as const,
+      content: {
+        type: 'object',
+        properties: {
+          result: { type: 'string' },
+          details: { type: 'object' }
+        }
+      }
+    } : null
   ]
 };
 ```
@@ -260,10 +309,14 @@ const module: PromptModule<{ data: any[] }> = {
 
 ### Output（出力）セクション
 
+Output大セクションは以下の2つの標準セクションで構成されます：
+
 | セクション | 用途 |
 |---------|------|
 | cue | 出力開始の合図 |
-| schema | 出力形式の定義 |
+| schema | 出力形式の定義（JSONElement等） |
+
+**注意**: `outputs`という標準セクションは存在しません。Output大セクションは`cue`と`schema`のみで構成されます。
 
 ## モジュールの合成
 
@@ -286,11 +339,52 @@ const extensionModule: PromptModule = {
 const combined = merge(baseModule, extensionModule);
 ```
 
+### schemaセクションのマージ例
+
+```typescript
+// 最初のモジュール（schemaなし）
+const stateModule: PromptModule = {
+  objective: ['状態を管理する'],
+  state: ['現在の状態']
+};
+
+// 2番目のモジュール（schemaあり）
+const analyzeModule: PromptModule = {
+  instructions: ['分析を実行'],
+  schema: [
+    'JSON形式で出力:',
+    {
+      type: 'json',
+      content: {
+        type: 'object',
+        properties: {
+          result: { type: 'string' },
+          score: { type: 'number' }
+        }
+      }
+    }
+  ]
+};
+
+// マージ結果
+const merged = merge(stateModule, analyzeModule);
+// merged.schemaには analyzeModule.schema が含まれる
+// compile時に自動的に metadata.outputSchema が設定される
+```
+
 ### 合成時の動作
 
-- 同名セクションの要素は配列として結合
-- createContextは各モジュールの結果をマージ
-- 重複は許容される（意図的な繰り返しをサポート）
+- **セクション要素**: 同名セクションの要素は配列として結合
+  - 例: `objective: ['目的1']` + `objective: ['目的2']` → `objective: ['目的1', '目的2']`
+- **createContext**: 同名プロパティは後の値で上書き
+  - 例: `{ value: 1 }` + `{ value: 2 }` → `{ value: 2 }`
+- **サブセクション**: 同名のサブセクションはitemsが結合される
+- **重複**: 意図的な繰り返しをサポート（セパレータ、強調など）
+- **schema**: 他の標準セクションと同様にマージ
+  - 各モジュールのschema要素は順番に結合される
+  - JSONElementを含む全てのElement型が保持される
+  - 最初のJSONElementがoutputSchemaとして使用される
+  - 例: module1にschemaがなくても、module2のschemaは正しくマージされる
 
 ## ベストプラクティス
 

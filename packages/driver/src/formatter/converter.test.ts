@@ -111,7 +111,7 @@ describe('formatPrompt', () => {
     
     expect(result).toContain('# Instructions');
     expect(result).toContain('## Objective');
-    expect(result).toContain('- Process the input');
+    expect(result).toContain('Process the input');
     expect(result).toContain('# Data');
     expect(result).toContain('### Context');
     expect(result).toContain('# Output');
@@ -323,7 +323,7 @@ describe('formatPromptAsMessages', () => {
     });
     expect(messages[1]).toEqual({
       role: 'system',
-      content: '## Guidelines\n\n- Do this\n- Then that'
+      content: '## Guidelines\n\nDo this\nThen that'
     });
   });
   

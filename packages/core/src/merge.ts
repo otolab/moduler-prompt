@@ -3,7 +3,8 @@ import type {
   SectionContent,
   SubSectionElement,
   DynamicContent,
-  StandardSectionName
+  StandardSectionName,
+  Element
 } from './types.js';
 import { STANDARD_SECTIONS } from './types.js';
 
@@ -35,12 +36,16 @@ function mergeTwo<T1 = any, T2 = any>(
 
   for (const sectionName of sectionNames) {
     const sections = [module1[sectionName], module2[sectionName]].filter(s => s !== undefined);
-    
+
     if (sections.length > 0) {
       // 型の不一致を解決: 異なるContext型を統合
       result[sectionName] = mergeSectionContents<T1 & T2>(...(sections as SectionContent<T1 & T2>[]));
     }
   }
+
+  // schemaセクションは標準セクションとして自動的にマージされる
+  // Note: schemaは他の標準セクションと同様にmergeSectionContentsでマージされます
+  // JSONElement内のスキーマオブジェクトの深いマージは行いません（浅いマージで十分）
 
   return result;
 }
@@ -95,7 +100,7 @@ function mergeSectionContents<TContext = any>(
 ): SectionContent<TContext> {
   const merged: SectionContent<TContext> = [];
   const subsections = new Map<string, SubSectionElement>();
-  const plainItems: (string | DynamicContent<TContext>)[] = [];
+  const plainItems: (string | Element | DynamicContent<TContext>)[] = [];
 
   // 全てのコンテンツを分類
   for (const content of contents) {
@@ -115,16 +120,22 @@ function mergeSectionContents<TContext = any>(
       } else if (typeof item === 'string') {
         // 文字列はそのまま保持
         plainItems.push(item);
-      } else if (item.type === 'subsection') {
-        // 同名のサブセクションをマージ
-        const existing = subsections.get(item.title);
-        if (existing) {
-          subsections.set(item.title, {
-            ...item,
-            items: [...existing.items, ...item.items]
-          });
+      } else if (item && typeof item === 'object' && 'type' in item) {
+        // Element型のオブジェクト
+        if (item.type === 'subsection') {
+          // 同名のサブセクションをマージ
+          const existing = subsections.get(item.title);
+          if (existing) {
+            subsections.set(item.title, {
+              ...item,
+              items: [...existing.items, ...item.items]
+            });
+          } else {
+            subsections.set(item.title, item);
+          }
         } else {
-          subsections.set(item.title, item);
+          // その他のElement（JSONElement、MaterialElement等）はそのまま保持
+          plainItems.push(item);
         }
       }
     }

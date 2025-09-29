@@ -169,19 +169,23 @@ describe('DefaultFormatter', () => {
   });
   
   describe('format section elements', () => {
-    it('should format section with string items as bullet list', () => {
+    it('should format section with string items without automatic bullets', () => {
       const formatter = new DefaultFormatter();
       const element: SectionElement = {
         type: 'section',
         title: 'Instructions',
         items: ['Do this', 'Then that', 'Finally this']
       };
-      
+
       const result = formatter.format(element);
       expect(result).toContain('## Instructions');
-      expect(result).toContain('- Do this');
-      expect(result).toContain('- Then that');
-      expect(result).toContain('- Finally this');
+      expect(result).toContain('Do this');
+      expect(result).toContain('Then that');
+      expect(result).toContain('Finally this');
+      // Should NOT contain automatic bullet points
+      expect(result).not.toContain('- Do this');
+      expect(result).not.toContain('- Then that');
+      expect(result).not.toContain('- Finally this');
     });
     
     it('should format section with subsection', () => {
@@ -196,30 +200,59 @@ describe('DefaultFormatter', () => {
         title: 'Main Section',
         items: ['Item 1', subsection]
       };
-      
+
       const result = formatter.format(element);
       expect(result).toContain('## Main Section');
-      expect(result).toContain('- Item 1');
+      expect(result).toContain('Item 1');
       expect(result).toContain('### Details');
-      expect(result).toContain('- Detail 1');
-      expect(result).toContain('- Detail 2');
+      expect(result).toContain('Detail 1');
+      expect(result).toContain('Detail 2');
+      // Should NOT contain automatic bullet points
+      expect(result).not.toContain('- Item 1');
+      expect(result).not.toContain('- Detail 1');
+      expect(result).not.toContain('- Detail 2');
     });
   });
   
   describe('format subsection elements', () => {
-    it('should format subsection as nested list', () => {
+    it('should format subsection without automatic bullets', () => {
       const formatter = new DefaultFormatter();
       const element: SubSectionElement = {
         type: 'subsection',
         title: 'Sub Tasks',
         items: ['Task A', 'Task B', 'Task C']
       };
-      
+
       const result = formatter.format(element);
       expect(result).toContain('### Sub Tasks');
-      expect(result).toContain('- Task A');
-      expect(result).toContain('- Task B');
-      expect(result).toContain('- Task C');
+      expect(result).toContain('Task A');
+      expect(result).toContain('Task B');
+      expect(result).toContain('Task C');
+      // Should NOT contain automatic bullet points
+      expect(result).not.toContain('- Task A');
+      expect(result).not.toContain('- Task B');
+      expect(result).not.toContain('- Task C');
+    });
+
+    it('should format user-provided bullet points as-is', () => {
+      const formatter = new DefaultFormatter();
+      const element: SubSectionElement = {
+        type: 'subsection',
+        title: 'Guidelines',
+        items: [
+          '以下の観点で判定：',
+          '- リクエストの種類（issue/question/action等）',
+          '- 必要なアクション',
+          '- 発行すべきイベント'
+        ]
+      };
+
+      const result = formatter.format(element);
+      expect(result).toContain('### Guidelines');
+      expect(result).toContain('以下の観点で判定：');
+      expect(result).toContain('- リクエストの種類（issue/question/action等）');
+      expect(result).toContain('- 必要なアクション');
+      expect(result).toContain('- 発行すべきイベント');
     });
   });
 });

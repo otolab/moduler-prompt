@@ -71,8 +71,8 @@ describe.skipIf(shouldSkipMLX)('MLXDriver Structured Outputs', () => {
       console.log('MLX Response:', result.content);
 
       // Check if structured outputs were extracted
-      if (result.structuredOutput && result.structuredOutput.length > 0) {
-        const data = result.structuredOutput[0] as PersonData;
+      if (result.structuredOutput) {
+        const data = result.structuredOutput as PersonData;
         expect(data).toHaveProperty('name');
         expect(data).toHaveProperty('age');
         expect(typeof data.name).toBe('string');
@@ -134,8 +134,8 @@ describe.skipIf(shouldSkipMLX)('MLXDriver Structured Outputs', () => {
       console.log('MLX Response with markdown:', result.content);
 
       // Check if structured outputs were extracted
-      if (result.structuredOutput && result.structuredOutput.length > 0) {
-        const data = result.structuredOutput[0] as StatusData;
+      if (result.structuredOutput) {
+        const data = result.structuredOutput as StatusData;
         expect(data).toHaveProperty('status');
         expect(data).toHaveProperty('count');
       } else {
@@ -184,8 +184,8 @@ describe.skipIf(shouldSkipMLX)('MLXDriver Structured Outputs', () => {
       const finalResult = await result;
       console.log('Streamed content:', finalResult.content);
 
-      if (finalResult.structuredOutput && finalResult.structuredOutput.length > 0) {
-        const data = finalResult.structuredOutput[0] as StreamData;
+      if (finalResult.structuredOutput) {
+        const data = finalResult.structuredOutput as StreamData;
         expect(data).toBeDefined();
         console.log('Extracted structured data:', data);
       }

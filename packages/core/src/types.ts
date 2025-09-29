@@ -45,7 +45,6 @@ export interface ChunkElement {
 export interface SectionElement<TContext = any> {
   type: 'section';
   category: SectionType;  // 配置先の大セクション（instructions/data/output）
-  content: string;
   title: string;
   items: (string | SubSectionElement | DynamicContent<TContext>)[];
 }
@@ -53,7 +52,6 @@ export interface SectionElement<TContext = any> {
 // サブセクション要素（第2階層）
 export interface SubSectionElement<TContext = any> {
   type: 'subsection';
-  content: string;
   title: string;
   items: (string | SimpleDynamicContent<TContext>)[];
 }
@@ -103,8 +101,9 @@ export type DynamicContent<TContext = any> =
     | undefined;               // 何も返さない
 
 // セクションコンテンツ型
-export type SectionContent<TContext = any> = 
-  (string | SubSectionElement | DynamicContent<TContext>)[];
+// Element型全体を含むことで、静的な要素配置を可能にする
+export type SectionContent<TContext = any> =
+  (string | Element | DynamicContent<TContext>)[];
 
 // プロンプトモジュール
 export interface PromptModule<TContext = any> {

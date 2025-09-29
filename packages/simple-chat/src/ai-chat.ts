@@ -49,7 +49,6 @@ const baseChatModule: PromptModule<ChatContext> = {
     '必要に応じて具体例を提示してください',
     {
       type: 'subsection',
-      content: '',
       title: '応答形式',
       items: [
         '簡潔で明確な説明を心がける',

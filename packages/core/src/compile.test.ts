@@ -35,14 +35,12 @@ describe('compile', () => {
       expect(result.instructions[0]).toEqual({
         type: 'section',
         category: 'instructions',
-        content: '',
         title: 'Objective and Role',
         items: ['AIアシスタントとして動作する']
       });
       expect(result.instructions[1]).toEqual({
         type: 'section',
         category: 'instructions',
-        content: '',
         title: 'Processing Methodology',
         items: ['データを分析', '結果を生成']
       });
@@ -54,8 +52,7 @@ describe('compile', () => {
           '入力を検証',
           {
             type: 'subsection',
-            content: '',
-            title: '変換処理',
+                title: '変換処理',
             items: ['正規化', '特徴抽出']
           } as SubSectionElement,
           '出力を生成'
@@ -68,15 +65,13 @@ describe('compile', () => {
       expect(result.instructions[0]).toEqual({
         type: 'section',
         category: 'instructions',
-        content: '',
         title: 'Processing Methodology',
         items: [
           '入力を検証',
           '出力を生成',
           {
             type: 'subsection',
-            content: '',
-            title: '変換処理',
+                title: '変換処理',
             items: ['正規化', '特徴抽出']
           }
         ]
@@ -200,7 +195,6 @@ describe('compile', () => {
       expect(result1.data[0]).toEqual({
         type: 'section',
         category: 'data',
-        content: '',
         title: 'Current State',
         items: ['固定の状態']
       });
@@ -214,7 +208,6 @@ describe('compile', () => {
       expect(result2.data[0]).toEqual({
         type: 'section',
         category: 'data',
-        content: '',
         title: 'Current State',
         items: ['固定の状態']
       });
@@ -276,8 +269,7 @@ describe('compile', () => {
           } as TextElement),
           {
             type: 'subsection',
-            content: '',
-            title: '詳細手順',
+                title: '詳細手順',
             items: ['初期化', '検証', '実行']
           } as SubSectionElement,
           (context) => context.details.map(detail => ({
@@ -301,15 +293,13 @@ describe('compile', () => {
       expect(result.instructions[0]).toEqual({
         type: 'section',
         category: 'instructions',
-        content: '',
         title: 'Processing Methodology',
         items: [
           '処理を開始',
           '処理を完了',
           {
             type: 'subsection',
-            content: '',
-            title: '詳細手順',
+                title: '詳細手順',
             items: ['初期化', '検証', '実行']
           }
         ]
@@ -348,7 +338,6 @@ describe('compile', () => {
         type: 'section',
         category: 'instructions',
         title: 'Instructions',
-        content: '',
         items: ['Direct instruction']
       });
       
@@ -358,7 +347,6 @@ describe('compile', () => {
         type: 'section',
         category: 'data',
         title: 'Current State',
-        content: '',
         items: ['Current state']
       });
       
@@ -368,7 +356,6 @@ describe('compile', () => {
         type: 'section',
         category: 'output',
         title: 'Output',
-        content: '',
         items: ['Output cue']
       });
     });
@@ -377,7 +364,6 @@ describe('compile', () => {
       const subsection: SubSectionElement = {
         type: 'subsection',
         title: 'Sub Instructions',
-        content: '',
         items: ['Sub item']
       };
       
@@ -394,14 +380,12 @@ describe('compile', () => {
         type: 'section',
         category: 'instructions',
         title: 'Instructions',
-        content: '',
         items: [
           'Direct instruction string',
           {
             type: 'subsection',
             title: 'Sub Instructions',
-            content: '',
-            items: ['Sub item']
+                items: ['Sub item']
           }
         ]
       });
@@ -428,14 +412,12 @@ describe('compile', () => {
       const subsection1: SubSectionElement = {
         type: 'subsection',
         title: 'Same Subsection',
-        content: '',
         items: ['Item 1']
       };
       
       const subsection2: SubSectionElement = {
         type: 'subsection',
         title: 'Same Subsection',
-        content: '',
         items: ['Item 2']
       };
       
@@ -559,7 +541,6 @@ describe('compile', () => {
       expect(result.instructions[0]).toEqual({
         type: 'section',
         category: 'instructions',
-        content: '',
         title: 'Processing Methodology',
         items: ['プロセス開始', '合計: 5件']
       });

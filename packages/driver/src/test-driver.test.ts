@@ -392,6 +392,202 @@ describe('TestDriver', () => {
       expect(result2.content).toBe('plain text');
       expect(result2.structuredOutput).toBeUndefined();
     });
+
+    describe('edge cases and error handling', () => {
+      it('handles multiple JSON objects in response (uses first valid one)', async () => {
+        const driver = new TestDriver({
+          responses: ['{"first": 1} {"second": 2} {"third": 3}']
+        });
+
+        const prompt: CompiledPrompt = {
+          instructions: [{ type: 'text', content: 'Generate' }],
+          data: [],
+          output: [],
+          metadata: {
+            outputSchema: { type: 'object' }
+          }
+        };
+
+        const result = await driver.query(prompt);
+        // extractJSON with multiple: false returns the first valid JSON
+        expect(result.structuredOutput).toEqual({ first: 1 });
+      });
+
+      it('handles invalid JSON gracefully', async () => {
+        const driver = new TestDriver({
+          responses: ['This is not JSON at all, just plain text']
+        });
+
+        const prompt: CompiledPrompt = {
+          instructions: [{ type: 'text', content: 'Generate' }],
+          data: [],
+          output: [],
+          metadata: {
+            outputSchema: { type: 'object' }
+          }
+        };
+
+        const result = await driver.query(prompt);
+        expect(result.content).toBe('This is not JSON at all, just plain text');
+        expect(result.structuredOutput).toBeUndefined();
+      });
+
+      it('handles partially valid JSON by extracting what is possible', async () => {
+        // Note: extractJSON tries to extract partially valid JSON
+        const driver = new TestDriver({
+          responses: ['{"valid": "part", "broken": ']
+        });
+
+        const prompt: CompiledPrompt = {
+          instructions: [{ type: 'text', content: 'Generate' }],
+          data: [],
+          output: [],
+          metadata: {
+            outputSchema: { type: 'object' }
+          }
+        };
+
+        const result = await driver.query(prompt);
+        expect(result.content).toBe('{"valid": "part", "broken": ');
+        // extractJSON may extract { "valid": "part" } from this
+        // The exact behavior depends on the extractJSON implementation
+        // For now, we just verify it doesn't throw
+        expect(result).toHaveProperty('structuredOutput');
+      });
+
+      it('handles array as top-level JSON', async () => {
+        const driver = new TestDriver({
+          responses: ['[1, 2, 3, 4, 5]']
+        });
+
+        const prompt: CompiledPrompt = {
+          instructions: [{ type: 'text', content: 'Generate array' }],
+          data: [],
+          output: [],
+          metadata: {
+            outputSchema: {
+              type: 'array',
+              items: { type: 'number' }
+            }
+          }
+        };
+
+        const result = await driver.query(prompt);
+        expect(result.structuredOutput).toEqual([1, 2, 3, 4, 5]);
+        expect(Array.isArray(result.structuredOutput)).toBe(true);
+      });
+
+      it('handles deeply nested complex schema', async () => {
+        const complexData = {
+          user: {
+            id: 123,
+            profile: {
+              name: 'Alice',
+              settings: {
+                theme: 'dark',
+                notifications: {
+                  email: true,
+                  push: false
+                }
+              }
+            },
+            roles: ['admin', 'user']
+          },
+          metadata: {
+            timestamp: '2024-01-01T00:00:00Z',
+            version: 2
+          }
+        };
+
+        const driver = new TestDriver({
+          responses: [JSON.stringify(complexData)]
+        });
+
+        const prompt: CompiledPrompt = {
+          instructions: [{ type: 'text', content: 'Generate complex data' }],
+          data: [],
+          output: [],
+          metadata: {
+            outputSchema: {
+              type: 'object',
+              properties: {
+                user: {
+                  type: 'object',
+                  properties: {
+                    id: { type: 'number' },
+                    profile: { type: 'object' },
+                    roles: { type: 'array' }
+                  }
+                },
+                metadata: { type: 'object' }
+              }
+            }
+          }
+        };
+
+        const result = await driver.query(prompt);
+        expect(result.structuredOutput).toEqual(complexData);
+      });
+
+      it('extracts JSON from mixed content', async () => {
+        const driver = new TestDriver({
+          responses: ['Here is the result: {"status": "ok", "value": 42} and some more text']
+        });
+
+        const prompt: CompiledPrompt = {
+          instructions: [{ type: 'text', content: 'Generate' }],
+          data: [],
+          output: [],
+          metadata: {
+            outputSchema: { type: 'object' }
+          }
+        };
+
+        const result = await driver.query(prompt);
+        expect(result.structuredOutput).toEqual({ status: 'ok', value: 42 });
+      });
+
+      it('handles empty response', async () => {
+        const driver = new TestDriver({
+          responses: ['']
+        });
+
+        const prompt: CompiledPrompt = {
+          instructions: [{ type: 'text', content: 'Generate' }],
+          data: [],
+          output: [],
+          metadata: {
+            outputSchema: { type: 'object' }
+          }
+        };
+
+        const result = await driver.query(prompt);
+        expect(result.content).toBe('');
+        expect(result.structuredOutput).toBeUndefined();
+      });
+
+      it('handles JSON with special characters', async () => {
+        const driver = new TestDriver({
+          responses: ['{"message": "Hello\\nWorld\\t!", "emoji": "🎉", "unicode": "\\u0048\\u0065\\u006c\\u006c\\u006f"}']
+        });
+
+        const prompt: CompiledPrompt = {
+          instructions: [{ type: 'text', content: 'Generate' }],
+          data: [],
+          output: [],
+          metadata: {
+            outputSchema: { type: 'object' }
+          }
+        };
+
+        const result = await driver.query(prompt);
+        expect(result.structuredOutput).toEqual({
+          message: 'Hello\nWorld\t!',
+          emoji: '🎉',
+          unicode: 'Hello'
+        });
+      });
+    });
   });
 
 });

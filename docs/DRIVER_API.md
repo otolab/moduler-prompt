@@ -282,6 +282,8 @@ type ResponseProvider = (
 - **遅延シミュレーション**: API呼び出しの遅延を模擬
 - **使用状況シミュレーション**: トークン使用量を推定
 
+詳細な使用例は[TEST_DRIVERS.md](./TEST_DRIVERS.md)を参照。
+
 ### EchoDriver
 
 プロンプトをエコーバックするデバッグ用ドライバー。v0.2.1よりstructured outputs対応。
@@ -311,6 +313,8 @@ interface EchoDriverConfig {
 - **メタデータ付加**: リクエストのメタデータを含めることが可能
 - **カスタムフォーマッターオプション**: 出力形式のカスタマイズ
 - **ストリーミングサポート**: チャンクサイズを指定可能
+
+詳細な使用例は[TEST_DRIVERS.md](./TEST_DRIVERS.md)を参照。
 
 ## 型定義
 

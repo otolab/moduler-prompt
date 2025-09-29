@@ -102,32 +102,38 @@ function compileSectionToElements<TContext>(
     } else if (typeof item === 'string') {
       // 文字列をそのまま追加
       plainItems.push(item);
-    } else if (item.type === 'subsection') {
-      // サブセクション内のSimpleDynamicContentを処理
-      const processedItems: string[] = [];
-      for (const subItem of item.items) {
-        if (typeof subItem === 'function') {
-          // SimpleDynamicContentを実行
-          const result = processSimpleDynamicContent(subItem as SimpleDynamicContent<any>, context);
-          processedItems.push(...result);
-        } else if (typeof subItem === 'string') {
-          processedItems.push(subItem);
+    } else if (item && typeof item === 'object' && 'type' in item) {
+      // Element型のオブジェクト
+      if (item.type === 'subsection') {
+        // サブセクション内のSimpleDynamicContentを処理
+        const processedItems: string[] = [];
+        for (const subItem of item.items) {
+          if (typeof subItem === 'function') {
+            // SimpleDynamicContentを実行
+            const result = processSimpleDynamicContent(subItem as SimpleDynamicContent<any>, context);
+            processedItems.push(...result);
+          } else if (typeof subItem === 'string') {
+            processedItems.push(subItem);
+          }
         }
+        // 処理済みのサブセクションを追加
+        subsections.push({
+          ...item,
+          items: processedItems
+        });
+      } else {
+        // その他のElement（text, message, material, chunk, json, section）を直接追加
+        elements.push(item as Element);
       }
-      // 処理済みのサブセクションを追加
-      subsections.push({
-        ...item,
-        items: processedItems
-      });
     }
   }
 
-  // 文字列やサブセクションがある場合は、SectionElementにまとめる
+  // 文字列やサブセクションがある場合は、SectionElementを作成
+  // （標準セクションは空でなければSectionElementとして表現される）
   if (plainItems.length > 0 || subsections.length > 0) {
     const sectionElement: SectionElement = {
       type: 'section',
       category,
-      content: '',
       title,
       items: [...plainItems, ...subsections]
     };

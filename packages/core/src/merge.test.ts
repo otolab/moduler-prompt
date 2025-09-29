@@ -421,4 +421,104 @@ describe('merge', () => {
       expect(merged.state).toEqual(['状態6']);
     });
   });
+
+  describe('schemaセクションのマージ', () => {
+    it('複数のschemaセクションをマージできる', () => {
+      const module1: PromptModule = {
+        schema: ['スキーマ1']
+      };
+
+      const module2: PromptModule = {
+        schema: ['スキーマ2', 'スキーマ3']
+      };
+
+      const merged = merge(module1, module2);
+      expect(merged.schema).toEqual(['スキーマ1', 'スキーマ2', 'スキーマ3']);
+    });
+
+    it('JSONElementを含むschemaをマージできる', () => {
+      const module1: PromptModule = {
+        schema: [
+          () => ({
+            type: 'json' as const,
+            content: {
+              type: 'object',
+              properties: {
+                name: { type: 'string' }
+              }
+            }
+          })
+        ]
+      };
+
+      const module2: PromptModule = {
+        schema: [
+          () => ({
+            type: 'json' as const,
+            content: {
+              type: 'object',
+              properties: {
+                age: { type: 'number' }
+              }
+            }
+          })
+        ]
+      };
+
+      const merged = merge(module1, module2);
+      expect(merged.schema).toHaveLength(2);
+      expect(typeof merged.schema![0]).toBe('function');
+      expect(typeof merged.schema![1]).toBe('function');
+
+      // DynamicContentを実行して確認
+      const context = {};
+      const element1 = (merged.schema![0] as any)(context);
+      const element2 = (merged.schema![1] as any)(context);
+
+      expect(element1.type).toBe('json');
+      expect(element1.content.properties.name).toEqual({ type: 'string' });
+      expect(element2.type).toBe('json');
+      expect(element2.content.properties.age).toEqual({ type: 'number' });
+    });
+
+    it('schemaとサブセクションを同時に含む場合も正しくマージする', () => {
+      const module1: PromptModule = {
+        schema: [
+          '基本的なスキーマ説明',
+          {
+            type: 'subsection',
+            title: 'スキーマ詳細',
+            items: ['詳細1', '詳細2']
+          }
+        ]
+      };
+
+      const module2: PromptModule = {
+        schema: [
+          () => ({
+            type: 'json' as const,
+            content: { type: 'object' }
+          }),
+          {
+            type: 'subsection',
+            title: 'スキーマ詳細',
+            items: ['詳細3']
+          }
+        ]
+      };
+
+      const merged = merge(module1, module2);
+      expect(merged.schema).toHaveLength(3);
+
+      // 通常要素が先、サブセクションが後
+      expect(merged.schema![0]).toBe('基本的なスキーマ説明');
+      expect(typeof merged.schema![1]).toBe('function');
+
+      // サブセクションがマージされている
+      const subsection = merged.schema![2] as any;
+      expect(subsection.type).toBe('subsection');
+      expect(subsection.title).toBe('スキーマ詳細');
+      expect(subsection.items).toEqual(['詳細1', '詳細2', '詳細3']);
+    });
+  });
 });
