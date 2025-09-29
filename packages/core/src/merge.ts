@@ -35,14 +35,16 @@ function mergeTwo<T1 = any, T2 = any>(
 
   for (const sectionName of sectionNames) {
     const sections = [module1[sectionName], module2[sectionName]].filter(s => s !== undefined);
-    
+
     if (sections.length > 0) {
       // 型の不一致を解決: 異なるContext型を統合
       result[sectionName] = mergeSectionContents<T1 & T2>(...(sections as SectionContent<T1 & T2>[]));
     }
   }
 
-  // >>> schemaをマージします。単純に名前で浅いマージを行えば十分です。深いマージをしないことはコメント・ドキュメントに記載してください。
+  // schemaセクションは標準セクションとして自動的にマージされる
+  // Note: schemaは他の標準セクションと同様にmergeSectionContentsでマージされます
+  // JSONElement内のスキーマオブジェクトの深いマージは行いません（浅いマージで十分）
 
   return result;
 }
