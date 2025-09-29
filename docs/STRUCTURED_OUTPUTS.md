@@ -123,6 +123,8 @@ if (prompt.metadata?.outputSchema && content) {
 
 これらのドライバーはレスポンスからJSONを抽出：
 
+> **Note**: テスト用ドライバーの詳細な使用例は[TEST_DRIVERS.md](./TEST_DRIVERS.md)を参照。
+
 #### TestDriver
 
 ```typescript
@@ -132,7 +134,7 @@ import { extractJSON } from '@moduler-prompt/utils';
 if (prompt.metadata?.outputSchema && content) {
   const extracted = extractJSON(content, { multiple: false });
   if (extracted.source !== 'none' && extracted.data !== null) {
-    structuredOutput = [extracted.data];
+    structuredOutput = extracted.data;
   }
 }
 ```
@@ -147,7 +149,7 @@ if (prompt.metadata?.outputSchema) {
     // JSON形式の出力から抽出
     const extracted = extractJSON(content, { multiple: false });
     if (extracted.source !== 'none' && extracted.data !== null) {
-      structuredOutput = [extracted.data];
+      structuredOutput = extracted.data;
     }
   }
 }
@@ -163,7 +165,7 @@ async query(prompt: CompiledPrompt, options?: QueryOptions): Promise<QueryResult
   if (prompt.metadata?.outputSchema) {
     const extracted = extractJSON(content, { multiple: false });
     if (extracted.source !== 'none' && extracted.data !== null) {
-      structuredOutput = [extracted.data];
+      structuredOutput = extracted.data;
     }
   }
 
@@ -183,30 +185,38 @@ async query(prompt: CompiledPrompt, options?: QueryOptions): Promise<QueryResult
 import { compile } from '@moduler-prompt/core';
 import { OpenAIDriver } from '@moduler-prompt/driver';
 
-// スキーマを含むプロンプトをコンパイル
-const prompt = compile(myModule, context);
-prompt.metadata = {
-  outputSchema: {
-    type: 'object',
-    properties: {
-      name: { type: 'string' },
-      age: { type: 'number' },
-      skills: {
-        type: 'array',
-        items: { type: 'string' }
+// モジュールのschemaセクションでJSONElementを定義
+const myModule: PromptModule = {
+  // ... other sections ...
+  schema: [
+    {
+      type: 'json',
+      content: {
+        type: 'object',
+        properties: {
+          name: { type: 'string' },
+          age: { type: 'number' },
+          skills: {
+            type: 'array',
+            items: { type: 'string' }
+          }
+        },
+        required: ['name', 'age']
       }
-    },
-    required: ['name', 'age']
-  }
+    }
+  ]
 };
+
+// コンパイル時に自動的にmetadata.outputSchemaが設定される
+const prompt = compile(myModule, context);
 
 // ドライバーで実行
 const driver = new OpenAIDriver({ apiKey: '...' });
 const result = await driver.query(prompt);
 
 // 構造化出力を取得
-if (result.structuredOutput && result.structuredOutput.length > 0) {
-  const data = result.structuredOutput[0] as {
+if (result.structuredOutput) {
+  const data = result.structuredOutput as {
     name: string;
     age: number;
     skills?: string[];
@@ -218,6 +228,22 @@ if (result.structuredOutput && result.structuredOutput.length > 0) {
 ### ストリーミングでの使用
 
 ```typescript
+// schemaセクションにJSONElementを含むモジュール
+const myModule: PromptModule = {
+  schema: [
+    {
+      type: 'json',
+      content: {
+        type: 'object',
+        properties: {
+          summary: { type: 'string' }
+        }
+      }
+    }
+  ]
+};
+
+const prompt = compile(myModule, context);
 const { stream, result } = await driver.streamQuery(prompt);
 
 // ストリームを処理
@@ -248,6 +274,24 @@ if (finalResult.structuredOutput) {
 3. **埋め込みJSON**: `Some text {"key": "value"} more text`
 4. **複数のJSON**: 複数のJSONオブジェクトを含むテキスト
 
+### 注意事項
+
+`extractJSON`は**部分的に有効なJSON**も抽出を試みます：
+
+```typescript
+// 例: 不完全だが部分的に有効なJSON
+const text = '{"broken": invalid json';
+const extracted = extractJSON(text);
+// extracted.data = { "broken": "invalid json" } // 可能な限り抽出
+
+// 完全に無効な場合のみundefined
+const plainText = 'This is not JSON at all';
+const extracted2 = extractJSON(plainText);
+// extracted2.source = 'none', extracted2.data = null
+```
+
+この挙動により、AIモデルが生成した不完全なJSONからも可能な限りデータを回収できます。
+
 ### 使用例
 
 ```typescript
@@ -277,13 +321,11 @@ const result = await driver.query(prompt);
 
 // 構造化出力の検証
 if (result.structuredOutput === undefined) {
-  // スキーマが指定されていない
-} else if (result.structuredOutput.length === 0) {
-  // 有効なJSONが生成されなかった
-  console.warn('Failed to generate valid JSON:', result.content);
+  // スキーマが指定されていない、または有効なJSONが生成されなかった
+  console.warn('No structured output generated:', result.content);
 } else {
   // 成功
-  const data = result.structuredOutput[0];
+  const data = result.structuredOutput;
   // 型ガードやバリデーションを実施
 }
 ```
@@ -292,7 +334,7 @@ if (result.structuredOutput === undefined) {
 
 ```typescript
 // 構造化出力が失敗した場合のフォールバック
-const data = result.structuredOutput?.[0] ||
+const data = result.structuredOutput ||
   parseManually(result.content) ||
   defaultData;
 ```
@@ -320,13 +362,18 @@ const data = result.structuredOutput?.[0] ||
 
 ### 長期的な検討事項
 
-1. **プロンプトモジュールでのスキーマ定義**:
+1. **プロンプトモジュールでのスキーマ定義** (✅ v0.2.0で実装済み):
    ```typescript
    const module: PromptModule = {
-     outputSchema: {
-       type: 'object',
-       // ...
-     }
+     schema: [
+       {
+         type: 'json',
+         content: {
+           type: 'object',
+           // ...
+         }
+       }
+     ]
    };
    ```
 

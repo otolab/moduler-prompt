@@ -44,6 +44,7 @@
 - [動作確認手順](./docs/VERIFYING_MODULES.md) - モジュールのテストとデバッグ
 - [ドライバーAPI](./docs/DRIVER_API.md) - AIモデルドライバーのAPI仕様
 - [Structured Outputs](./docs/STRUCTURED_OUTPUTS.md) - 構造化出力（JSON）の仕様と使用方法
+- [テスト用ドライバー](./docs/TEST_DRIVERS.md) - TestDriverとEchoDriverの使用方法
 - [ユーティリティ](./docs/UTILITIES.md) - ログシステムとその他のユーティリティ
 
 ### 開発者向けドキュメント
@@ -146,16 +147,25 @@ if (driver) {
 AIからの応答を構造化されたJSONとして取得：
 
 ```typescript
-const prompt = compile(module, context);
-prompt.metadata = {
-  outputSchema: {
-    type: 'object',
-    properties: {
-      issues: { type: 'array', items: { type: 'string' } },
-      score: { type: 'number' }
+// モジュールのschemaセクションでJSONElementを定義
+const moduleWithSchema: PromptModule = {
+  ...analysisModule,
+  schema: [
+    {
+      type: 'json',
+      content: {
+        type: 'object',
+        properties: {
+          issues: { type: 'array', items: { type: 'string' } },
+          score: { type: 'number' }
+        }
+      }
     }
-  }
+  ]
 };
+
+// compileすると自動的にmetadata.outputSchemaが設定される
+const prompt = compile(moduleWithSchema, context);
 
 const result = await driver.query(prompt);
 if (result.structuredOutput) {
@@ -166,6 +176,29 @@ if (result.structuredOutput) {
 ```
 
 詳細は[Structured Outputs仕様](./docs/STRUCTURED_OUTPUTS.md)を参照してください。
+
+### テストとデバッグ
+
+開発・テスト用のドライバーを提供：
+
+```typescript
+import { TestDriver, EchoDriver } from '@moduler-prompt/driver';
+
+// モックレスポンスでテスト
+const testDriver = new TestDriver({
+  responses: ['{"result": "success"}']
+});
+
+// プロンプトをエコーバックでデバッグ
+const echoDriver = new EchoDriver({
+  format: 'debug'
+});
+
+const result = await echoDriver.query(compiled);
+console.log(JSON.parse(result.content)); // プロンプト構造を確認
+```
+
+詳細は[TEST_DRIVERS.md](./docs/TEST_DRIVERS.md)を参照。
 
 ## 開発
 
