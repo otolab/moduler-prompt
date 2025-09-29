@@ -9,39 +9,67 @@ import { extractJSON } from '@moduler-prompt/utils';
  */
 export interface EchoDriverConfig {
   /**
-   * Format for echo output
-   * - 'text': Return formatted text
-   * - 'messages': Return formatted messages as JSON
-   * - 'raw': Return raw compiled prompt as JSON
-   * - 'both': Return both text and messages
-   * - 'debug': Return detailed debug information
+   * Format for echo output determines what the driver returns:
+   * - 'text': Human-readable markdown formatted text
+   * - 'messages': Array of chat messages as JSON (for testing message-based APIs)
+   * - 'raw': The raw CompiledPrompt object as JSON (includes metadata)
+   * - 'both': Object containing both 'text' and 'messages' fields as JSON
+   * - 'debug': Comprehensive debug info including raw prompt, formatted versions, and metadata
+   *
+   * @default 'text'
    */
   format?: 'text' | 'messages' | 'raw' | 'both' | 'debug';
-  
+
   /**
-   * Include metadata in response
+   * Include metadata wrapper around the response.
+   * When true, adds timestamp and options to the output.
+   *
+   * @default false
    */
   includeMetadata?: boolean;
-  
+
   /**
-   * Custom formatter options
+   * Custom formatter options for text/message formatting.
+   * Allows customization of markers, preambles, and section descriptions.
    */
   formatterOptions?: FormatterOptions;
-  
+
   /**
-   * Simulate usage statistics
+   * Simulate token usage statistics.
+   * When true, estimates token counts based on character length.
+   *
+   * @default true
    */
   simulateUsage?: boolean;
-  
+
   /**
-   * Stream chunk size (for streaming mode)
+   * Number of characters to send in each streaming chunk.
+   * Lower values create more granular streaming.
+   *
+   * @default 100
    */
   streamChunkSize?: number;
 }
 
 /**
- * Echo test driver that returns the formatted prompt
- * Useful for testing and debugging prompt generation
+ * Echo driver that returns the formatted prompt instead of calling an AI model.
+ * Primary use cases:
+ * - Debugging: Inspect the exact prompt being sent to AI models
+ * - Testing: Verify prompt generation without API calls
+ * - Development: Quickly iterate on prompt design
+ *
+ * @example
+ * // Debug prompt structure
+ * const driver = new EchoDriver({ format: 'debug' });
+ * const result = await driver.query(prompt);
+ * console.log(JSON.parse(result.content));
+ *
+ * @example
+ * // Test structured outputs with raw format
+ * const driver = new EchoDriver({ format: 'raw' });
+ * prompt.metadata = { outputSchema: { type: 'object' } };
+ * const result = await driver.query(prompt);
+ * // result.structuredOutput contains the entire prompt as JSON
  */
 export class EchoDriver implements AIDriver {
   private format: EchoDriverConfig['format'];
@@ -59,29 +87,36 @@ export class EchoDriver implements AIDriver {
   }
   
   /**
-   * Query implementation that echoes back the formatted prompt
+   * Query implementation that echoes back the formatted prompt.
+   * The format of the response depends on the configured format option.
+   * Structured outputs are automatically extracted from JSON formats.
    */
   async query(prompt: CompiledPrompt, options?: QueryOptions): Promise<QueryResult> {
     let content: string;
-    
+
+    // Format the prompt according to the configured format
     switch (this.format) {
       case 'text': {
+        // Human-readable markdown format
         content = formatPrompt(prompt, this.formatterOptions);
         break;
       }
 
       case 'messages': {
+        // Array of chat messages (for message-based API testing)
         const messages = formatPromptAsMessages(prompt, this.formatterOptions);
         content = JSON.stringify(messages, null, 2);
         break;
       }
 
       case 'raw': {
+        // The entire CompiledPrompt object as JSON
         content = JSON.stringify(prompt, null, 2);
         break;
       }
 
       case 'both': {
+        // Both text and messages in a single object
         const text = formatPrompt(prompt, this.formatterOptions);
         const messages = formatPromptAsMessages(prompt, this.formatterOptions);
         content = JSON.stringify({

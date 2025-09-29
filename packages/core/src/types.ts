@@ -101,8 +101,9 @@ export type DynamicContent<TContext = any> =
     | undefined;               // 何も返さない
 
 // セクションコンテンツ型
-export type SectionContent<TContext = any> = 
-  (string | SubSectionElement | DynamicContent<TContext>)[];
+// Element型全体を含むことで、静的な要素配置を可能にする
+export type SectionContent<TContext = any> =
+  (string | Element | DynamicContent<TContext>)[];
 
 // プロンプトモジュール
 export interface PromptModule<TContext = any> {
