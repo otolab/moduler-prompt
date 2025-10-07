@@ -16,7 +16,8 @@
     }
   },
   "files": [
-    "dist"
+    "dist",
+    "GUIDE.md"
   ],
   "scripts": {
     "build": "tsc -b --force",
@@ -27,7 +28,7 @@
     "clean": "rm -rf dist",
     "lint": "eslint src",
     "typecheck": "tsc --noEmit",
-    "prepack": "npm run clean && npm run build"
+    "prepack": "npm run clean && npm run build && cp ../../docs/COMPLETE_GUIDE.md ./GUIDE.md"
   },
   "devDependencies": {
     "@eslint/js": "^9.34.0",
