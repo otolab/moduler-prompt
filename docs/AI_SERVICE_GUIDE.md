@@ -171,6 +171,28 @@ if (driver) {
 }
 ```
 
+### 全モデルの取得
+
+`selectModels`メソッドに空の配列を渡すと、登録されている全モデルを取得できます：
+
+```typescript
+// 全モデルを取得
+const allModels = aiService.selectModels([]);
+
+// 特定プロバイダーを除外して全モデルを取得
+const modelsWithoutOpenAI = aiService.selectModels([], {
+  excludeProviders: ['openai']
+});
+
+// 優先度付きで全モデルを取得
+const sortedModels = aiService.selectModels([], {
+  preferLocal: true,
+  preferFast: true
+});
+```
+
+この機能は、利用可能なモデルの一覧表示やデバッグ時に便利です。
+
 ## 選択アルゴリズム
 
 ### 選択プロセス
