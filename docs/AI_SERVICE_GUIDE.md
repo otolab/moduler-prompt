@@ -61,7 +61,6 @@ npm install @moduler-prompt/driver
 ```typescript
 import { AIService } from '@moduler-prompt/driver';
 
-// 設定
 const config = {
   models: [
     {
@@ -69,32 +68,15 @@ const config = {
       provider: 'openai',
       capabilities: ['streaming', 'japanese', 'fast'],
       priority: 10
-    },
-    {
-      model: 'llama-3.3-70b',
-      provider: 'mlx',
-      capabilities: ['local', 'fast', 'reasoning'],
-      priority: 30
     }
   ],
   drivers: {
-    openai: { apiKey: process.env.OPENAI_API_KEY },
-    mlx: {}
+    openai: { apiKey: process.env.OPENAI_API_KEY }
   }
 };
 
-// AIService初期化
 const aiService = new AIService(config);
-
-// 日本語対応の高速モデルを選択
-const driver = await aiService.createDriverFromCapabilities(
-  ['japanese', 'fast']
-);
-
-if (driver) {
-  const result = await driver.query(compiledPrompt);
-  console.log(result.content);
-}
+const driver = await aiService.createDriverFromCapabilities(['japanese']);
 ```
 
 ## ModelSpec（モデル仕様）
@@ -155,69 +137,38 @@ interface ModelSpec {
 
 ### 能力の組み合わせ例
 
-```typescript
-// ローカルで動く日本語対応モデル
-['local', 'japanese']
-
-// ストリーミング対応の高速コーディングモデル
-['streaming', 'fast', 'coding']
-
-// 構造化出力が可能な推論モデル
-['reasoning', 'structured', 'json']
-```
+| 用途 | 能力の組み合わせ |
+|------|----------------|
+| ローカル日本語処理 | `['local', 'japanese']` |
+| 高速コーディング支援 | `['streaming', 'fast', 'coding']` |
+| 構造化推論 | `['reasoning', 'structured', 'json']` |
 
 ## AIServiceの使用方法
 
-### 初期化
+### 主要メソッド
+
+| メソッド | 用途 | 戻り値 |
+|---------|------|--------|
+| `createDriverFromCapabilities` | 能力ベースでドライバー作成 | `Promise<AIDriver \| null>` |
+| `createDriver` | ModelSpec指定でドライバー作成 | `Promise<AIDriver>` |
+| `selectModels` | 条件に合うモデルを選択 | `ModelSpec[]` |
+
+### 基本的な使用パターン
 
 ```typescript
-const config = {
-  models: [...],     // ModelSpec配列
-  drivers: {         // ドライバー設定
-    openai: { apiKey: '...' },
-    anthropic: { apiKey: '...' },
-    mlx: {}
-  }
-};
-
+// 1. 初期化
 const aiService = new AIService(config);
-```
 
-### 能力ベースのドライバー作成
-
-```typescript
-// 必要な能力を指定
+// 2. 能力ベースの選択
 const driver = await aiService.createDriverFromCapabilities(
   ['japanese', 'streaming'],
-  {
-    preferLocal: true,        // ローカル優先
-    preferFast: false,        // 速度は優先しない
-    lenient: true            // 条件緩和を許可
-  }
-);
-```
-
-### 直接モデル指定
-
-```typescript
-// ModelSpecを直接指定してドライバー作成
-const driver = await aiService.createDriver({
-  model: 'gpt-4o-mini',
-  provider: 'openai',
-  capabilities: ['streaming', 'japanese']
-});
-```
-
-### モデル選択のみ
-
-```typescript
-// ドライバーを作成せず、適合するモデルのリストを取得
-const models = aiService.selectModels(
-  ['reasoning', 'structured'],
-  { preferProvider: 'anthropic' }
+  { preferLocal: true, lenient: true }
 );
 
-console.log('適合モデル:', models.map(m => m.model));
+// 3. 実行
+if (driver) {
+  const result = await driver.query(prompt);
+}
 ```
 
 ## 選択アルゴリズム
@@ -244,192 +195,45 @@ interface SelectionOptions {
 
 ### 条件緩和（lenient）モード
 
-条件を満たすモデルがない場合、自動的に条件を減らして再検索：
+条件を満たすモデルがない場合、自動的に条件を後ろから減らして再検索します。
 
-```typescript
-// 最初: ['japanese', 'streaming', 'local']
-// ↓ 該当なし
-// 次: ['japanese', 'streaming']
-// ↓ 該当なし
-// 次: ['japanese']
-// ↓ 見つかった！
-```
+例: `['japanese', 'streaming', 'local']` → `['japanese', 'streaming']` → `['japanese']`
 
 ## 実装パターン
 
 ### パターン1: タスク別の動的選択
 
-```typescript
-class TaskProcessor {
-  private aiService: AIService;
+タスクの種類に応じて必要な能力を動的に決定し、適切なドライバーを選択します。
 
-  async processTask(task: Task) {
-    // タスクの種類に応じて必要な能力を決定
-    const capabilities = this.getRequiredCapabilities(task);
-
-    // 動的にドライバーを選択
-    const driver = await this.aiService.createDriverFromCapabilities(
-      capabilities,
-      { lenient: true }
-    );
-
-    if (!driver) {
-      throw new Error('適合するモデルが見つかりません');
-    }
-
-    return driver.query(task.prompt);
-  }
-
-  private getRequiredCapabilities(task: Task): DriverCapability[] {
-    switch (task.type) {
-      case 'translation':
-        return ['multilingual', 'japanese'];
-      case 'coding':
-        return ['coding', 'reasoning'];
-      case 'analysis':
-        return ['reasoning', 'structured'];
-      default:
-        return ['chat'];
-    }
-  }
-}
-```
+| タスク種別 | 必要な能力 |
+|-----------|-----------|
+| 翻訳 | `['multilingual', 'japanese']` |
+| コーディング | `['coding', 'reasoning']` |
+| 分析 | `['reasoning', 'structured']` |
+| 一般チャット | `['chat']` |
 
 ### パターン2: フォールバック戦略
 
-```typescript
-async function executeWithFallback(prompt: CompiledPrompt) {
-  const strategies = [
-    { capabilities: ['local', 'fast'], options: {} },
-    { capabilities: ['fast'], options: { excludeProviders: ['mlx'] } },
-    { capabilities: [], options: {} }  // 最終手段
-  ];
+優先度の高い戦略から順に試行し、利用可能なドライバーで実行します。
 
-  for (const strategy of strategies) {
-    const driver = await aiService.createDriverFromCapabilities(
-      strategy.capabilities,
-      strategy.options
-    );
-
-    if (driver) {
-      try {
-        return await driver.query(prompt);
-      } catch (error) {
-        console.warn('実行失敗、次の戦略を試行:', error);
-      }
-    }
-  }
-
-  throw new Error('すべての戦略が失敗');
-}
-```
+1. ローカル＆高速を試行
+2. 高速のみ（ローカル除外）を試行
+3. 任意のドライバーを試行
 
 ### パターン3: コスト最適化
 
-```typescript
-function selectCostOptimalModel(
-  requiredCapabilities: DriverCapability[],
-  maxCost: number
-): ModelSpec[] {
-  const models = aiService.selectModels(requiredCapabilities);
-
-  return models.filter(model => {
-    if (!model.cost) return true;
-    return model.cost.output <= maxCost;
-  }).sort((a, b) => {
-    const costA = a.cost?.output || 0;
-    const costB = b.cost?.output || 0;
-    return costA - costB;
-  });
-}
-```
+`ModelSpec.cost`フィールドを活用して、コスト制約内で最適なモデルを選択します。
 
 ## ベストプラクティス
 
-### 1. 設定の外部化
+### 推奨事項
 
-```typescript
-// config.json
-{
-  "models": [
-    {
-      "model": "gpt-4o-mini",
-      "provider": "openai",
-      "capabilities": ["streaming", "japanese"],
-      "priority": 10,
-      "enabled": true
-    }
-  ]
-}
-
-// 使用
-import config from './config.json';
-const aiService = new AIService(config);
-```
-
-### 2. エラーハンドリング
-
-```typescript
-const driver = await aiService.createDriverFromCapabilities(
-  capabilities,
-  { lenient: true }
-);
-
-if (!driver) {
-  // フォールバック処理
-  logger.warn('No suitable model found, using default');
-  return useDefaultDriver();
-}
-
-try {
-  return await driver.query(prompt);
-} catch (error) {
-  // エラー処理
-  logger.error('Query failed:', error);
-  throw error;
-} finally {
-  // クリーンアップ
-  await driver.close();
-}
-```
-
-### 3. 能力の適切な指定
-
-```typescript
-// ❌ 過度に具体的
-['japanese', 'streaming', 'fast', 'local', 'reasoning']
-
-// ✅ 必要最小限
-['japanese', 'reasoning']
-
-// ✅ lenientモードと組み合わせ
-await aiService.createDriverFromCapabilities(
-  ['japanese', 'reasoning', 'fast'],  // 理想
-  { lenient: true }  // 妥協を許可
-);
-```
-
-### 4. モデル情報のキャッシュ
-
-```typescript
-class CachedAIService {
-  private modelCache = new Map<string, ModelSpec[]>();
-
-  selectModelsWithCache(
-    capabilities: DriverCapability[],
-    options?: SelectionOptions
-  ): ModelSpec[] {
-    const key = JSON.stringify({ capabilities, options });
-
-    if (!this.modelCache.has(key)) {
-      const models = this.aiService.selectModels(capabilities, options);
-      this.modelCache.set(key, models);
-    }
-
-    return this.modelCache.get(key)!;
-  }
-}
-```
+| 項目 | 推奨 | 理由 |
+|------|------|------|
+| **設定の外部化** | JSONファイルやenv変数で管理 | 環境依存の分離 |
+| **エラーハンドリング** | driver nullチェックとtry-catch | 確実な実行 |
+| **能力指定** | 必要最小限＋lenientモード | 柔軟性の確保 |
+| **結果のキャッシュ** | 選択結果をキャッシュ | パフォーマンス向上 |
 
 ## トラブルシューティング
 
@@ -444,94 +248,42 @@ class CachedAIService {
 
 ### デバッグ方法
 
-```typescript
-// 選択されたモデルの確認
-const models = aiService.selectModels(capabilities, options);
-console.log('候補モデル:', models.map(m => ({
-  model: m.model,
-  provider: m.provider,
-  priority: m.priority
-})));
-
-// 選択理由の追跡
-if (models.length === 0) {
-  console.log('条件を満たすモデルなし');
-  // 条件を1つずつ外して確認
-  for (let i = capabilities.length - 1; i >= 0; i--) {
-    const partial = capabilities.slice(0, i);
-    const found = aiService.selectModels(partial);
-    if (found.length > 0) {
-      console.log(`条件 ${capabilities[i]} を外すと ${found.length} 個のモデルが見つかる`);
-      break;
-    }
-  }
-}
-```
+1. **選択結果の確認**: `selectModels()`で候補モデルを確認
+2. **条件の段階的削除**: 条件を1つずつ減らして該当モデルを探索
+3. **優先度の確認**: `ModelSpec.priority`フィールドを確認
 
 ## ApplicationConfig型
 
-### 完全な設定例
+### 設定構造
 
 ```typescript
 interface ApplicationConfig {
   models?: ModelSpec[];
-  drivers: {
-    openai?: { apiKey: string; baseURL?: string };
-    anthropic?: { apiKey: string };
-    vertexai?: { projectId: string; location: string };
-    mlx?: { pythonPath?: string };
-    ollama?: { baseURL: string };
-    test?: { responses?: string[] };
-    echo?: { format?: string };
+  drivers?: {
+    openai?: { apiKey?: string; baseURL?: string; organization?: string };
+    anthropic?: { apiKey?: string; baseURL?: string };
+    vertexai?: { project?: string; location?: string; region?: string };
+    mlx?: { baseURL?: string; pythonPath?: string };
+    ollama?: { baseURL?: string };
+  };
+  defaultOptions?: {
+    temperature?: number;
+    maxTokens?: number;
+    topP?: number;
+    topK?: number;
   };
 }
-
-const fullConfig: ApplicationConfig = {
-  models: [
-    {
-      model: 'gpt-4o',
-      provider: 'openai',
-      capabilities: ['streaming', 'reasoning', 'tools', 'vision'],
-      maxInputTokens: 128000,
-      maxOutputTokens: 16384,
-      cost: { input: 0.0025, output: 0.01 },
-      priority: 20,
-      enabled: true
-    },
-    {
-      model: 'claude-3-5-sonnet-20241022',
-      provider: 'anthropic',
-      capabilities: ['streaming', 'reasoning', 'coding'],
-      maxInputTokens: 200000,
-      maxOutputTokens: 8192,
-      cost: { input: 0.003, output: 0.015 },
-      priority: 25,
-      enabled: true
-    },
-    {
-      model: 'llama-3.3-70b',
-      provider: 'mlx',
-      capabilities: ['local', 'fast', 'reasoning'],
-      maxInputTokens: 8192,
-      maxOutputTokens: 4096,
-      priority: 30,
-      enabled: true
-    }
-  ],
-  drivers: {
-    openai: {
-      apiKey: process.env.OPENAI_API_KEY!,
-      baseURL: 'https://api.openai.com/v1'
-    },
-    anthropic: {
-      apiKey: process.env.ANTHROPIC_API_KEY!
-    },
-    mlx: {
-      pythonPath: '/usr/bin/python3'
-    }
-  }
-};
 ```
+
+### ドライバー設定の詳細
+
+| プロバイダー | 必須設定 | オプション設定 |
+|------------|---------|--------------|
+| openai | apiKey | baseURL, organization |
+| anthropic | apiKey | baseURL |
+| vertexai | project, location | region |
+| mlx | なし | baseURL, pythonPath |
+| ollama | なし | baseURL |
 
 ## まとめ
 
