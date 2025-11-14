@@ -86,3 +86,6 @@ venv/
 
 # Analysis results
 .code-bugs/
+
+# Generated files during prepack
+packages/*/GUIDE.md

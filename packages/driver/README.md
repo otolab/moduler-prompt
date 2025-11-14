@@ -56,16 +56,10 @@ const driver = new OpenAIDriver({
 });
 ```
 
-**サポートされるオプション:**
+**主なオプション:**
 - `temperature`: 生成のランダム性 (0-2)
 - `maxTokens`: 最大トークン数
 - `topP`: トップPサンプリング
-- `frequencyPenalty`: 頻度ペナルティ (-2.0 to 2.0)
-- `presencePenalty`: 存在ペナルティ (-2.0 to 2.0)
-- `stop`: 停止文字列
-- `responseFormat`: レスポンス形式 (`{ type: 'json_object' | 'text' }`)
-- `tools`: 関数呼び出しツール定義
-- `seed`: 再現性のためのシード値
 
 ### Anthropic
 
@@ -84,12 +78,10 @@ const driver = new AnthropicDriver({
 });
 ```
 
-**サポートされるオプション:**
-- `maxTokens`: 最大トークン数（必須、デフォルト: 4096）
+**主なオプション:**
+- `maxTokens`: 最大トークン数（デフォルト: 4096）
 - `temperature`: 生成のランダム性 (0-1)
 - `topP`: トップPサンプリング
-- `topK`: トップKサンプリング
-- `stopSequences`: 停止シーケンス
 
 ### Google Vertex AI (Gemini)
 
@@ -111,13 +103,10 @@ const driver = new VertexAIDriver({
 });
 ```
 
-**サポートされるオプション:**
+**主なオプション:**
 - `maxTokens`: 最大出力トークン数
 - `temperature`: 生成のランダム性
 - `topP`: トップPサンプリング
-- `topK`: トップKサンプリング
-- `responseFormat`: 'json' | 'text'
-- `jsonSchema`: JSON出力のスキーマ定義
 
 **必要な設定:**
 - Google Cloud プロジェクトID（環境変数: `GOOGLE_CLOUD_PROJECT`）
@@ -182,12 +171,10 @@ const driver = new MlxDriver({
 await driver.close();
 ```
 
-**サポートされるオプション:**
+**主なオプション:**
 - `max_tokens`: 最大トークン数
 - `temperature`: 生成のランダム性
 - `top_p`: トップPサンプリング
-- `repetition_penalty`: 繰り返しペナルティ
-- `repetition_context_size`: 繰り返し検出のコンテキストサイズ
 
 **注意事項:**
 - Pythonサブプロセスを使用するため、Python環境とMLXのインストールが必要
@@ -228,9 +215,14 @@ const driver2 = new TestDriver({
 const prompt = compile(myModule, context);
 
 // ストリーミングレスポンス
-for await (const chunk of driver.streamQuery(prompt)) {
+const { stream, result } = await driver.streamQuery(prompt);
+for await (const chunk of stream) {
   process.stdout.write(chunk);
 }
+
+// 最終結果を取得
+const finalResult = await result;
+console.log('\nUsage:', finalResult.usage);
 ```
 
 ## カスタムドライバーの作成
@@ -310,18 +302,12 @@ class CustomDriver extends BaseDriver {
 interface AIDriver {
   // プロンプトをクエリ
   query(prompt: CompiledPrompt, options?: QueryOptions): Promise<QueryResult>;
-  
+
   // ストリーミングクエリ
-  streamQuery?(prompt: CompiledPrompt, options?: QueryOptions): AsyncIterable<string>;
-  
-  // フォーマッターオプションを取得
-  getFormatterOptions(): FormatterOptions;
-  
-  // メッセージ形式を優先するか
-  preferMessageFormat?: boolean;
-  
+  streamQuery(prompt: CompiledPrompt, options?: QueryOptions): Promise<StreamResult>;
+
   // リソースのクリーンアップ
-  close?(): Promise<void>;
+  close(): Promise<void>;
 }
 ```
 
@@ -347,6 +333,15 @@ interface QueryOptions {
   maxTokens?: number;
   topP?: number;
   stream?: boolean;
+}
+```
+
+### StreamResult
+
+```typescript
+interface StreamResult {
+  stream: AsyncIterable<string>;  // ストリームチャンク
+  result: Promise<QueryResult>;   // 最終結果
 }
 ```
 
@@ -416,18 +411,20 @@ const driver = createDriver(process.env.AI_PROVIDER || 'openai');
 ```typescript
 async function streamWithProgress(driver: AIDriver, prompt: CompiledPrompt) {
   let totalChars = 0;
-  
+
   console.log('Generating response...');
-  
-  for await (const chunk of driver.streamQuery(prompt)) {
+
+  const { stream, result } = await driver.streamQuery(prompt);
+  for await (const chunk of stream) {
     process.stdout.write(chunk);
     totalChars += chunk.length;
-    
+
     // プログレス情報を別の行に表示
     process.stderr.write(`\r[${totalChars} characters generated]`);
   }
-  
-  console.log('\nComplete!');
+
+  const finalResult = await result;
+  console.log(`\nComplete! (${finalResult.usage?.totalTokens} tokens)`);
 }
 ```
 
