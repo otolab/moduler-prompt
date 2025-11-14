@@ -4,16 +4,7 @@
 
 ## 📚 ドキュメント
 
-### 完全ガイド
-パッケージに同梱されている`GUIDE.md`に、Moduler Promptの包括的な仕様書があります。
-
-```bash
-# npmでインストール後
-cat node_modules/@moduler-prompt/core/GUIDE.md
-
-# またはオンラインで閲覧
-# https://github.com/otolab/moduler-prompt/blob/main/docs/COMPLETE_GUIDE.md
-```
+詳細は[ドキュメント](https://github.com/otolab/moduler-prompt/tree/main/docs)を参照してください。
 
 ## インストール
 
@@ -24,17 +15,40 @@ npm install @moduler-prompt/core
 ## 基本的な使用方法
 
 ```typescript
-import { compile, createContext, merge } from '@moduler-prompt/core';
+import { compile, merge, createContext } from '@moduler-prompt/core';
 import type { PromptModule } from '@moduler-prompt/core';
 
-// モジュール定義
-const module: PromptModule = {
+// Context型定義
+interface MyContext {
+  inputs?: string;
+}
+
+// プロセスモジュール（処理方法を定義）
+const processModule: PromptModule<MyContext> = {
+  methodology: ['データを処理する'],
+  inputs: [(ctx) => ctx.inputs || '']
+};
+
+// ユーザーモジュール（タスクを定義）
+const userModule = {
   objective: ['タスクの目的'],
   instructions: ['具体的な指示']
 };
 
-// コンパイルと実行
-const compiled = compile(module);
+// マージしてContextを取得
+const merged = merge(processModule, userModule);
+const context = createContext(merged);
+context.inputs = 'データ';
+
+// コンパイル
+const compiled = compile(merged, context);
+// compiled: CompiledPrompt
+// {
+//   instructions: SectionElement[]  // 指示セクション群
+//   data: SectionElement[]          // データセクション群
+//   output: SectionElement[]        // 出力セクション群
+//   metadata?: { outputSchema }     // メタデータ
+// }
 ```
 
 ## 主要な機能
@@ -42,9 +56,7 @@ const compiled = compile(module);
 - **PromptModule**: 再利用可能なプロンプトテンプレート
 - **compile**: モジュールを実行可能な形式に変換
 - **merge**: 複数のモジュールを合成
-- **createContext**: 動的データの管理
-
-詳細は`GUIDE.md`を参照してください。
+- **createContext**: マージ済みモジュールから型安全なContextを取得
 
 ## ライセンス
 

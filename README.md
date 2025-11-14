@@ -36,15 +36,12 @@
 
 ## ドキュメント
 
-### 📚 完全ガイド
-- **[Moduler Prompt 完全ガイド](./docs/COMPLETE_GUIDE.md)** - これ一枚で理解できる包括的な仕様書
-
 ### ユーザー向けドキュメント
+- [はじめに](./docs/GETTING_STARTED.md) - インストール、環境設定、プロセスモジュールの使い方
 - [コンセプトと設計思想](./docs/CONCEPTS.md) - フレームワークの理念と課題解決アプローチ
 - [アーキテクチャ](./docs/ARCHITECTURE.md) - システム構成と技術詳細
-- [モジュールの作り方](./docs/CREATING_MODULES.md) - プロンプトモジュールの作成方法
-- [モジュールの使い方](./docs/USING_MODULES.md) - モジュールの実行とドライバー連携
-- [動作確認手順](./docs/VERIFYING_MODULES.md) - モジュールのテストとデバッグ
+- [プロンプトモジュール仕様](./docs/PROMPT_MODULE_SPEC.md) - プロンプトモジュールの完全な仕様
+- [プロセスモジュールガイド](./docs/PROCESS_MODULE_GUIDE.md) - プロセスモジュールの実装ガイドライン
 - [ドライバーAPI](./docs/DRIVER_API.md) - AIモデルドライバーのAPI仕様
 - [Structured Outputs](./docs/STRUCTURED_OUTPUTS.md) - 構造化出力（JSON）の仕様と使用方法
 - [テスト用ドライバー](./docs/TEST_DRIVERS.md) - TestDriverとEchoDriverの使用方法

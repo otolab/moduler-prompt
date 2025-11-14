@@ -11,18 +11,18 @@ Structured Outputsは、AIモデルからの応答を構造化されたデータ
 ### データフロー
 
 ```
-PromptModule
-    ↓ (outputSchema定義)
+PromptModule (schema定義)
+    ↓
 CompiledPrompt (metadata.outputSchema)
     ↓
-AIDriver
-    ↓ (スキーマに基づく生成)
+AIDriver (スキーマに基づく生成)
+    ↓
 QueryResult.structuredOutput
 ```
 
 ### 型定義
 
-#### CompiledPrompt (core/types.ts)
+#### CompiledPrompt
 
 ```typescript
 interface CompiledPrompt {
@@ -35,7 +35,7 @@ interface CompiledPrompt {
 }
 ```
 
-#### QueryResult (driver/types.ts)
+#### QueryResult
 
 ```typescript
 interface QueryResult {
@@ -55,127 +55,24 @@ interface QueryResult {
 
 ## 実装パターン
 
-### 1. ネイティブサポート型（OpenAI、Anthropic、VertexAI）
+### 1. ネイティブサポート型
 
-これらのドライバーはAPIレベルでstructured outputsをサポート：
+APIレベルでstructured outputsをサポート：
 
-#### OpenAIDriver
+- **OpenAIDriver**: `response_format` APIパラメータを使用
+- **VertexAIDriver**: `responseMimeType`と`responseSchema`パラメータを使用
 
-```typescript
-// response_formatパラメータを使用
-const params = {
-  response_format: prompt.metadata?.outputSchema
-    ? { type: 'json_object' }
-    : undefined,
-  // ...
-};
+### 2. JSON抽出型
 
-// レスポンスを解析
-if (prompt.metadata?.outputSchema && params.response_format) {
-  try {
-    const parsed = JSON.parse(fullContent);
-    structuredOutput = parsed;
-  } catch {
-    structuredOutput = [];
-  }
-}
-```
+レスポンスからJSONを抽出：
 
-#### AnthropicDriver
+- **AnthropicDriver**: プロンプト指示 + JSON抽出
+- **MlxDriver**: JSON抽出ユーティリティを使用
+- **TestDriver / EchoDriver**: JSON抽出（詳細は[TEST_DRIVERS.md](./TEST_DRIVERS.md)）
 
-```typescript
-// システムプロンプトでJSON生成を指示
-if (prompt.metadata?.outputSchema) {
-  const jsonInstruction = '\n\nYou must respond with valid JSON that matches the provided schema. Output only the JSON object, no additional text or markdown formatting.';
-  system = system ? `${system}${jsonInstruction}` : jsonInstruction;
-}
+### 3. 未対応
 
-// レスポンスからJSONを抽出
-if (prompt.metadata?.outputSchema && fullContent) {
-  const extracted = extractJSON(fullContent, { multiple: false });
-  if (extracted.source !== 'none' && extracted.data !== null) {
-    structuredOutput = extracted.data;
-  }
-}
-```
-
-#### VertexAIDriver
-
-```typescript
-// responseMimeTypeとresponseSchemaパラメータを使用
-const generationConfig = {
-  responseMimeType: prompt.metadata?.outputSchema ? 'application/json' : 'text/plain',
-  responseSchema: this.convertJsonSchema(prompt.metadata?.outputSchema),
-  // ...
-};
-
-// レスポンスを解析
-if (prompt.metadata?.outputSchema && content) {
-  try {
-    structuredOutput = JSON.parse(content);
-  } catch {
-    // JSONとして解析できない場合はundefined
-  }
-}
-```
-
-### 2. JSON抽出型（TestDriver、EchoDriver）
-
-これらのドライバーはレスポンスからJSONを抽出：
-
-> **Note**: テスト用ドライバーの詳細な使用例は[TEST_DRIVERS.md](./TEST_DRIVERS.md)を参照。
-
-#### TestDriver
-
-```typescript
-import { extractJSON } from '@moduler-prompt/utils';
-
-// outputSchemaが指定されている場合のみJSON抽出
-if (prompt.metadata?.outputSchema && content) {
-  const extracted = extractJSON(content, { multiple: false });
-  if (extracted.source !== 'none' && extracted.data !== null) {
-    structuredOutput = extracted.data;
-  }
-}
-```
-
-#### EchoDriver
-
-```typescript
-// フォーマットに応じて抽出方法を変更
-if (prompt.metadata?.outputSchema) {
-  if (this.format === 'raw' || this.format === 'messages' ||
-      this.format === 'both' || this.format === 'debug') {
-    // JSON形式の出力から抽出
-    const extracted = extractJSON(content, { multiple: false });
-    if (extracted.source !== 'none' && extracted.data !== null) {
-      structuredOutput = extracted.data;
-    }
-  }
-}
-```
-
-#### MlxDriver
-
-```typescript
-async query(prompt: CompiledPrompt, options?: QueryOptions): Promise<QueryResult> {
-  // ... モデル実行 ...
-
-  // スキーマ指定がある場合はJSON抽出
-  if (prompt.metadata?.outputSchema) {
-    const extracted = extractJSON(content, { multiple: false });
-    if (extracted.source !== 'none' && extracted.data !== null) {
-      structuredOutput = extracted.data;
-    }
-  }
-
-  return { content, structuredOutput };
-}
-```
-
-### 3. 実装予定型（OllamaDriver）
-
-- **OllamaDriver**: OpenAI互換APIの機能を活用可能
+- **OllamaDriver**: 実装可能（OpenAI互換）
 
 ## 使用方法
 
@@ -187,7 +84,6 @@ import { OpenAIDriver } from '@moduler-prompt/driver';
 
 // モジュールのschemaセクションでJSONElementを定義
 const myModule: PromptModule = {
-  // ... other sections ...
   schema: [
     {
       type: 'json',
@@ -225,39 +121,6 @@ if (result.structuredOutput) {
 }
 ```
 
-### ストリーミングでの使用
-
-```typescript
-// schemaセクションにJSONElementを含むモジュール
-const myModule: PromptModule = {
-  schema: [
-    {
-      type: 'json',
-      content: {
-        type: 'object',
-        properties: {
-          summary: { type: 'string' }
-        }
-      }
-    }
-  ]
-};
-
-const prompt = compile(myModule, context);
-const { stream, result } = await driver.streamQuery(prompt);
-
-// ストリームを処理
-for await (const chunk of stream) {
-  process.stdout.write(chunk);
-}
-
-// 最終結果から構造化出力を取得
-const finalResult = await result;
-if (finalResult.structuredOutput) {
-  console.log('Structured:', finalResult.structuredOutput);
-}
-```
-
 ## JSON抽出ユーティリティ
 
 `@moduler-prompt/utils`パッケージの`extractJSON`関数は、様々な形式からJSONを抽出：
@@ -265,32 +128,8 @@ if (finalResult.structuredOutput) {
 ### 対応形式
 
 1. **直接JSON**: `{"key": "value"}`
-2. **マークダウンコードブロック**:
-   ````markdown
-   ```json
-   {"key": "value"}
-   ```
-   ````
+2. **マークダウンコードブロック**: `` ```json\n{"key": "value"}\n``` ``
 3. **埋め込みJSON**: `Some text {"key": "value"} more text`
-4. **複数のJSON**: 複数のJSONオブジェクトを含むテキスト
-
-### 注意事項
-
-`extractJSON`は**部分的に有効なJSON**も抽出を試みます：
-
-```typescript
-// 例: 不完全だが部分的に有効なJSON
-const text = '{"broken": invalid json';
-const extracted = extractJSON(text);
-// extracted.data = { "broken": "invalid json" } // 可能な限り抽出
-
-// 完全に無効な場合のみundefined
-const plainText = 'This is not JSON at all';
-const extracted2 = extractJSON(plainText);
-// extracted2.source = 'none', extracted2.data = null
-```
-
-この挙動により、AIモデルが生成した不完全なJSONからも可能な限りデータを回収できます。
 
 ### 使用例
 
@@ -351,45 +190,6 @@ const data = result.structuredOutput ||
 | MlxDriver | ✅ 対応済み | JSON抽出 | v0.2.0〜 |
 | OllamaDriver | ❌ 未対応 | - | 実装可能（OpenAI互換） |
 
-## 今後の拡張予定
-
-### v0.3.0での改善案
-
-1. **スキーマ検証**: 生成されたJSONのスキーマ検証機能
-2. **型生成**: スキーマからTypeScript型を自動生成
-3. **複数出力**: 複数のJSONオブジェクトの同時生成
-4. **ストリーミング対応**: JSONのストリーミングパース
-
-### 長期的な検討事項
-
-1. **プロンプトモジュールでのスキーマ定義** (✅ v0.2.0で実装済み):
-   ```typescript
-   const module: PromptModule = {
-     schema: [
-       {
-         type: 'json',
-         content: {
-           type: 'object',
-           // ...
-         }
-       }
-     ]
-   };
-   ```
-
-2. **型安全な構造化出力**:
-   ```typescript
-   interface OutputType {
-     name: string;
-     age: number;
-   }
-
-   const result = await driver.query<OutputType>(prompt);
-   // result.structuredOutput は OutputType[] 型
-   ```
-
-3. **スキーマバリデーションライブラリとの統合**: Zod、Yup等との連携
-
 ## トラブルシューティング
 
 ### よくある問題
@@ -414,8 +214,3 @@ const data = result.structuredOutput ||
 - [Driver API](./DRIVER_API.md) - ドライバーインターフェースの詳細
 - [型定義](../packages/core/src/types.ts) - CompiledPromptの型定義
 - [JSON抽出ユーティリティ](../packages/utils/src/json-extractor/) - extractJSON関数の実装
-
----
-
-**作成日**: 2024年1月
-**最終更新**: 2024年1月（v0.2.1）
