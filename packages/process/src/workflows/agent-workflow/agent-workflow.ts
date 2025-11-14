@@ -152,7 +152,10 @@ async function executeStep(
     }
 
     // Update context state with nextState for the next step
-    context.state = nextState;
+    context.state = {
+      content: nextState,
+      usage: stepResult.usage?.totalTokens
+    };
 
     // Create execution log entry (without nextState - it's in context.state now)
     return {

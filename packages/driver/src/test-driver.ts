@@ -3,15 +3,23 @@ import type { AIDriver, QueryOptions, QueryResult, StreamResult } from './types.
 import { extractJSON } from '@moduler-prompt/utils';
 
 /**
+ * Mock response configuration
+ */
+export interface MockResponse {
+  content: string;
+  finishReason?: 'stop' | 'length' | 'error';
+}
+
+/**
  * Response provider function type
  * A function that generates responses dynamically based on the prompt and options.
  * Called each time query() or streamQuery() is invoked.
  *
  * @param prompt - The compiled prompt being executed
  * @param options - Query options (temperature, maxTokens, etc.)
- * @returns The response string (can be JSON for structured outputs)
+ * @returns The response string or MockResponse object
  */
-export type ResponseProvider = (prompt: CompiledPrompt, options?: QueryOptions) => string | Promise<string>;
+export type ResponseProvider = (prompt: CompiledPrompt, options?: QueryOptions) => string | MockResponse | Promise<string | MockResponse>;
 
 /**
  * Test driver options
@@ -21,9 +29,10 @@ export interface TestDriverOptions {
    * Mock responses for the driver.
    * Can be either:
    * - An array of strings: responses are consumed sequentially (queue pattern)
+   * - An array of MockResponse objects: responses with finishReason control
    * - A function: called for each query to generate dynamic responses
    */
-  responses?: string[] | ResponseProvider;
+  responses?: (string | MockResponse)[] | ResponseProvider;
 
   /**
    * Delay in milliseconds to simulate API latency.
@@ -65,7 +74,7 @@ function estimateTokens(text: string): number {
  */
 export class TestDriver implements AIDriver {
   /** Queue of responses when using array mode */
-  private responseQueue: string[];
+  private responseQueue: MockResponse[];
   /** Function to generate responses dynamically */
   private responseProvider?: ResponseProvider;
   /** Delay in milliseconds to simulate latency */
@@ -78,7 +87,10 @@ export class TestDriver implements AIDriver {
       this.responseQueue = [];
     } else {
       // Array mode: use responses as a queue (FIFO)
-      this.responseQueue = options.responses ? [...options.responses] : [];
+      // Normalize string responses to MockResponse objects
+      this.responseQueue = options.responses
+        ? options.responses.map(r => typeof r === 'string' ? { content: r, finishReason: 'stop' as const } : r)
+        : [];
       this.responseProvider = undefined;
     }
     this.delay = options.delay || 0;
@@ -95,7 +107,12 @@ export class TestDriver implements AIDriver {
     // If we have a response provider function, use it
     if (this.responseProvider) {
       // Dynamic response generation mode
-      const content = await this.responseProvider(prompt, options);
+      const response = await this.responseProvider(prompt, options);
+
+      // Normalize response to MockResponse
+      const mockResponse: MockResponse = typeof response === 'string'
+        ? { content: response, finishReason: 'stop' }
+        : response;
 
       // Simulate API latency if configured
       if (this.delay > 0) {
@@ -105,22 +122,22 @@ export class TestDriver implements AIDriver {
       // Handle structured outputs if schema is provided
       // This attempts to extract JSON from the response if outputSchema is defined
       let structuredOutput: unknown | undefined;
-      if (prompt.metadata?.outputSchema && content) {
-        const extracted = extractJSON(content, { multiple: false });
+      if (prompt.metadata?.outputSchema && mockResponse.content) {
+        const extracted = extractJSON(mockResponse.content, { multiple: false });
         if (extracted.source !== 'none' && extracted.data !== null) {
           structuredOutput = extracted.data;
         }
       }
 
       return {
-        content,
+        content: mockResponse.content,
         structuredOutput,
         usage: {
           promptTokens: estimateTokens(formattedPrompt),
-          completionTokens: estimateTokens(content),
-          totalTokens: estimateTokens(formattedPrompt) + estimateTokens(content)
+          completionTokens: estimateTokens(mockResponse.content),
+          totalTokens: estimateTokens(formattedPrompt) + estimateTokens(mockResponse.content)
         },
-        finishReason: 'stop'
+        finishReason: mockResponse.finishReason || 'stop'
       };
     }
 
@@ -135,27 +152,27 @@ export class TestDriver implements AIDriver {
     }
 
     // Take the first response from the queue (FIFO pattern)
-    const content = this.responseQueue.shift()!;
+    const mockResponse = this.responseQueue.shift()!;
 
     // Handle structured outputs if schema is provided
     // This attempts to extract JSON from the response if outputSchema is defined
     let structuredOutput: unknown | undefined;
-    if (prompt.metadata?.outputSchema && content) {
-      const extracted = extractJSON(content, { multiple: false });
+    if (prompt.metadata?.outputSchema && mockResponse.content) {
+      const extracted = extractJSON(mockResponse.content, { multiple: false });
       if (extracted.source !== 'none' && extracted.data !== null) {
         structuredOutput = extracted.data;
       }
     }
 
     return {
-      content,
+      content: mockResponse.content,
       structuredOutput,
       usage: {
         promptTokens: estimateTokens(formattedPrompt),
-        completionTokens: estimateTokens(content),
-        totalTokens: estimateTokens(formattedPrompt) + estimateTokens(content)
+        completionTokens: estimateTokens(mockResponse.content),
+        totalTokens: estimateTokens(formattedPrompt) + estimateTokens(mockResponse.content)
       },
-      finishReason: 'stop'
+      finishReason: mockResponse.finishReason || 'stop'
     };
   }
   
@@ -173,26 +190,30 @@ export class TestDriver implements AIDriver {
     ].filter(Boolean).join('\n\n');
 
     // Get the response (either from provider function or queue)
-    let response: string;
+    let mockResponse: MockResponse;
     if (this.responseProvider) {
       // Dynamic mode: generate response
-      response = await this.responseProvider(prompt, options);
+      const response = await this.responseProvider(prompt, options);
+      mockResponse = typeof response === 'string'
+        ? { content: response, finishReason: 'stop' }
+        : response;
     } else {
       // Queue mode: consume one response
       if (this.responseQueue.length === 0) {
         throw new Error('No more responses available');
       }
-      response = this.responseQueue.shift()!;
+      mockResponse = this.responseQueue.shift()!;
     }
 
     // Create stream generator that yields characters one by one
     const delay = this.delay;
+    const content = mockResponse.content;
     async function* streamGenerator(): AsyncIterable<string> {
       // Stream response character by character to simulate streaming
-      for (const char of response) {
+      for (const char of content) {
         if (delay > 0) {
           // Distribute delay across all characters
-          await new Promise(resolve => setTimeout(resolve, delay / response.length));
+          await new Promise(resolve => setTimeout(resolve, delay / content.length));
         }
         yield char;
       }
@@ -201,8 +222,8 @@ export class TestDriver implements AIDriver {
     // Handle structured outputs if schema is provided
     // Extract JSON from the complete response (not streamed)
     let structuredOutput: unknown | undefined;
-    if (prompt.metadata?.outputSchema && response) {
-      const extracted = extractJSON(response, { multiple: false });
+    if (prompt.metadata?.outputSchema && mockResponse.content) {
+      const extracted = extractJSON(mockResponse.content, { multiple: false });
       if (extracted.source !== 'none' && extracted.data !== null) {
         structuredOutput = extracted.data;
       }
@@ -210,14 +231,14 @@ export class TestDriver implements AIDriver {
 
     // Create result promise
     const resultPromise = Promise.resolve({
-      content: response,
+      content: mockResponse.content,
       structuredOutput,
       usage: {
         promptTokens: estimateTokens(formattedPrompt),
-        completionTokens: estimateTokens(response),
-        totalTokens: estimateTokens(formattedPrompt) + estimateTokens(response)
+        completionTokens: estimateTokens(mockResponse.content),
+        totalTokens: estimateTokens(formattedPrompt) + estimateTokens(mockResponse.content)
       },
-      finishReason: 'stop' as const
+      finishReason: mockResponse.finishReason || 'stop'
     });
 
     return {

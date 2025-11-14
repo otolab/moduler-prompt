@@ -56,6 +56,48 @@ const driver = new TestDriver({
 });
 ```
 
+### finishReasonのカスタマイズ
+
+エラーハンドリングのテストのために、finishReasonを制御できます。
+
+```typescript
+import { TestDriver } from '@moduler-prompt/driver';
+
+// MockResponseオブジェクトでfinishReasonを指定
+const driver = new TestDriver({
+  responses: [
+    { content: 'Normal completion', finishReason: 'stop' },
+    { content: 'Truncated...', finishReason: 'length' },
+    { content: 'Error occurred', finishReason: 'error' }
+  ]
+});
+
+const result1 = await driver.query(prompt);
+console.log(result1.finishReason); // 'stop'
+
+const result2 = await driver.query(prompt);
+console.log(result2.finishReason); // 'length'
+
+const result3 = await driver.query(prompt);
+console.log(result3.finishReason); // 'error'
+```
+
+関数プロバイダーでも使用できます：
+
+```typescript
+const driver = new TestDriver({
+  responses: (prompt) => {
+    // プロンプトが長すぎる場合はlengthで終了
+    if (prompt.instructions.length > 10) {
+      return { content: 'Too long...', finishReason: 'length' };
+    }
+    return { content: 'OK', finishReason: 'stop' };
+  }
+});
+```
+
+**互換性**: 文字列レスポンスは自動的に`finishReason: 'stop'`として扱われます。
+
 ### Structured Outputs使用時の注意点
 
 **重要**: スキーマで定義したフィールド名とレスポンスのフィールド名が一致している必要があります。

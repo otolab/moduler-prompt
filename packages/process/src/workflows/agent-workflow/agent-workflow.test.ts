@@ -50,7 +50,7 @@ describe('agentProcess', () => {
     expect(result.context.executionLog?.[0].result).toBe('Analysis complete: Input analyzed successfully');
     expect(result.context.executionLog?.[1].result).toBe('Output generated successfully');
     // nextState is stored in context.state, updated after each step
-    expect(result.context.state).toBe('Ready for integration');
+    expect(result.context.state?.content).toBe('Ready for integration');
     expect(result.metadata?.planSteps).toBe(2);
     expect(result.metadata?.executedSteps).toBe(2);
   });
@@ -182,16 +182,58 @@ describe('agentProcess', () => {
     expect(result.output).toBe('Integration done');
   });
 
-  it.skip('should handle workflow error in planning phase', async () => {
-    // Note: TestDriver always returns finishReason: 'stop'
-    // This test requires a custom mock driver to test error handling
-    // Skipping for now - will be tested in integration tests
+  it('should handle workflow error in planning phase', async () => {
+    const driver = new TestDriver({
+      responses: [
+        { content: 'Partial planning...', finishReason: 'length' }
+      ]
+    });
+
+    const context: AgentWorkflowContext = {
+      objective: 'Test error handling'
+    };
+
+    const userModule = {
+      objective: ['エラーハンドリングのテスト'],
+      instructions: ['計画フェーズでエラーが発生']
+    };
+
+    await expect(async () => {
+      await agentProcess(driver, userModule, context);
+    }).rejects.toThrow('Planning failed with reason: length');
   });
 
-  it.skip('should handle workflow error in execution phase', async () => {
-    // Note: TestDriver always returns finishReason: 'stop'
-    // This test requires a custom mock driver to test error handling
-    // Skipping for now - will be tested in integration tests
+  it('should handle workflow error in execution phase', async () => {
+    const plan: AgentPlan = {
+      steps: [
+        { id: 'step-1', description: 'First step' },
+        { id: 'step-2', description: 'Second step' }
+      ]
+    };
+
+    const driver = new TestDriver({
+      responses: [
+        // Planning (returns valid plan)
+        JSON.stringify(plan),
+        // Execution: step 1 succeeds
+        JSON.stringify({ result: 'Step 1 done', nextState: 'Moving to step 2' }),
+        // Execution: step 2 fails with error
+        { content: 'Partial execution...', finishReason: 'error' }
+      ]
+    });
+
+    const context: AgentWorkflowContext = {
+      objective: 'Test execution error handling'
+    };
+
+    const userModule = {
+      objective: ['実行フェーズでのエラーハンドリング'],
+      instructions: ['2番目のステップでエラーが発生']
+    };
+
+    await expect(async () => {
+      await agentProcess(driver, userModule, context);
+    }).rejects.toThrow('Step execution failed with reason: error');
   });
 
   it('should handle action errors', async () => {
@@ -263,7 +305,7 @@ describe('agentProcess', () => {
       objective: 'Analyze the document and summarize',
       plan,
       executionLog,
-      state: 'Ready for step 2' // State from previous step
+      state: { content: 'Ready for step 2' } // State from previous step
     };
 
     // Same user module as initial execution

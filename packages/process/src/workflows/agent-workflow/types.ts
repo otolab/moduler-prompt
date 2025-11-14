@@ -39,7 +39,10 @@ export interface AgentPlan {
 export interface AgentWorkflowContext {
   objective: string;              // 達成目標
   inputs?: any;                   // 入力データ
-  state?: string;                 // 前ステップからの申し送り事項
+  state?: {                       // 前ステップからの申し送り事項
+    content: string;
+    usage?: number;
+  };
   plan?: AgentPlan;               // 実行計画
   executionLog?: AgentExecutionLog[];  // 実行履歴
   currentStep?: AgentStep;        // 現在実行中のステップ

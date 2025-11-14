@@ -38,7 +38,7 @@ export const execution: PromptModule<AgentWorkflowContext> = {
     },
     (ctx) => {
       if (ctx.state) {
-        return `前ステップからの申し送り: ${ctx.state}`;
+        return `前ステップからの申し送り: ${ctx.state.content}`;
       }
       return null;
     }
