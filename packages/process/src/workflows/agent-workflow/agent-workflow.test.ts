@@ -36,9 +36,9 @@ describe('agentProcess', () => {
     const userModule = {
       objective: ['文書を分析し、重要な洞察を抽出する'],
       instructions: [
-        '文書の主要なテーマを特定する',
-        '重要なポイントを3つ抽出する',
-        '各ポイントを簡潔にまとめる'
+        '- 文書の主要なテーマを特定する',
+        '- 重要なポイントを3つ抽出する',
+        '- 各ポイントを簡潔にまとめる'
       ]
     };
 
@@ -93,9 +93,9 @@ describe('agentProcess', () => {
     const userModule = {
       objective: ['ユーザーデータを取得し、レポートを生成する'],
       instructions: [
-        'データを適切なフォーマットで取得',
-        '集計結果を分かりやすく整形',
-        'サマリーを含めたレポートを作成'
+        '- データを適切なフォーマットで取得',
+        '- 集計結果を分かりやすく整形',
+        '- サマリーを含めたレポートを作成'
       ]
     };
 
@@ -135,9 +135,9 @@ describe('agentProcess', () => {
     const userModule = {
       objective: ['技術仕様書を要約する'],
       instructions: [
-        '各セクションの内容を理解する',
-        '重要な技術要件を抽出する',
-        '全体の概要をまとめる'
+        '- 各セクションの内容を理解する',
+        '- 重要な技術要件を抽出する',
+        '- 全体の概要をまとめる'
       ]
     };
 
@@ -170,9 +170,9 @@ describe('agentProcess', () => {
     const userModule = {
       objective: ['月次売上レポートを作成する'],
       instructions: [
-        '売上データを集計する',
-        'グラフとチャートを作成する',
-        'サマリーレポートにまとめる'
+        '- 売上データを集計する',
+        '- グラフとチャートを作成する',
+        '- サマリーレポートにまとめる'
       ]
     };
 
@@ -195,7 +195,7 @@ describe('agentProcess', () => {
 
     const userModule = {
       objective: ['エラーハンドリングのテスト'],
-      instructions: ['計画フェーズでエラーが発生']
+      instructions: ['- 計画フェーズでエラーが発生']
     };
 
     await expect(async () => {
@@ -228,7 +228,7 @@ describe('agentProcess', () => {
 
     const userModule = {
       objective: ['実行フェーズでのエラーハンドリング'],
-      instructions: ['2番目のステップでエラーが発生']
+      instructions: ['- 2番目のステップでエラーが発生']
     };
 
     await expect(async () => {
@@ -266,9 +266,9 @@ describe('agentProcess', () => {
     const userModule = {
       objective: ['顧客フィードバックを処理する'],
       instructions: [
-        'フィードバックを収集する',
-        'カテゴリ別に分類する',
-        '改善提案をまとめる'
+        '- フィードバックを収集する',
+        '- カテゴリ別に分類する',
+        '- 改善提案をまとめる'
       ]
     };
 
@@ -312,9 +312,9 @@ describe('agentProcess', () => {
     const userModule = {
       objective: ['文書を分析し、要約する'],
       instructions: [
-        '文書の構造を把握する',
-        '重要な情報を抽出する',
-        '簡潔な要約を作成する'
+        '- 文書の構造を把握する',
+        '- 重要な情報を抽出する',
+        '- 簡潔な要約を作成する'
       ]
     };
 

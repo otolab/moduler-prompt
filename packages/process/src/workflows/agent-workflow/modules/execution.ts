@@ -1,5 +1,7 @@
+import { merge } from '@moduler-prompt/core';
 import type { PromptModule } from '@moduler-prompt/core';
-import type { AgentWorkflowContext } from '../types.js';
+import type { AgentWorkflowContext, AgentStep } from '../types.js';
+import { common } from './common.js';
 
 /**
  * Execution phase module for agent workflow
@@ -8,18 +10,46 @@ import type { AgentWorkflowContext } from '../types.js';
  * Should be merged with user's module:
  *   merge(execution, userModule)
  */
-export const execution: PromptModule<AgentWorkflowContext> = {
+const executionBase: PromptModule<AgentWorkflowContext> = {
   methodology: [
+    '',
+    '現在はExecutionフェーズです。実行計画の現在のステップのみを実行し、結果を記録します。'
+  ],
+
+  instructions: [
     {
       type: 'subsection',
-      title: '実行フェーズの処理',
+      title: 'Executionフェーズの処理',
       items: [
-        (ctx) => ctx.currentStep
-          ? `現在のステップ「${ctx.currentStep.description}」を実行する`
-          : '現在のステップを実行する',
-        'instructionsの中から現在のステップに関連する指示を実行',
-        'アクション結果がある場合はそれを活用',
-        '結果(result)と次への申し送り(nextState)を構造化して出力'
+        '- 以下の「実行計画」に記載された現在のステップのみを実行する',
+        '- アクション結果がある場合はそれを活用',
+        '- 結果(result)と次への申し送り(nextState)を構造化して出力'
+      ]
+    },
+    {
+      type: 'subsection',
+      title: '利用可能なAction',
+      items: [
+        '- 利用可能なActionはありません'
+      ]
+    },
+    {
+      type: 'subsection',
+      title: '実行計画',
+      items: [
+        (ctx) => {
+          if (!ctx.plan) {
+            return null;
+          }
+
+          const currentStepId = ctx.currentStep?.id;
+
+          return ctx.plan.steps.map((step: AgentStep) => {
+            const marker = step.id === currentStepId ? ' ← 現在実行中' : '';
+            const action = step.action ? ` (アクション: ${step.action})` : '';
+            return `- ${step.description}${action}${marker}`;
+          });
+        }
       ]
     }
   ],
@@ -31,32 +61,10 @@ export const execution: PromptModule<AgentWorkflowContext> = {
       return `進捗: ${completed}/${total} ステップ完了`;
     },
     (ctx) => {
-      if (ctx.currentStep) {
-        return `現在のステップ: ${ctx.currentStep.id} - ${ctx.currentStep.description}`;
-      }
-      return null;
-    },
-    (ctx) => {
       if (ctx.state) {
         return `前ステップからの申し送り: ${ctx.state.content}`;
       }
       return null;
-    }
-  ],
-
-  chunks: [
-    (ctx) => {
-      if (!ctx.executionLog || ctx.executionLog.length === 0) {
-        return null;
-      }
-
-      return ctx.executionLog.map((log, index) => ({
-        type: 'chunk' as const,
-        partOf: 'execution-results',
-        index: index + 1,
-        total: ctx.executionLog!.length,
-        content: `[${log.stepId}]\n${log.result}`
-      }));
     }
   ],
 
@@ -74,6 +82,18 @@ export const execution: PromptModule<AgentWorkflowContext> = {
           ? ctx.actionResult
           : JSON.stringify(ctx.actionResult, null, 2)
       };
+    },
+    (ctx) => {
+      if (!ctx.executionLog || ctx.executionLog.length === 0) {
+        return null;
+      }
+
+      return ctx.executionLog.map((log) => ({
+        type: 'material' as const,
+        id: `execution-result-${log.stepId}`,
+        title: `実行結果: ${log.stepId}`,
+        content: log.result
+      }));
     }
   ],
 
@@ -97,3 +117,5 @@ export const execution: PromptModule<AgentWorkflowContext> = {
     }
   ]
 };
+
+export const execution = merge(common, executionBase);

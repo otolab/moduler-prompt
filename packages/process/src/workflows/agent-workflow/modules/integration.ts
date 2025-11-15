@@ -1,5 +1,7 @@
+import { merge } from '@moduler-prompt/core';
 import type { PromptModule } from '@moduler-prompt/core';
-import type { AgentWorkflowContext } from '../types.js';
+import type { AgentWorkflowContext, AgentStep } from '../types.js';
+import { common } from './common.js';
 
 /**
  * Integration phase module for agent workflow
@@ -8,16 +10,43 @@ import type { AgentWorkflowContext } from '../types.js';
  * Should be merged with user's module:
  *   merge(integration, userModule)
  */
-export const integration: PromptModule<AgentWorkflowContext> = {
+const integrationBase: PromptModule<AgentWorkflowContext> = {
   methodology: [
+    '',
+    '現在はIntegrationフェーズです。全ステップの実行結果を統合し、全体目標を達成する最終的な出力を生成します。'
+  ],
+
+  instructions: [
     {
       type: 'subsection',
-      title: '統合フェーズの処理',
+      title: 'Integrationフェーズの処理',
       items: [
-        '全ステップの実行結果を統合し、最終的な出力を生成する',
-        'objectiveが達成されたか確認する',
-        'instructionsで指定された出力形式に従う',
-        '各ステップの重要な結果を明確に記述する'
+        '- 以下の「実行計画」の全ステップの実行結果を統合し、最終的な出力を生成する',
+        '- objectiveが達成されたか確認する',
+        '- 各ステップの重要な結果を明確に記述する'
+      ]
+    },
+    {
+      type: 'subsection',
+      title: '利用可能なAction',
+      items: [
+        '- 利用可能なActionはありません'
+      ]
+    },
+    {
+      type: 'subsection',
+      title: '実行計画（全ステップ完了）',
+      items: [
+        (ctx) => {
+          if (!ctx.plan) {
+            return null;
+          }
+
+          return ctx.plan.steps.map((step: AgentStep) => {
+            const action = step.action ? ` (アクション: ${step.action})` : '';
+            return `- ${step.description}${action}`;
+          });
+        }
       ]
     }
   ],
@@ -30,14 +59,14 @@ export const integration: PromptModule<AgentWorkflowContext> = {
     }
   ],
 
-  chunks: [
+  materials: [
     (ctx) => {
       if (!ctx.executionLog || ctx.executionLog.length === 0) {
         return null;
       }
 
-      return ctx.executionLog.map((log, index) => {
-        let content = `[${log.stepId}]\n${log.result}`;
+      return ctx.executionLog.map((log) => {
+        let content = log.result;
 
         if (log.actionResult !== undefined) {
           const actionResultStr = typeof log.actionResult === 'string'
@@ -47,31 +76,14 @@ export const integration: PromptModule<AgentWorkflowContext> = {
         }
 
         return {
-          type: 'chunk' as const,
-          partOf: 'execution-results',
-          index: index + 1,
-          total: ctx.executionLog!.length,
+          type: 'material' as const,
+          id: `execution-result-${log.stepId}`,
+          title: `実行結果: ${log.stepId}`,
           content
         };
       });
     }
-  ],
-
-  materials: [
-    (ctx) => {
-      if (!ctx.plan) {
-        return null;
-      }
-
-      return {
-        type: 'material' as const,
-        id: 'original-plan',
-        title: '当初の実行計画',
-        content: ctx.plan.steps.map((step, index) =>
-          `${index + 1}. [${step.id}] ${step.description}` +
-          (step.action ? ` (アクション: ${step.action})` : '')
-        ).join('\n')
-      };
-    }
   ]
 };
+
+export const integration = merge(common, integrationBase);

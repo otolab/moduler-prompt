@@ -71,7 +71,8 @@ export class DefaultFormatter implements ElementFormatter {
   }
   
   formatAll(elements: Element[]): string {
-    return elements.map(el => this.format(el)).join(this.options.lineBreak);
+    const { lineBreak } = this.options;
+    return elements.map(el => this.format(el)).join(lineBreak + lineBreak);
   }
   
   setSpecialTokens(tokens: Record<string, SpecialToken | SpecialTokenPair>): void {
@@ -207,17 +208,30 @@ export class DefaultFormatter implements ElementFormatter {
     lines.push(`## ${element.title}`);
     lines.push('');
 
+    // Track previous item type for spacing
+    let previousItemType: 'string' | 'subsection' | null = null;
+
     // Format items without automatic bullet points
     for (const item of element.items) {
       if (typeof item === 'string') {
+        // Add blank line if previous was subsection
+        if (previousItemType === 'subsection') {
+          lines.push('');
+        }
         lines.push(item);
+        previousItemType = 'string';
       } else if (typeof item === 'function') {
         // Skip DynamicContent functions - they should be resolved before formatting
         continue;
       } else {
         // Subsection element
+        // Add blank line if there was any previous item
+        if (previousItemType !== null) {
+          lines.push('');
+        }
         const formatted = this.format(item);
         lines.push(formatted);
+        previousItemType = 'subsection';
       }
     }
 

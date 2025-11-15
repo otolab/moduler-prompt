@@ -255,6 +255,81 @@ describe('DefaultFormatter', () => {
       expect(result).toContain('- 発行すべきイベント');
     });
   });
+
+  describe('spacing between elements', () => {
+    it('should add blank line between consecutive subsections in a section', () => {
+      const formatter = new DefaultFormatter();
+      const subsection1: SubSectionElement = {
+        type: 'subsection',
+        title: 'First SubSection',
+        items: ['Item A', 'Item B']
+      };
+      const subsection2: SubSectionElement = {
+        type: 'subsection',
+        title: 'Second SubSection',
+        items: ['Item C', 'Item D']
+      };
+      const element: SectionElement = {
+        type: 'section',
+        title: 'Main Section',
+        items: [subsection1, subsection2]
+      };
+
+      const result = formatter.format(element);
+      // SubSections should be separated by blank line
+      expect(result).toContain('Item B\n\n### Second SubSection');
+    });
+
+    it('should add blank line between subsection and following string item', () => {
+      const formatter = new DefaultFormatter();
+      const subsection: SubSectionElement = {
+        type: 'subsection',
+        title: 'Details',
+        items: ['Detail 1', 'Detail 2']
+      };
+      const element: SectionElement = {
+        type: 'section',
+        title: 'Main Section',
+        items: [subsection, 'Item after subsection']
+      };
+
+      const result = formatter.format(element);
+      // SubSection and following string should be separated by blank line
+      expect(result).toContain('Detail 2\n\nItem after subsection');
+    });
+
+    it('should add blank line between string item and following subsection', () => {
+      const formatter = new DefaultFormatter();
+      const subsection: SubSectionElement = {
+        type: 'subsection',
+        title: 'Details',
+        items: ['Detail 1', 'Detail 2']
+      };
+      const element: SectionElement = {
+        type: 'section',
+        title: 'Main Section',
+        items: ['Item before subsection', subsection]
+      };
+
+      const result = formatter.format(element);
+      // String and following SubSection should be separated by blank line
+      expect(result).toContain('Item before subsection\n\n### Details');
+    });
+
+    it('should not add extra blank lines between consecutive string items', () => {
+      const formatter = new DefaultFormatter();
+      const element: SectionElement = {
+        type: 'section',
+        title: 'Main Section',
+        items: ['Item 1', 'Item 2', 'Item 3']
+      };
+
+      const result = formatter.format(element);
+      // String items should be separated by single line break
+      expect(result).toContain('Item 1\nItem 2\nItem 3');
+      expect(result).not.toContain('Item 1\n\nItem 2');
+    });
+  });
 });
 
 describe('markers usage', () => {

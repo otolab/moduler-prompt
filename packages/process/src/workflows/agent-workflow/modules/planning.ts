@@ -1,5 +1,7 @@
+import { merge } from '@moduler-prompt/core';
 import type { PromptModule } from '@moduler-prompt/core';
 import type { AgentWorkflowContext } from '../types.js';
+import { common } from './common.js';
 
 /**
  * Planning phase module for agent workflow
@@ -8,24 +10,27 @@ import type { AgentWorkflowContext } from '../types.js';
  * Should be merged with user's module:
  *   merge(planning, userModule)
  */
-export const planning: PromptModule<AgentWorkflowContext> = {
+const planningBase: PromptModule<AgentWorkflowContext> = {
   methodology: [
+    '',
+    '現在はPlanningフェーズです。Objective（目標）とInstructions（指示）を分析し、実行可能なステップに分解した実行計画を生成してください。'
+  ],
+
+  instructions: [
     {
       type: 'subsection',
-      title: '計画フェーズの処理',
+      title: 'Planningフェーズの処理',
       items: [
-        'objectiveとinstructionsを分析し、実行可能なステップに分解する',
-        '各ステップには一意のID、説明、必要に応じてアクションとパラメータを含める',
-        'ステップ数は3〜5個程度を目安とする'
+        '- objectiveとinstructionsを分析し、実行可能なステップに分解する',
+        '- 各ステップには一意のID、説明、必要に応じてアクションとパラメータを含める',
+        '- ステップ数は3〜5個程度を目安とする'
       ]
     },
     {
       type: 'subsection',
-      title: 'アクションの指定',
+      title: '利用可能なAction',
       items: [
-        'アクションが必要な場合は、action フィールドにアクション名を指定',
-        'アクションのパラメータは params フィールドに指定',
-        'アクションが不要な場合は、AI推論のみで処理'
+        '- 利用可能なActionはありません'
       ]
     }
   ],
@@ -76,3 +81,5 @@ export const planning: PromptModule<AgentWorkflowContext> = {
     }
   ]
 };
+
+export const planning = merge(common, planningBase);
