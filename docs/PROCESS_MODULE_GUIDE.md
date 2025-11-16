@@ -100,17 +100,17 @@ PromptModuleフレームワーク自体は標準セクションの使い方を�
 ```typescript
 /**
  * プロセス固有のContext型を定義
- * （以下はAgent workflowの例）
+ * （以下はAgentic workflowの例）
  */
-export interface AgentWorkflowContext {
+export interface AgenticWorkflowContext {
   inputs?: any;                   // 入力データ
-  plan?: AgentPlan;               // 実行計画
-  executionLog?: AgentExecutionLog[];  // 実行履歴
+  plan?: AgenticPlan;               // 実行計画
+  executionLog?: AgenticExecutionLog[];  // 実行履歴
   state?: {                       // 前ステップからの申し送り
     content: string;
     usage?: number;
   };
-  currentStep?: AgentStep;        // 現在のステップ
+  currentStep?: AgenticStep;        // 現在のステップ
   actionResult?: any;             // アクション実行結果
   phase?: 'planning' | 'execution' | 'integration' | 'complete';
 }
@@ -337,7 +337,7 @@ interface TypicalWorkflowContext {
 | materials | 参考資料（構造化された資料） |
 | state | 初期状態（処理開始時の状態や継続情報） |
 
-**注記**: `inputs`の構造は各プロセスモジュールが定義します（例：dialogueでは`messages`配列、agentでは任意のデータ）
+**注記**: `inputs`の構造は各プロセスモジュールが定義します（例：dialogueでは`messages`配列、agenticでは任意のデータ）
 
 #### ワークフロー内部管理フィールド
 
@@ -349,7 +349,7 @@ interface TypicalWorkflowContext {
 | | chunks | chunks | 分割データ（実行結果など） |
 | | phase | state | 処理フェーズ |
 | | range | （配置なし） | バッチ処理の範囲指定 |
-| **Agent** | plan | materials | 実行計画 |
+| **Agentic** | plan | materials | 実行計画 |
 | | executionLog | chunks | 実行履歴 |
 | | currentStep | state | 現在のステップ |
 | | actionResult | materials | アクション実行結果 |
@@ -391,12 +391,12 @@ interface SummarizeWorkflowContext {
 }
 
 // エージェントワークフロー
-interface AgentWorkflowContext {
+interface AgenticWorkflowContext {
   inputs?: any;
   state?: { content: string; usage?: number };
-  plan?: AgentPlan;
-  executionLog?: AgentExecutionLog[];
-  currentStep?: AgentStep;
+  plan?: AgenticPlan;
+  executionLog?: AgenticExecutionLog[];
+  currentStep?: AgenticStep;
   actionResult?: any;
   phase?: 'planning' | 'execution' | 'integration' | 'complete';
 }

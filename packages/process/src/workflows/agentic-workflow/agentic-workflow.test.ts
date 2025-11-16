@@ -1,9 +1,9 @@
 import { describe, it, expect } from 'vitest';
-import { agentProcess } from './agent-workflow.js';
+import { agenticProcess } from './agent-workflow.js';
 import { TestDriver } from '@moduler-prompt/driver';
-import type { AgentWorkflowContext, AgentPlan } from './types.js';
+import type { AgenticWorkflowContext, AgentPlan } from './types.js';
 
-describe('agentProcess', () => {
+describe('agenticProcess', () => {
   it('should execute a simple agent workflow', async () => {
     // Mock plan
     const plan: AgentPlan = {
@@ -27,7 +27,7 @@ describe('agentProcess', () => {
       ]
     });
 
-    const context: AgentWorkflowContext = {
+    const context: AgenticWorkflowContext = {
       objective: 'Analyze the document and extract insights',
       inputs: { data: 'test data' }
     };
@@ -42,7 +42,7 @@ describe('agentProcess', () => {
       ]
     };
 
-    const result = await agentProcess(driver, userModule, context);
+    const result = await agenticProcess(driver, userModule, context);
 
     expect(result.output).toBe('Final result: Task completed successfully');
     expect(result.context.phase).toBe('complete');
@@ -86,7 +86,7 @@ describe('agentProcess', () => {
       ]
     });
 
-    const context: AgentWorkflowContext = {
+    const context: AgenticWorkflowContext = {
       objective: 'Fetch user data and generate report'
     };
 
@@ -99,7 +99,7 @@ describe('agentProcess', () => {
       ]
     };
 
-    const result = await agentProcess(driver, userModule, context, { actions });
+    const result = await agenticProcess(driver, userModule, context, { actions });
 
     expect(actionCalled).toBe(true);
     expect(result.context.executionLog?.[0].actionResult).toEqual({ result: 'data retrieved' });
@@ -128,7 +128,7 @@ describe('agentProcess', () => {
       ]
     });
 
-    const context: AgentWorkflowContext = {
+    const context: AgenticWorkflowContext = {
       objective: 'Summarize technical specification'
     };
 
@@ -141,7 +141,7 @@ describe('agentProcess', () => {
       ]
     };
 
-    const result = await agentProcess(driver, userModule, context, { maxSteps: 3 });
+    const result = await agenticProcess(driver, userModule, context, { maxSteps: 3 });
 
     expect(result.context.executionLog).toHaveLength(3);
     expect(result.metadata?.executedSteps).toBe(3);
@@ -162,7 +162,7 @@ describe('agentProcess', () => {
       ]
     });
 
-    const context: AgentWorkflowContext = {
+    const context: AgenticWorkflowContext = {
       objective: 'Create monthly sales report',
       plan // Plan already provided
     };
@@ -176,7 +176,7 @@ describe('agentProcess', () => {
       ]
     };
 
-    const result = await agentProcess(driver, userModule, context, { enablePlanning: false });
+    const result = await agenticProcess(driver, userModule, context, { enablePlanning: false });
 
     expect(result.context.executionLog).toHaveLength(1);
     expect(result.output).toBe('Integration done');
@@ -189,7 +189,7 @@ describe('agentProcess', () => {
       ]
     });
 
-    const context: AgentWorkflowContext = {
+    const context: AgenticWorkflowContext = {
       objective: 'Test error handling'
     };
 
@@ -199,7 +199,7 @@ describe('agentProcess', () => {
     };
 
     await expect(async () => {
-      await agentProcess(driver, userModule, context);
+      await agenticProcess(driver, userModule, context);
     }).rejects.toThrow('Planning failed with reason: length');
   });
 
@@ -222,7 +222,7 @@ describe('agentProcess', () => {
       ]
     });
 
-    const context: AgentWorkflowContext = {
+    const context: AgenticWorkflowContext = {
       objective: 'Test execution error handling'
     };
 
@@ -232,7 +232,7 @@ describe('agentProcess', () => {
     };
 
     await expect(async () => {
-      await agentProcess(driver, userModule, context);
+      await agenticProcess(driver, userModule, context);
     }).rejects.toThrow('Step execution failed with reason: error');
   });
 
@@ -259,7 +259,7 @@ describe('agentProcess', () => {
       ]
     });
 
-    const context: AgentWorkflowContext = {
+    const context: AgenticWorkflowContext = {
       objective: 'Process customer feedback'
     };
 
@@ -273,7 +273,7 @@ describe('agentProcess', () => {
     };
 
     await expect(async () => {
-      await agentProcess(driver, userModule, context, { actions });
+      await agenticProcess(driver, userModule, context, { actions });
     }).rejects.toThrow("Action 'failingAction' failed: Action failed");
   });
 
@@ -301,7 +301,7 @@ describe('agentProcess', () => {
       ]
     });
 
-    const context: AgentWorkflowContext = {
+    const context: AgenticWorkflowContext = {
       objective: 'Analyze the document and summarize',
       plan,
       executionLog,
@@ -318,7 +318,7 @@ describe('agentProcess', () => {
       ]
     };
 
-    const result = await agentProcess(driver, userModule, context, { enablePlanning: false });
+    const result = await agenticProcess(driver, userModule, context, { enablePlanning: false });
 
     expect(result.context.executionLog).toHaveLength(3);
     expect(result.context.executionLog?.[0].stepId).toBe('step-1');

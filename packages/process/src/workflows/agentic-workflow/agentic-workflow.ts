@@ -2,7 +2,7 @@ import { compile, merge } from '@moduler-prompt/core';
 import type { PromptModule } from '@moduler-prompt/core';
 import { WorkflowExecutionError } from '../types.js';
 import type { AIDriver, WorkflowResult } from '../types.js';
-import type { AgentWorkflowContext, AgentWorkflowOptions, AgentPlan, AgentExecutionLog, ActionHandler } from './types.js';
+import type { AgenticWorkflowContext, AgenticWorkflowOptions, AgenticPlan, AgenticExecutionLog, ActionHandler } from './types.js';
 import { agentic } from './modules/agentic.js';
 import { planning } from './modules/planning.js';
 import { execution } from './modules/execution.js';
@@ -13,11 +13,11 @@ import { integration } from './modules/integration.js';
  */
 async function executePlanningPhase(
   driver: AIDriver,
-  module: PromptModule<AgentWorkflowContext>,
-  context: AgentWorkflowContext,
+  module: PromptModule<AgenticWorkflowContext>,
+  context: AgenticWorkflowContext,
   maxSteps: number,
   logger?: any
-): Promise<AgentPlan> {
+): Promise<AgenticPlan> {
   const planningModule = merge(agentic, planning, module);
   const prompt = compile(planningModule, context);
 
@@ -50,7 +50,7 @@ async function executePlanningPhase(
       );
     }
 
-    const plan = planResult.structuredOutput as AgentPlan;
+    const plan = planResult.structuredOutput as AgenticPlan;
 
     // Validate and limit steps
     if (!plan.steps || !Array.isArray(plan.steps)) {
@@ -86,13 +86,13 @@ async function executePlanningPhase(
  */
 async function executeStep(
   driver: AIDriver,
-  module: PromptModule<AgentWorkflowContext>,
-  context: AgentWorkflowContext,
-  step: AgentPlan['steps'][number],
+  module: PromptModule<AgenticWorkflowContext>,
+  context: AgenticWorkflowContext,
+  step: AgenticPlan['steps'][number],
   actions: Record<string, ActionHandler>,
-  executionLog: AgentExecutionLog[],
+  executionLog: AgenticExecutionLog[],
   logger?: any
-): Promise<AgentExecutionLog> {
+): Promise<AgenticExecutionLog> {
   // Execute actions if specified
   let actionResult: any;
   if (step.actions && step.actions.length > 0) {
@@ -120,7 +120,7 @@ async function executeStep(
 
   // Execute step with AI
   const executionModule = merge(agentic, execution, module);
-  const stepContext: AgentWorkflowContext = {
+  const stepContext: AgenticWorkflowContext = {
     ...context,
     currentStep: step,
     actionResult,
@@ -193,12 +193,12 @@ async function executeStep(
  */
 async function executeExecutionPhase(
   driver: AIDriver,
-  module: PromptModule<AgentWorkflowContext>,
-  context: AgentWorkflowContext,
-  plan: AgentPlan,
+  module: PromptModule<AgenticWorkflowContext>,
+  context: AgenticWorkflowContext,
+  plan: AgenticPlan,
   actions: Record<string, ActionHandler>,
   logger?: any
-): Promise<AgentExecutionLog[]> {
+): Promise<AgenticExecutionLog[]> {
   const executionLog = context.executionLog || [];
 
   // Determine starting position (for resumption)
@@ -219,9 +219,9 @@ async function executeExecutionPhase(
  */
 async function executeIntegrationPhase(
   driver: AIDriver,
-  module: PromptModule<AgentWorkflowContext>,
-  context: AgentWorkflowContext,
-  executionLog: AgentExecutionLog[],
+  module: PromptModule<AgenticWorkflowContext>,
+  context: AgenticWorkflowContext,
+  executionLog: AgenticExecutionLog[],
   logger?: any
 ): Promise<string> {
   const integrationModule = merge(agentic, integration, module);
@@ -259,19 +259,19 @@ async function executeIntegrationPhase(
 }
 
 /**
- * Agent workflow - autonomous multi-step processing with planning
+ * Agentic workflow - autonomous multi-step processing with planning
  *
  * Flow:
  * 1. Planning phase: Generate execution plan using structured outputs
  * 2. Execution phase: Execute each step (with optional actions)
  * 3. Integration phase: Integrate results and generate final output
  */
-export async function agentProcess(
+export async function agenticProcess(
   driver: AIDriver,
-  module: PromptModule<AgentWorkflowContext>,
-  context: AgentWorkflowContext,
-  options: AgentWorkflowOptions = {}
-): Promise<WorkflowResult<AgentWorkflowContext>> {
+  module: PromptModule<AgenticWorkflowContext>,
+  context: AgenticWorkflowContext,
+  options: AgenticWorkflowOptions = {}
+): Promise<WorkflowResult<AgenticWorkflowContext>> {
 
   const {
     maxSteps = 5,
@@ -281,7 +281,7 @@ export async function agentProcess(
   } = options;
 
   let currentContext = { ...context };
-  let plan: AgentPlan;
+  let plan: AgenticPlan;
 
   // Phase 1: Planning
   if (enablePlanning && !currentContext.plan) {
@@ -303,7 +303,7 @@ export async function agentProcess(
   const finalOutput = await executeIntegrationPhase(driver, module, currentContext, executionLog, logger);
 
   // Complete
-  const finalContext: AgentWorkflowContext = {
+  const finalContext: AgenticWorkflowContext = {
     ...currentContext,
     phase: 'complete'
   };

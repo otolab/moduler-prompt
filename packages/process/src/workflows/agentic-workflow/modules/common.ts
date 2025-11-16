@@ -1,5 +1,5 @@
 import type { PromptModule } from '@moduler-prompt/core';
-import type { AgentWorkflowContext } from '../types.js';
+import type { AgenticWorkflowContext } from '../types.js';
 
 /**
  * Common module for agent workflow
@@ -10,7 +10,7 @@ import type { AgentWorkflowContext } from '../types.js';
  *   merge(common, execution, userModule)
  *   merge(common, integration, userModule)
  */
-export const common: PromptModule<AgentWorkflowContext> = {
+export const common: PromptModule<AgenticWorkflowContext> = {
   terms: [
     '- Objective: The ultimate goal to achieve',
     '- Instructions: Specific directives and requirements to accomplish the task',

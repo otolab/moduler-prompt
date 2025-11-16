@@ -1,6 +1,6 @@
 import { merge } from '@moduler-prompt/core';
 import type { PromptModule } from '@moduler-prompt/core';
-import type { AgentWorkflowContext } from '../types.js';
+import type { AgenticWorkflowContext } from '../types.js';
 import { common } from './common.js';
 
 /**
@@ -10,7 +10,7 @@ import { common } from './common.js';
  * Should be merged with user's module:
  *   merge(planning, userModule)
  */
-const planningBase: PromptModule<AgentWorkflowContext> = {
+const planningBase: PromptModule<AgenticWorkflowContext> = {
   methodology: [
     '',
     'Currently in Planning phase. Analyze the Objective and Instructions to generate an execution plan broken down into executable steps.'

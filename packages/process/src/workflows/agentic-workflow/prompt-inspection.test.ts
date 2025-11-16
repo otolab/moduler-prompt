@@ -4,7 +4,7 @@ import { compile, merge } from '@moduler-prompt/core';
 import { planning } from './modules/planning.js';
 import { execution } from './modules/execution.js';
 import { integration } from './modules/integration.js';
-import type { AgentWorkflowContext, AgentPlan } from './types.js';
+import type { AgenticWorkflowContext, AgentPlan } from './types.js';
 
 describe('Agent Workflow Prompt Inspection', () => {
   const userModule = {
@@ -57,7 +57,7 @@ describe('Agent Workflow Prompt Inspection', () => {
       }
     });
 
-    const planningContext: AgentWorkflowContext = {
+    const planningContext: AgenticWorkflowContext = {
       objective: '文書を分析し、重要な洞察を抽出する',
       inputs: { document: 'サンプルドキュメントの内容...' }
     };
@@ -91,7 +91,7 @@ describe('Agent Workflow Prompt Inspection', () => {
 
     for (let i = 0; i < plan.steps.length; i++) {
       const step = plan.steps[i];
-      const executionContext: AgentWorkflowContext = {
+      const executionContext: AgenticWorkflowContext = {
         objective: '文書を分析し、重要な洞察を抽出する',
         inputs: { document: 'サンプルドキュメントの内容...' },
         plan: plan,
@@ -129,7 +129,7 @@ describe('Agent Workflow Prompt Inspection', () => {
       }
     });
 
-    const integrationContext: AgentWorkflowContext = {
+    const integrationContext: AgenticWorkflowContext = {
       objective: '文書を分析し、重要な洞察を抽出する',
       inputs: { document: 'サンプルドキュメントの内容...' },
       plan: plan,

@@ -1,6 +1,6 @@
 import { merge } from '@moduler-prompt/core';
 import type { PromptModule } from '@moduler-prompt/core';
-import type { AgentWorkflowContext, AgentStep } from '../types.js';
+import type { AgenticWorkflowContext, AgenticStep } from '../types.js';
 import { common } from './common.js';
 
 /**
@@ -10,7 +10,7 @@ import { common } from './common.js';
  * Should be merged with user's module:
  *   merge(integration, userModule)
  */
-const integrationBase: PromptModule<AgentWorkflowContext> = {
+const integrationBase: PromptModule<AgenticWorkflowContext> = {
   methodology: [
     '',
     'Currently in Integration phase. Integrate results from all steps to generate the final output achieving the overall objective.'
@@ -42,7 +42,7 @@ const integrationBase: PromptModule<AgentWorkflowContext> = {
             return null;
           }
 
-          return ctx.plan.steps.map((step: AgentStep) => {
+          return ctx.plan.steps.map((step: AgenticStep) => {
             const parts: string[] = [step.description];
 
             // Tools

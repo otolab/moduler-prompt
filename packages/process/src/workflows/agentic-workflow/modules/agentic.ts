@@ -1,5 +1,5 @@
 import type { PromptModule } from '@moduler-prompt/core';
-import type { AgentWorkflowContext } from '../types.js';
+import type { AgenticWorkflowContext } from '../types.js';
 
 /**
  * Agentic module - Common definitions for agent workflow
@@ -8,7 +8,7 @@ import type { AgentWorkflowContext } from '../types.js';
  * This module should be merged with user's module:
  *   agentProcess(driver, merge(agenticModule, userModule), context)
  */
-export const agentic: PromptModule<AgentWorkflowContext> = {
+export const agentic: PromptModule<AgenticWorkflowContext> = {
   terms: [
     '- instructions: Specific directives to achieve the Objective. Step execution procedures are provided separately in the methodology.'
   ],

@@ -1,13 +1,30 @@
-import { agentProcess } from '../src/workflows/agent-workflow/agent-workflow.js';
+import { agenticProcess } from '../src/workflows/agentic-workflow/agentic-workflow.js';
 import { MlxDriver } from '@moduler-prompt/driver';
 import { defaultLogger, LogLevel } from '@moduler-prompt/utils';
 import { platform } from 'os';
+import { readFileSync } from 'fs';
+import { join, dirname } from 'path';
+import { fileURLToPath } from 'url';
 
 /**
- * Agent Workflow - Meal Planning Test
+ * Agentic Workflow Test Runner
  *
- * 冷蔵庫の材料と過去の献立から、今日の献立を検討します
+ * プロンプトを与えて結果を見る汎用テストスクリプト
+ *
+ * Usage:
+ *   npx tsx scripts/test-agentic-workflow.ts [test-case-file]
+ *
+ * Example:
+ *   npx tsx scripts/test-agentic-workflow.ts
+ *   npx tsx scripts/test-agentic-workflow.ts test-cases/meal-planning.json
+ *
+ * Environment Variables:
+ *   MLX_MODEL: Model to use (default: mlx-community/gemma-3-27b-it-qat-4bit)
+ *   SKIP_MLX_TESTS: Skip MLX tests (default: false)
  */
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = dirname(__filename);
 
 // MLXはApple Silicon専用
 const shouldSkipMLX =
@@ -15,16 +32,39 @@ const shouldSkipMLX =
   process.env.CI === 'true' ||
   process.env.SKIP_MLX_TESTS === 'true';
 
+interface TestCase {
+  name: string;
+  description?: string;
+  module: any;
+  context: any;
+}
+
+function loadTestCase(filePath: string): TestCase {
+  const fullPath = filePath.startsWith('/')
+    ? filePath
+    : join(__dirname, filePath);
+
+  const content = readFileSync(fullPath, 'utf-8');
+  return JSON.parse(content);
+}
+
 async function main() {
   if (shouldSkipMLX) {
     console.log('⚠️  MLX tests are skipped (not on Apple Silicon or CI environment)');
     return;
   }
 
+  // Get test case file from command line argument or use default
+  const testCaseFile = process.argv[2] || 'test-cases/meal-planning.json';
+  const testCase = loadTestCase(testCaseFile);
+
   // Model selection - can be overridden by environment variable
   const modelName = process.env.MLX_MODEL || 'mlx-community/gemma-3-27b-it-qat-4bit';
 
-  console.log('🍽️  Meal Planning Workflow Test\n');
+  console.log(`🧪 Agentic Workflow Test: ${testCase.name}\n`);
+  if (testCase.description) {
+    console.log(`📝 ${testCase.description}\n`);
+  }
   console.log(`📦 Model: ${modelName}\n`);
 
   // Logger setup for debug output
@@ -41,43 +81,17 @@ async function main() {
     }
   });
 
-  // User's module - 献立検討のワークフロー
-  const userModule = {
-    objective: ['今日の夕飯の献立を決定する'],
-    instructions: [
-      '- 冷蔵庫の材料から作れる主菜候補を検討する',
-      '- 過去の献立と比較し、似たものが続かないようにする',
-      '- 選んだ主菜に合う副菜を提案する',
-      '- 不足している材料があれば買い出しリストを作成する'
-    ]
-  };
-
-  // Initial context - 冷蔵庫の材料と過去の献立
-  const context = {
-    objective: '今日の夕飯の献立を決定する',
-    inputs: {
-      refrigerator: {
-        proteins: ['鶏もも肉 300g', '豚バラ肉 200g', '卵 6個', '豆腐 1丁'],
-        vegetables: ['キャベツ', '人参', '玉ねぎ 2個', 'じゃがいも 3個', 'ピーマン', 'もやし'],
-        seasonings: ['醤油', 'みりん', '酒', '味噌', 'サラダ油', 'ごま油', '塩', 'コショウ'],
-        other: ['ご飯', '乾燥わかめ']
-      },
-      pastMeals: [
-        { date: '昨日', mainDish: 'カレーライス（豚肉・じゃがいも・人参・玉ねぎ）' },
-        { date: '一昨日', mainDish: '生姜焼き（豚肉・玉ねぎ）' },
-        { date: '3日前', mainDish: '鶏の照り焼き（鶏もも肉）' }
-      ]
-    }
-  };
-
+  console.log('📋 Test Case Module:');
+  console.log(JSON.stringify(testCase.module, null, 2));
+  console.log('');
   console.log('📋 Initial Context:');
-  console.log(JSON.stringify(context, null, 2));
+  console.log(JSON.stringify(testCase.context, null, 2));
   console.log('');
 
   try {
     // Run the workflow
-    console.log('⚙️  Running meal planning workflow...\n');
-    const result = await agentProcess(driver, userModule, context, { logger: defaultLogger });
+    console.log('⚙️  Running agentic workflow...\n');
+    const result = await agenticProcess(driver, testCase.module, testCase.context, { logger: defaultLogger });
 
     // Display results
     console.log('✅ Workflow completed!\n');
@@ -106,7 +120,7 @@ async function main() {
       console.log(log.result);
     });
 
-    console.log('\n✨ Meal planning completed successfully!\n');
+    console.log(`\n✨ ${testCase.name} completed successfully!\n`);
   } catch (error) {
     console.error('❌ Error during workflow execution:', error);
     throw error;

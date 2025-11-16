@@ -1,6 +1,6 @@
 import { merge } from '@moduler-prompt/core';
 import type { PromptModule } from '@moduler-prompt/core';
-import type { AgentWorkflowContext, AgentStep } from '../types.js';
+import type { AgenticWorkflowContext, AgenticStep } from '../types.js';
 import { common } from './common.js';
 
 /**
@@ -10,7 +10,7 @@ import { common } from './common.js';
  * Should be merged with user's module:
  *   merge(execution, userModule)
  */
-const executionBase: PromptModule<AgentWorkflowContext> = {
+const executionBase: PromptModule<AgenticWorkflowContext> = {
   methodology: [
     '',
     'Currently in Execution phase. Execute only the current step of the execution plan and record the results.'
@@ -44,7 +44,7 @@ const executionBase: PromptModule<AgentWorkflowContext> = {
 
           const currentStepId = ctx.currentStep?.id;
 
-          return ctx.plan.steps.map((step: AgentStep) => {
+          return ctx.plan.steps.map((step: AgenticStep) => {
             const parts: string[] = [];
 
             // Description
