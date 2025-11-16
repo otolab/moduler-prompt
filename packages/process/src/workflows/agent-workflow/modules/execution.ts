@@ -13,29 +13,29 @@ import { common } from './common.js';
 const executionBase: PromptModule<AgentWorkflowContext> = {
   methodology: [
     '',
-    '現在はExecutionフェーズです。実行計画の現在のステップのみを実行し、結果を記録します。'
+    'Currently in Execution phase. Execute only the current step of the execution plan and record the results.'
   ],
 
   instructions: [
     {
       type: 'subsection',
-      title: 'Executionフェーズの処理',
+      title: 'Execution Phase Process',
       items: [
-        '- 以下の「実行計画」に記載された現在のステップのみを実行する',
-        '- アクション結果がある場合はそれを活用',
-        '- 結果(result)と次への申し送り(nextState)を構造化して出力'
+        '- Focus solely on completing the current step',
+        '- Utilize action results if available',
+        '- Output result and nextState in a structured format'
       ]
     },
     {
       type: 'subsection',
-      title: '利用可能なAction',
+      title: 'Available Tools',
       items: [
-        '- 利用可能なActionはありません'
+        '- No tools are available'
       ]
     },
     {
       type: 'subsection',
-      title: '実行計画',
+      title: 'Execution Plan',
       items: [
         (ctx) => {
           if (!ctx.plan) {
@@ -45,10 +45,38 @@ const executionBase: PromptModule<AgentWorkflowContext> = {
           const currentStepId = ctx.currentStep?.id;
 
           return ctx.plan.steps.map((step: AgentStep) => {
-            const marker = step.id === currentStepId ? ' ← 現在実行中' : '';
-            const action = step.action ? ` (アクション: ${step.action})` : '';
-            return `- ${step.description}${action}${marker}`;
-          });
+            const parts: string[] = [];
+
+            // Description
+            parts.push(step.description);
+
+            // Tools
+            if (step.actions && step.actions.length > 0) {
+              const toolNames = step.actions.map(a => a.tool).join(', ');
+              parts.push(`(Tools: ${toolNames})`);
+            }
+
+            const baseText = parts.join(' ');
+
+            // For currently executing step, show dos/donts
+            if (step.id === currentStepId) {
+              const details: string[] = [`- **${baseText}** ← **[Currently executing]**`];
+
+              if (step.dos && step.dos.length > 0) {
+                details.push('  **Do:**');
+                step.dos.forEach(item => details.push(`  - ${item}`));
+              }
+
+              if (step.donts && step.donts.length > 0) {
+                details.push('  **Don\'t:**');
+                step.donts.forEach(item => details.push(`  - ${item}`));
+              }
+
+              return details;
+            }
+
+            return `- ${baseText}`;
+          }).flat();
         }
       ]
     }
@@ -58,14 +86,18 @@ const executionBase: PromptModule<AgentWorkflowContext> = {
     (ctx) => {
       const completed = ctx.executionLog?.length || 0;
       const total = ctx.plan?.steps.length || 0;
-      return `進捗: ${completed}/${total} ステップ完了`;
+      return `Progress: ${completed}/${total} steps completed`;
     },
     (ctx) => {
       if (ctx.state) {
-        return `前ステップからの申し送り: ${ctx.state.content}`;
+        return `Handover from previous step: ${ctx.state.content}`;
       }
       return null;
     }
+  ],
+
+  inputs: [
+    (ctx) => ctx.inputs ? JSON.stringify(ctx.inputs, null, 2) : null
   ],
 
   materials: [
@@ -77,7 +109,7 @@ const executionBase: PromptModule<AgentWorkflowContext> = {
       return {
         type: 'material' as const,
         id: 'action-result',
-        title: '現在のステップのアクション実行結果',
+        title: 'Action execution result for current step',
         content: typeof ctx.actionResult === 'string'
           ? ctx.actionResult
           : JSON.stringify(ctx.actionResult, null, 2)
@@ -88,13 +120,21 @@ const executionBase: PromptModule<AgentWorkflowContext> = {
         return null;
       }
 
-      return ctx.executionLog.map((log) => ({
+      // Show only the most recent execution result to reduce confusion
+      const lastLog = ctx.executionLog[ctx.executionLog.length - 1];
+
+      return {
         type: 'material' as const,
-        id: `execution-result-${log.stepId}`,
-        title: `実行結果: ${log.stepId}`,
-        content: log.result
-      }));
+        id: `execution-result-${lastLog.stepId}`,
+        title: `Previous step result: ${lastLog.stepId}`,
+        content: lastLog.result
+      };
     }
+  ],
+
+  cue: [
+    'Output a JSON object containing the execution result of the current step following the JSON Output Format below.',
+    'Generate actual data (an object with result and nextState properties), not the JSON Schema definition itself.'
   ],
 
   schema: [
@@ -105,11 +145,11 @@ const executionBase: PromptModule<AgentWorkflowContext> = {
         properties: {
           result: {
             type: 'string',
-            description: 'ステップの実行結果。何を行ったか、どのような結果が得られたかを記述'
+            description: 'Execution result: Describe what was done in this step and what results were obtained. Include specific findings and outputs.'
           },
           nextState: {
             type: 'string',
-            description: '次のステップへの申し送り事項。次のステップで必要となる情報、注意点、中間結果など'
+            description: 'Handover note for the next step (simple text, not object/array)'
           }
         },
         required: ['result', 'nextState']

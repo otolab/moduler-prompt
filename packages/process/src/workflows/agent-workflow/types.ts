@@ -12,8 +12,12 @@ export type ActionHandler<TContext = any> = (
 export interface AgentStep {
   id: string;
   description: string;
-  action?: string;
-  params?: any;
+  dos?: string[];        // Things to do in this step
+  donts?: string[];      // Things NOT to do in this step
+  actions?: Array<{      // External tools to use (supports multiple tools)
+    tool: string;
+    params?: any;
+  }>;
 }
 
 /**
@@ -57,4 +61,5 @@ export interface AgentWorkflowOptions {
   maxSteps?: number;              // 最大ステップ数（デフォルト: 5）
   actions?: Record<string, ActionHandler>;  // 利用可能なアクション
   enablePlanning?: boolean;       // 計画フェーズの有効化（デフォルト: true）
+  logger?: any;                   // Logger instance for debug output
 }

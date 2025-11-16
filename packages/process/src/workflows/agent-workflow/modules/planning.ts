@@ -13,24 +13,29 @@ import { common } from './common.js';
 const planningBase: PromptModule<AgentWorkflowContext> = {
   methodology: [
     '',
-    '現在はPlanningフェーズです。Objective（目標）とInstructions（指示）を分析し、実行可能なステップに分解した実行計画を生成してください。'
+    'Currently in Planning phase. Analyze the Objective and Instructions to generate an execution plan broken down into executable steps.'
   ],
 
   instructions: [
     {
       type: 'subsection',
-      title: 'Planningフェーズの処理',
+      title: 'Planning Phase Process',
       items: [
-        '- objectiveとinstructionsを分析し、実行可能なステップに分解する',
-        '- 各ステップには一意のID、説明、必要に応じてアクションとパラメータを含める',
-        '- ステップ数は3〜5個程度を目安とする'
+        '- Analyze the objective and instructions to break them down into executable steps',
+        '- Each step should include:',
+        '  - id: Unique identifier',
+        '  - description: Brief summary of the step',
+        '  - dos: List of things to do (2-4 specific actions)',
+        '  - donts: List of things NOT to do (1-3 specific prohibitions)',
+        '  - actions: External tools to use (optional, only if tools are available)',
+        '- Aim for approximately 3-5 steps'
       ]
     },
     {
       type: 'subsection',
-      title: '利用可能なAction',
+      title: 'Available Tools',
       items: [
-        '- 利用可能なActionはありません'
+        '- No tools are available'
       ]
     }
   ],
@@ -40,7 +45,12 @@ const planningBase: PromptModule<AgentWorkflowContext> = {
   ],
 
   state: [
-    'フェーズ: planning'
+    'Phase: planning'
+  ],
+
+  cue: [
+    'Output a JSON object containing the actual array of steps following the JSON Output Format below.',
+    'Generate actual data (an object with a steps property), not the JSON Schema definition itself.'
   ],
 
   schema: [
@@ -56,24 +66,44 @@ const planningBase: PromptModule<AgentWorkflowContext> = {
               properties: {
                 id: {
                   type: 'string',
-                  description: 'ステップの一意なID（例: step-1, step-2）'
+                  description: 'Unique step ID (e.g., step-1, step-2)'
                 },
                 description: {
                   type: 'string',
-                  description: 'ステップの説明（何をするか）'
+                  description: 'Brief summary of what this step accomplishes'
                 },
-                action: {
-                  type: 'string',
-                  description: 'アクション名（オプション）。利用可能なアクションがあれば指定'
+                dos: {
+                  type: 'array',
+                  items: { type: 'string' },
+                  description: 'List of specific things to do in this step (2-4 items)'
                 },
-                params: {
-                  type: 'object',
-                  description: 'アクションのパラメータ（オプション）'
+                donts: {
+                  type: 'array',
+                  items: { type: 'string' },
+                  description: 'List of specific things NOT to do in this step (1-3 items)'
+                },
+                actions: {
+                  type: 'array',
+                  items: {
+                    type: 'object',
+                    properties: {
+                      tool: {
+                        type: 'string',
+                        description: 'Tool name from available actions'
+                      },
+                      params: {
+                        type: 'object',
+                        description: 'Tool parameters (optional)'
+                      }
+                    },
+                    required: ['tool']
+                  },
+                  description: 'External tools to use (optional, only if available actions exist)'
                 }
               },
-              required: ['id', 'description']
+              required: ['id', 'description', 'dos', 'donts']
             },
-            description: '実行計画のステップリスト'
+            description: 'List of execution plan steps'
           }
         },
         required: ['steps']

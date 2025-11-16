@@ -12,16 +12,16 @@ import type { AgentWorkflowContext } from '../types.js';
  */
 export const common: PromptModule<AgentWorkflowContext> = {
   terms: [
-    '- Objective: 最終的に達成すべきゴール',
-    '- Instructions: タスク達成のための具体的な指示や要件',
-    '- 実行計画: Instructionsを実行可能なステップに分解したもの',
-    '- Action: ステップ実行時に外部処理（API呼び出し、データ取得など）を行う機能'
+    '- Objective: The ultimate goal to achieve',
+    '- Instructions: Specific directives and requirements to accomplish the task',
+    '- Execution Plan: Instructions broken down into executable steps',
+    '- Action: Capability to perform external processing (API calls, data retrieval, etc.) during step execution'
   ],
 
   methodology: [
-    'このワークフローは3つのフェーズで構成されます：',
-    '1. Planning: Objective（目標）とInstructions（指示）を分析し、実行可能なステップに分解した実行計画を生成',
-    '2. Execution: 実行計画の各ステップを順次実行し、結果を記録',
-    '3. Integration: 全ステップの実行結果を統合し、最終的な出力を生成'
+    'This workflow consists of three phases:',
+    '1. Planning: Analyze the Objective and Instructions to generate an execution plan broken down into executable steps',
+    '2. Execution: Execute each step in the execution plan sequentially and record results',
+    '3. Integration: Integrate results from all steps to generate the final output'
   ]
 };

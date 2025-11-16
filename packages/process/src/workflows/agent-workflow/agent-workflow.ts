@@ -15,13 +15,16 @@ async function executePlanningPhase(
   driver: AIDriver,
   module: PromptModule<AgentWorkflowContext>,
   context: AgentWorkflowContext,
-  maxSteps: number
+  maxSteps: number,
+  logger?: any
 ): Promise<AgentPlan> {
   const planningModule = merge(agentic, planning, module);
   const prompt = compile(planningModule, context);
 
   try {
     const planResult = await driver.query(prompt);
+
+    logger?.debug('Planning phase - AI generated:', planResult.content);
 
     // Check finish reason
     if (planResult.finishReason && planResult.finishReason !== 'stop') {
@@ -87,26 +90,31 @@ async function executeStep(
   context: AgentWorkflowContext,
   step: AgentPlan['steps'][number],
   actions: Record<string, ActionHandler>,
-  executionLog: AgentExecutionLog[]
+  executionLog: AgentExecutionLog[],
+  logger?: any
 ): Promise<AgentExecutionLog> {
-  // Execute action if specified
+  // Execute actions if specified
   let actionResult: any;
-  if (step.action && actions[step.action]) {
-    try {
-      actionResult = await actions[step.action](step.params, context);
-    } catch (error) {
-      throw new WorkflowExecutionError(
-        `Action '${step.action}' failed: ${(error as Error).message}`,
-        {
-          ...context,
-          executionLog,
-          currentStep: step
-        },
-        {
-          phase: 'execution',
-          partialResult: executionLog.map(log => log.result).join('\n\n')
+  if (step.actions && step.actions.length > 0) {
+    for (const action of step.actions) {
+      if (actions[action.tool]) {
+        try {
+          actionResult = await actions[action.tool](action.params, context);
+        } catch (error) {
+          throw new WorkflowExecutionError(
+            `Tool '${action.tool}' failed: ${(error as Error).message}`,
+            {
+              ...context,
+              executionLog,
+              currentStep: step
+            },
+            {
+              phase: 'execution',
+              partialResult: executionLog.map(log => log.result).join('\n\n')
+            }
+          );
         }
-      );
+      }
     }
   }
 
@@ -123,6 +131,8 @@ async function executeStep(
 
   try {
     const stepResult = await driver.query(prompt);
+
+    logger?.debug(`Execution step ${step.id} - AI generated:`, stepResult.content);
 
     // Check finish reason
     if (stepResult.finishReason && stepResult.finishReason !== 'stop') {
@@ -186,7 +196,8 @@ async function executeExecutionPhase(
   module: PromptModule<AgentWorkflowContext>,
   context: AgentWorkflowContext,
   plan: AgentPlan,
-  actions: Record<string, ActionHandler>
+  actions: Record<string, ActionHandler>,
+  logger?: any
 ): Promise<AgentExecutionLog[]> {
   const executionLog = context.executionLog || [];
 
@@ -196,7 +207,7 @@ async function executeExecutionPhase(
   // Execute each step
   for (let i = startIndex; i < plan.steps.length; i++) {
     const step = plan.steps[i];
-    const logEntry = await executeStep(driver, module, context, step, actions, executionLog);
+    const logEntry = await executeStep(driver, module, context, step, actions, executionLog, logger);
     executionLog.push(logEntry);
   }
 
@@ -210,13 +221,16 @@ async function executeIntegrationPhase(
   driver: AIDriver,
   module: PromptModule<AgentWorkflowContext>,
   context: AgentWorkflowContext,
-  executionLog: AgentExecutionLog[]
+  executionLog: AgentExecutionLog[],
+  logger?: any
 ): Promise<string> {
   const integrationModule = merge(agentic, integration, module);
   const finalPrompt = compile(integrationModule, context);
 
   try {
     const integrationResult = await driver.query(finalPrompt);
+
+    logger?.debug('Integration phase - AI generated:', integrationResult.content);
 
     // Check finish reason
     if (integrationResult.finishReason && integrationResult.finishReason !== 'stop') {
@@ -262,7 +276,8 @@ export async function agentProcess(
   const {
     maxSteps = 5,
     actions = {},
-    enablePlanning = true
+    enablePlanning = true,
+    logger
   } = options;
 
   let currentContext = { ...context };
@@ -271,7 +286,7 @@ export async function agentProcess(
   // Phase 1: Planning
   if (enablePlanning && !currentContext.plan) {
     currentContext.phase = 'planning';
-    plan = await executePlanningPhase(driver, module, currentContext, maxSteps);
+    plan = await executePlanningPhase(driver, module, currentContext, maxSteps, logger);
     currentContext.plan = plan;
   } else {
     // Use existing plan
@@ -280,12 +295,12 @@ export async function agentProcess(
 
   // Phase 2: Execution
   currentContext.phase = 'execution';
-  const executionLog = await executeExecutionPhase(driver, module, currentContext, plan, actions);
+  const executionLog = await executeExecutionPhase(driver, module, currentContext, plan, actions, logger);
   currentContext.executionLog = executionLog;
 
   // Phase 3: Integration
   currentContext.phase = 'integration';
-  const finalOutput = await executeIntegrationPhase(driver, module, currentContext, executionLog);
+  const finalOutput = await executeIntegrationPhase(driver, module, currentContext, executionLog, logger);
 
   // Complete
   const finalContext: AgentWorkflowContext = {

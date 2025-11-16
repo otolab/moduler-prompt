@@ -13,29 +13,29 @@ import { common } from './common.js';
 const integrationBase: PromptModule<AgentWorkflowContext> = {
   methodology: [
     '',
-    '現在はIntegrationフェーズです。全ステップの実行結果を統合し、全体目標を達成する最終的な出力を生成します。'
+    'Currently in Integration phase. Integrate results from all steps to generate the final output achieving the overall objective.'
   ],
 
   instructions: [
     {
       type: 'subsection',
-      title: 'Integrationフェーズの処理',
+      title: 'Integration Phase Process',
       items: [
-        '- 以下の「実行計画」の全ステップの実行結果を統合し、最終的な出力を生成する',
-        '- objectiveが達成されたか確認する',
-        '- 各ステップの重要な結果を明確に記述する'
+        '- Integrate execution results from all steps in the "Execution Plan" to generate the final output',
+        '- Verify that the objective has been achieved',
+        '- Clearly describe important results from each step'
       ]
     },
     {
       type: 'subsection',
-      title: '利用可能なAction',
+      title: 'Available Tools',
       items: [
-        '- 利用可能なActionはありません'
+        '- No tools are available'
       ]
     },
     {
       type: 'subsection',
-      title: '実行計画（全ステップ完了）',
+      title: 'Execution Plan (All Steps Completed)',
       items: [
         (ctx) => {
           if (!ctx.plan) {
@@ -43,8 +43,15 @@ const integrationBase: PromptModule<AgentWorkflowContext> = {
           }
 
           return ctx.plan.steps.map((step: AgentStep) => {
-            const action = step.action ? ` (アクション: ${step.action})` : '';
-            return `- ${step.description}${action}`;
+            const parts: string[] = [step.description];
+
+            // Tools
+            if (step.actions && step.actions.length > 0) {
+              const toolNames = step.actions.map(a => a.tool).join(', ');
+              parts.push(`(Tools: ${toolNames})`);
+            }
+
+            return `- ${parts.join(' ')}`;
           });
         }
       ]
@@ -55,8 +62,12 @@ const integrationBase: PromptModule<AgentWorkflowContext> = {
     (ctx) => {
       const completed = ctx.executionLog?.length || 0;
       const total = ctx.plan?.steps.length || 0;
-      return `全 ${total} ステップ完了。最終出力を生成します。`;
+      return `All ${total} steps completed. Generating final output.`;
     }
+  ],
+
+  inputs: [
+    (ctx) => ctx.inputs ? JSON.stringify(ctx.inputs, null, 2) : null
   ],
 
   materials: [
@@ -72,13 +83,13 @@ const integrationBase: PromptModule<AgentWorkflowContext> = {
           const actionResultStr = typeof log.actionResult === 'string'
             ? log.actionResult
             : JSON.stringify(log.actionResult, null, 2);
-          content += `\n\n[アクション結果]\n${actionResultStr}`;
+          content += `\n\n[Action Result]\n${actionResultStr}`;
         }
 
         return {
           type: 'material' as const,
           id: `execution-result-${log.stepId}`,
-          title: `実行結果: ${log.stepId}`,
+          title: `Execution result: ${log.stepId}`,
           content
         };
       });

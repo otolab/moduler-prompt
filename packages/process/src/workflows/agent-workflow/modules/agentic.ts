@@ -10,17 +10,17 @@ import type { AgentWorkflowContext } from '../types.js';
  */
 export const agentic: PromptModule<AgentWorkflowContext> = {
   terms: [
-    'instructions: Objectiveを果たすための具体的な指示。ステップ実行の手順は別途methodologyで与えられる。'
+    '- instructions: Specific directives to achieve the Objective. Step execution procedures are provided separately in the methodology.'
   ],
 
   methodology: [
     {
       type: 'subsection',
-      title: 'エージェント的処理の基本',
+      title: 'Fundamentals of Agent Processing',
       items: [
-        '複雑なタスクを段階的に実行する多段階処理',
-        '各ステップの結果は次のステップに引き継がれる',
-        '全ステップの結果を統合して最終的な出力を生成'
+        'Multi-step processing that executes complex tasks in stages',
+        'Results from each step are passed to the next step',
+        'Integrate results from all steps to generate final output'
       ]
     }
   ]
