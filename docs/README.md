@@ -24,6 +24,7 @@ Moduler Promptのドキュメント集へようこそ。このディレクトリ
 ### AIモデルとの接続
 
 - **[Driver APIリファレンス](./DRIVER_API.md)** - `@moduler-prompt/driver`パッケージのAPIリファレンス
+- **[ローカルモデルセットアップガイド](./LOCAL_MODEL_SETUP.md)** - MLXとOllamaのセットアップとモデルダウンロード
 - **[AIService 完全ガイド](./AI_SERVICE_GUIDE.md)** - 動的なAIドライバー選択と管理
 - **[Structured Outputs仕様](./STRUCTURED_OUTPUTS.md)** - 構造化出力の仕様と実装ガイド
 - **[テスト用ドライバーガイド](./TEST_DRIVERS.md)** - TestDriverとEchoDriverの使い方

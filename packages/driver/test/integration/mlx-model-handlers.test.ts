@@ -118,11 +118,10 @@ describe('MLX Model Handlers', () => {
       const result = processLlmJpCompletion(prompt);
 
       expect(result).toBe(
-        '<s>\n\n### 指示:\n' +
-        '指示は英語と日本語の混ぜ書きになっています。以下の指示書(prompt)を丁寧に読んで実行してください。\n' +
-        '\n' +
-        'Task description\n' +
-        '\n### 応答:'
+        '<s>以下は、タスクを説明する指示です。要求を適切に満たす応答を書きなさい。' +
+        '\n\n### 指示:\n' +
+        'Task description' +
+        '\n\n### 応答:'
       );
     });
 

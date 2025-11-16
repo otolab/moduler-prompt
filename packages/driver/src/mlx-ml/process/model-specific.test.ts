@@ -125,27 +125,4 @@ describe('ModelSpecificProcessor', () => {
       expect(result).toBe(prompt);
     });
   });
-
-  describe('Generate merged prompt', () => {
-    const processor = createModelSpecificProcessor('test-model');
-    
-    it('should format messages with default markers', () => {
-      const messages: MlxMessage[] = [
-        { role: 'system', content: 'System instruction' },
-        { role: 'user', content: 'User question' },
-        { role: 'assistant', content: 'Assistant response' }
-      ];
-      
-      const result = processor.generateMergedPrompt(messages);
-      
-      // デフォルトフォーマッターはHTMLスタイルのコメントを使用
-      expect(result).toContain('System instruction');
-      expect(result).toContain('User question');
-      expect(result).toContain('Assistant response');
-      // 各メッセージがロールマーカーで囲まれていることを確認
-      expect(result).toMatch(/SYSTEM[\s\S]*System instruction[\s\S]*SYSTEM/);
-      expect(result).toMatch(/USER[\s\S]*User question[\s\S]*USER/);
-      expect(result).toMatch(/ASSISTANT[\s\S]*Assistant response[\s\S]*ASSISTANT/);
-    });
-  });
 });

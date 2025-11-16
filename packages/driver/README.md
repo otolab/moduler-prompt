@@ -116,6 +116,8 @@ const driver = new VertexAIDriver({
 
 ローカルで実行されるOllamaサービス用のドライバー。
 
+詳細なセットアップ手順とモデルのダウンロード方法については、[ローカルモデルセットアップガイド](../../docs/LOCAL_MODEL_SETUP.md#ollama)を参照してください。
+
 ```typescript
 import { OllamaDriver } from '@moduler-prompt/driver';
 
@@ -130,6 +132,8 @@ Ollamaドライバーは内部的にOpenAIドライバーを使用します（Ol
 ### MLX ML
 
 Appleシリコン最適化モデル用のPythonベースのドライバー。
+
+詳細なセットアップ手順とモデルのダウンロード方法については、[ローカルモデルセットアップガイド](../../docs/LOCAL_MODEL_SETUP.md#mlx-apple-silicon)を参照してください。
 
 #### セットアップ
 
@@ -175,6 +179,15 @@ await driver.close();
 - `max_tokens`: 最大トークン数
 - `temperature`: 生成のランダム性
 - `top_p`: トップPサンプリング
+
+**モデルのダウンロード:**
+
+テスト用モデル（約270MB）を事前にダウンロードできます：
+
+```bash
+cd node_modules/@moduler-prompt/driver
+npm run download-model
+```
 
 **注意事項:**
 - Pythonサブプロセスを使用するため、Python環境とMLXのインストールが必要

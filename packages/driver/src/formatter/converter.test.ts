@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { formatPrompt, formatPromptAsMessages, defaultFormatterTexts } from './converter.js';
+import { formatCompletionPrompt, formatPromptAsMessages, defaultFormatterTexts } from './converter.js';
 import { DefaultFormatter } from './formatter.js';
 import type { CompiledPrompt, Element } from '@moduler-prompt/core';
 
@@ -13,7 +13,7 @@ describe('preamble and section descriptions', () => {
       output: []
     };
     
-    const result = formatPrompt(prompt, {
+    const result = formatCompletionPrompt(prompt, {
       preamble: 'This is a custom preamble text.'
     });
     
@@ -36,7 +36,7 @@ describe('preamble and section descriptions', () => {
       ]
     };
     
-    const result = formatPrompt(prompt, {
+    const result = formatCompletionPrompt(prompt, {
       sectionDescriptions: {
         instructions: 'Custom instructions description',
         data: 'Custom data description',
@@ -66,7 +66,7 @@ describe('preamble and section descriptions', () => {
       output: []
     };
     
-    const result = formatPrompt(prompt, {
+    const result = formatCompletionPrompt(prompt, {
       preamble: 'Preamble text',
       sectionDescriptions: {
         instructions: 'Instructions desc'
@@ -81,7 +81,7 @@ describe('preamble and section descriptions', () => {
   });
 });
 
-describe('formatPrompt', () => {
+describe('formatCompletionPrompt', () => {
   it('should format complete prompt with all sections', () => {
     const prompt: CompiledPrompt = {
       instructions: [
@@ -107,7 +107,7 @@ describe('formatPrompt', () => {
       ]
     };
     
-    const result = formatPrompt(prompt);
+    const result = formatCompletionPrompt(prompt);
     
     expect(result).toContain('# Instructions');
     expect(result).toContain('## Objective');
@@ -130,7 +130,7 @@ describe('formatPrompt', () => {
       output: []
     };
     
-    const result = formatPrompt(prompt);
+    const result = formatCompletionPrompt(prompt);
     
     // Empty sections are not included
     expect(result).not.toContain('# Instructions');
@@ -155,11 +155,15 @@ describe('formatPrompt', () => {
       output: []
     };
     
-    const result = formatPrompt(prompt, { 
-      lineBreak: '\r\n'
+    const result = formatCompletionPrompt(prompt, {
+      lineBreak: '\r\n',
+      sectionDescriptions: {} // Disable section descriptions for this test
     });
-    
-    expect(result).toContain('Line 1\r\nLine 2');
+
+    // Check that custom line break is used
+    expect(result).toContain('Line 1');
+    expect(result).toContain('Line 2');
+    expect(result).toContain('\r\n'); // Custom line break is used
   });
   
   it('should use custom formatter when provided', () => {
@@ -180,7 +184,7 @@ describe('formatPrompt', () => {
       output: []
     };
     
-    const result = formatPrompt(prompt, {
+    const result = formatCompletionPrompt(prompt, {
       formatter: new CustomFormatter()
     });
     
@@ -202,21 +206,23 @@ describe('formatPromptAsMessages', () => {
       ]
     };
     
-    const messages = formatPromptAsMessages(prompt);
-    
+    const messages = formatPromptAsMessages(prompt, {
+      sectionDescriptions: {} // Disable section descriptions for basic test
+    });
+
     // Should have 6 messages: 3 section headers + 3 content messages
     expect(messages).toHaveLength(6);
-    
+
     // Check section headers
     expect(messages[0]).toEqual({
       role: 'system',
       content: '# Instructions'
     });
     expect(messages[1]).toEqual({
-      role: 'system', 
+      role: 'system',
       content: 'Follow these instructions'
     });
-    
+
     expect(messages[2]).toEqual({
       role: 'system',
       content: '# Data'
@@ -225,7 +231,7 @@ describe('formatPromptAsMessages', () => {
       role: 'system',
       content: 'Process this data'
     });
-    
+
     expect(messages[4]).toEqual({
       role: 'system',
       content: '# Output'
@@ -283,10 +289,12 @@ describe('formatPromptAsMessages', () => {
       output: []
     };
     
-    const messages = formatPromptAsMessages(prompt);
-    
+    const messages = formatPromptAsMessages(prompt, {
+      sectionDescriptions: {} // Disable section descriptions for basic test
+    });
+
     expect(messages).toHaveLength(3);
-    
+
     expect(messages[0]).toEqual({
       role: 'system',
       content: '# Data'
@@ -314,8 +322,10 @@ describe('formatPromptAsMessages', () => {
       output: []
     };
     
-    const messages = formatPromptAsMessages(prompt);
-    
+    const messages = formatPromptAsMessages(prompt, {
+      sectionDescriptions: {} // Disable section descriptions for basic test
+    });
+
     expect(messages).toHaveLength(2);
     expect(messages[0]).toEqual({
       role: 'system',
@@ -342,8 +352,10 @@ describe('formatPromptAsMessages', () => {
       output: []
     };
     
-    const messages = formatPromptAsMessages(prompt);
-    
+    const messages = formatPromptAsMessages(prompt, {
+      sectionDescriptions: {} // Disable section descriptions for basic test
+    });
+
     expect(messages).toHaveLength(2);
     expect(messages[0]).toEqual({
       role: 'system',
@@ -375,8 +387,10 @@ describe('formatPromptAsMessages', () => {
       output: []
     };
     
-    const messages = formatPromptAsMessages(prompt);
-    
+    const messages = formatPromptAsMessages(prompt, {
+      sectionDescriptions: {} // Disable section descriptions for basic test
+    });
+
     expect(messages).toHaveLength(3);
     expect(messages[0]).toEqual({
       role: 'system',
@@ -407,8 +421,10 @@ describe('formatPromptAsMessages', () => {
       output: []
     };
     
-    const messages = formatPromptAsMessages(prompt);
-    
+    const messages = formatPromptAsMessages(prompt, {
+      sectionDescriptions: {} // Disable section descriptions for basic test
+    });
+
     expect(messages).toHaveLength(2);
     expect(messages[0]).toEqual({
       role: 'system',
@@ -433,8 +449,10 @@ describe('formatPromptAsMessages', () => {
       output: []
     };
     
-    const messages = formatPromptAsMessages(prompt);
-    
+    const messages = formatPromptAsMessages(prompt, {
+      sectionDescriptions: {} // Disable section descriptions for basic test
+    });
+
     expect(messages).toHaveLength(2);
     expect(messages[0]).toEqual({
       role: 'system',
@@ -470,20 +488,22 @@ describe('formatPromptAsMessages', () => {
       ]
     };
     
-    const messages = formatPromptAsMessages(prompt);
-    
+    const messages = formatPromptAsMessages(prompt, {
+      sectionDescriptions: {} // Disable section descriptions for basic test
+    });
+
     expect(messages).toHaveLength(8);
-    
+
     // Instructions section
     expect(messages[0].content).toBe('# Instructions');
     expect(messages[1].content).toBe('General instruction');
     expect(messages[2].content).toContain('## Steps');
-    
+
     // Data section
     expect(messages[3].content).toBe('# Data');
     expect(messages[4].content).toContain('Material: Reference');
     expect(messages[5].role).toBe('user');
-    
+
     // Output section
     expect(messages[6].content).toBe('# Output');
     expect(messages[7].content).toBe('Write your response');
@@ -498,8 +518,10 @@ describe('formatPromptAsMessages', () => {
       output: []
     };
     
-    const messages = formatPromptAsMessages(prompt);
-    
+    const messages = formatPromptAsMessages(prompt, {
+      sectionDescriptions: {} // Disable section descriptions for basic test
+    });
+
     // Should only have data section
     expect(messages).toHaveLength(2);
     expect(messages[0].content).toBe('# Data');

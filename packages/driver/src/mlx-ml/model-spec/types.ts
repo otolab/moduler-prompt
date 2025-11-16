@@ -46,12 +46,9 @@ export interface ModelCustomProcessor {
   
   /** completionプロンプトの前処理 */
   preprocessCompletion?: (prompt: string) => string;
-  
+
   /** メッセージの検証 */
   validateMessages?: (messages: MlxMessage[]) => ValidationResult;
-  
-  /** プロンプト生成のカスタマイズ */
-  generatePrompt?: (messages: MlxMessage[]) => string;
 }
 
 /**

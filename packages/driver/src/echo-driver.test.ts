@@ -65,11 +65,11 @@ describe('EchoDriver', () => {
       expect(Array.isArray(messages)).toBe(true);
       expect(messages.length).toBeGreaterThan(0);
       
-      // Check for section headers
+      // Check for section headers (with descriptions)
       const contents = messages.map((m: any) => m.content);
-      expect(contents).toContain('# Instructions');
-      expect(contents).toContain('# Data');
-      expect(contents).toContain('# Output');
+      expect(contents.some(c => c.includes('# Instructions'))).toBe(true);
+      expect(contents.some(c => c.includes('# Data'))).toBe(true);
+      expect(contents.some(c => c.includes('# Output'))).toBe(true);
     });
   });
   

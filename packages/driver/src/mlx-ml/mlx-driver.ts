@@ -157,10 +157,10 @@ export class MlxDriver implements AIDriver {
   constructor(config: MlxDriverConfig) {
     this.model = config.model;
     this.defaultOptions = config.defaultOptions || {};
+    this.formatterOptions = config.formatterOptions || {};
     this.process = new MlxProcess(config.model, config.modelSpec, config.customProcessor);
     // special_tokensを取得できるようにプロセスを渡す
-    this.modelProcessor = createModelSpecificProcessor(config.model, this.process);
-    this.formatterOptions = config.formatterOptions || {};
+    this.modelProcessor = createModelSpecificProcessor(config.model, this.process, this.formatterOptions);
     this.preferMessageFormat = true; // MLX uses message format
   }
 

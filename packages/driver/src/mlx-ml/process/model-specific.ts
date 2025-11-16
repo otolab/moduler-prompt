@@ -6,12 +6,12 @@
  */
 
 import type { MlxMessage, MlxCapabilities } from './types.js';
-import { formatMessagesAsPrompt } from '../../formatter/converter.js';
-import type { ChatMessage } from '../../formatter/types.js';
+import type { FormatterOptions } from '../../formatter/types.js';
 import type { CompiledPrompt } from '@moduler-prompt/core';
 import type { MlxProcess } from './index.js';
 import { ElementFormatterRegistry } from './element-formatters/index.js';
-import { mergeSystemMessages, selectChatProcessor, selectCompletionProcessor } from './model-handlers.js';
+import { selectChatProcessor, selectCompletionProcessor } from './model-handlers.js';
+import { defaultFormatterTexts } from '../../formatter/converter.js';
 
 export interface ModelSpecificProcessor {
   /**
@@ -31,21 +31,17 @@ export interface ModelSpecificProcessor {
    * プロンプト文字列を受け取り、モデルに最適化されたプロンプトを返す
    */
   applyCompletionSpecificProcessing(prompt: string): string;
-
-  /**
-   * メッセージ配列からCompletion用プロンプトを生成
-   * apply_chat_templateがない場合に使用
-   */
-  generateMergedPrompt(messages: MlxMessage[]): string;
 }
 
 
 export class DefaultModelSpecificProcessor implements ModelSpecificProcessor {
   private specialTokensCache: MlxCapabilities['special_tokens'] | null = null;
   private formatterRegistry: ElementFormatterRegistry;
+  private formatterOptions: FormatterOptions;
 
-  constructor(private modelName: string, private process?: MlxProcess) {
+  constructor(private modelName: string, private process?: MlxProcess, formatterOptions?: FormatterOptions) {
     this.formatterRegistry = new ElementFormatterRegistry(modelName);
+    this.formatterOptions = formatterOptions || {};
   }
 
   /**
@@ -75,24 +71,53 @@ export class DefaultModelSpecificProcessor implements ModelSpecificProcessor {
   async formatCompletionPrompt(prompt: CompiledPrompt): Promise<string> {
     const sections: string[] = [];
 
-    // Instructions section
+    // Use default section descriptions if not provided (same as formatPromptAsMessages)
+    const sectionDescriptions = this.formatterOptions.sectionDescriptions ?? defaultFormatterTexts.sectionDescriptions;
+
+    // Add preamble if provided
+    if (this.formatterOptions.preamble) {
+      sections.push(this.formatterOptions.preamble);
+      sections.push('');
+    }
+
+    // Instructions section with header
     if (prompt.instructions.length > 0) {
+      sections.push('# Instructions');
+      if (sectionDescriptions?.instructions) {
+        sections.push('');
+        sections.push(sectionDescriptions.instructions);
+      }
+      sections.push('');
       const instructionTexts = await Promise.all(
         prompt.instructions.map(el => this.formatElementWithTokens(el))
       );
       sections.push(instructionTexts.join('\n'));
     }
 
-    // Data section
+    // Data section with header
     if (prompt.data.length > 0) {
+      if (sections.length > 0) sections.push('');
+      sections.push('# Data');
+      if (sectionDescriptions?.data) {
+        sections.push('');
+        sections.push(sectionDescriptions.data);
+      }
+      sections.push('');
       const dataTexts = await Promise.all(
         prompt.data.map(el => this.formatElementWithTokens(el))
       );
       sections.push(dataTexts.join('\n'));
     }
 
-    // Output section - 特にschemaやJSON出力の場合は特殊トークンを活用
+    // Output section with header - 特にschemaやJSON出力の場合は特殊トークンを活用
     if (prompt.output.length > 0) {
+      if (sections.length > 0) sections.push('');
+      sections.push('# Output');
+      if (sectionDescriptions?.output) {
+        sections.push('');
+        sections.push(sectionDescriptions.output);
+      }
+      sections.push('');
       const specialTokens = await this.getSpecialTokens();
       const hasOutputSchema = !!prompt.metadata?.outputSchema;
       const outputTexts = await Promise.all(
@@ -103,7 +128,7 @@ export class DefaultModelSpecificProcessor implements ModelSpecificProcessor {
       sections.push(outputTexts.join('\n'));
     }
 
-    const basePrompt = sections.join('\n\n');
+    const basePrompt = sections.join('\n');
 
     // モデル固有の追加処理
     return this.applyCompletionSpecificProcessing(basePrompt);
@@ -126,26 +151,14 @@ export class DefaultModelSpecificProcessor implements ModelSpecificProcessor {
     const processor = selectCompletionProcessor(this.modelName);
     return processor ? processor(prompt) : prompt;
   }
-
-  /**
-   * Python側のgenerate_merged_promptに対応
-   * apply_chat_templateがない場合のプロンプト生成
-   */
-  generateMergedPrompt(messages: MlxMessage[]): string {
-    const mergedMessages = mergeSystemMessages(messages);
-    
-    // formatterを使用してプロンプト生成
-    const chatMessages: ChatMessage[] = mergedMessages.map(msg => ({
-      role: msg.role,
-      content: msg.content
-    }));
-    
-    return formatMessagesAsPrompt(chatMessages);
-  }
 }
 
 // ファクトリー関数
-export function createModelSpecificProcessor(modelName: string, process?: MlxProcess): ModelSpecificProcessor {
+export function createModelSpecificProcessor(
+  modelName: string,
+  process?: MlxProcess,
+  formatterOptions?: FormatterOptions
+): ModelSpecificProcessor {
   // 将来的に異なるプロセッサーを返すことも可能
-  return new DefaultModelSpecificProcessor(modelName, process);
+  return new DefaultModelSpecificProcessor(modelName, process, formatterOptions);
 }

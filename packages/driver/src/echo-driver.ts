@@ -1,7 +1,7 @@
 import type { CompiledPrompt } from '@moduler-prompt/core';
 import type { AIDriver, QueryOptions, QueryResult, StreamResult } from './types.js';
 import type { FormatterOptions } from './formatter/types.js';
-import { formatPrompt, formatPromptAsMessages } from './formatter/converter.js';
+import { formatCompletionPrompt, formatPromptAsMessages, ECHO_SPECIAL_TOKENS } from './formatter/converter.js';
 import { extractJSON } from '@moduler-prompt/utils';
 
 /**
@@ -83,7 +83,12 @@ export class EchoDriver implements AIDriver {
     this.includeMetadata = config.includeMetadata ?? false;
     this.simulateUsage = config.simulateUsage ?? true;
     this.streamChunkSize = config.streamChunkSize ?? 100;
-    this.formatterOptions = config.formatterOptions || {};
+
+    // Merge ECHO_SPECIAL_TOKENS with user-provided formatter options
+    this.formatterOptions = {
+      ...ECHO_SPECIAL_TOKENS,
+      ...config.formatterOptions
+    };
   }
   
   /**
@@ -97,8 +102,8 @@ export class EchoDriver implements AIDriver {
     // Format the prompt according to the configured format
     switch (this.format) {
       case 'text': {
-        // Human-readable markdown format
-        content = formatPrompt(prompt, this.formatterOptions);
+        // Human-readable markdown format with Echo special tokens
+        content = formatCompletionPrompt(prompt, this.formatterOptions);
         break;
       }
 
@@ -117,7 +122,7 @@ export class EchoDriver implements AIDriver {
 
       case 'both': {
         // Both text and messages in a single object
-        const text = formatPrompt(prompt, this.formatterOptions);
+        const text = formatCompletionPrompt(prompt, this.formatterOptions);
         const messages = formatPromptAsMessages(prompt, this.formatterOptions);
         content = JSON.stringify({
           text,
@@ -127,7 +132,7 @@ export class EchoDriver implements AIDriver {
       }
 
       case 'debug': {
-        const text = formatPrompt(prompt, this.formatterOptions);
+        const text = formatCompletionPrompt(prompt, this.formatterOptions);
         const messages = formatPromptAsMessages(prompt, this.formatterOptions);
 
         const debug = {
@@ -150,7 +155,7 @@ export class EchoDriver implements AIDriver {
       }
 
       default:
-        content = formatPrompt(prompt, this.formatterOptions);
+        content = formatCompletionPrompt(prompt, this.formatterOptions);
     }
     
     // Add metadata if requested
