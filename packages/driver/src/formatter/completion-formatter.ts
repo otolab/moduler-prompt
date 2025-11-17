@@ -68,16 +68,25 @@ export function formatCompletionPrompt(
     sections.push(formatter.formatAll(prompt.data));
   }
 
-  // Format output section with header
+  // Format output section with header - always show the section
+  if (sections.length > 0) sections.push('');
+  sections.push('# Output');
+  if (sectionDescriptions?.output) {
+    sections.push('');
+    sections.push(sectionDescriptions.output);
+  }
   if (prompt.output && prompt.output.length > 0) {
-    if (sections.length > 0) sections.push('');
-    sections.push('# Output');
-    if (sectionDescriptions?.output) {
-      sections.push('');
-      sections.push(sectionDescriptions.output);
-    }
     sections.push('');
     sections.push(formatter.formatAll(prompt.output));
+  }
+
+  // Add output schema if metadata.outputSchema exists (within Output section)
+  if (prompt.metadata?.outputSchema) {
+    sections.push('');
+    const schemaContent = JSON.stringify(prompt.metadata.outputSchema, null, 2);
+    sections.push('IMPORTANT: Output ONLY a valid JSON object. Do not include any explanation, commentary, or text before or after the JSON.');
+    sections.push('');
+    sections.push(`JSON Output Format:\n${schemaContent}`);
   }
 
   return sections.join(lineBreak);

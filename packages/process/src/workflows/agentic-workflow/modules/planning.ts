@@ -1,41 +1,37 @@
-import { merge } from '@moduler-prompt/core';
 import type { PromptModule } from '@moduler-prompt/core';
 import type { AgenticWorkflowContext } from '../types.js';
-import { common } from './common.js';
 
 /**
  * Planning phase module for agent workflow
  * Phase-specific definitions for generating execution plan
  *
- * Should be merged with user's module:
- *   merge(planning, userModule)
+ * Should be merged with agentic and user's module:
+ *   merge(agentic, planning, userModule)
  */
-const planningBase: PromptModule<AgenticWorkflowContext> = {
+export const planning: PromptModule<AgenticWorkflowContext> = {
   methodology: [
     '',
-    'Currently in Planning phase. Analyze the Objective and Instructions to generate an execution plan broken down into executable steps.'
+    '**Current Phase: Planning**',
+    '',
+    '- Generate an execution plan by breaking down the Objective and Instructions into 3-5 executable steps.',
+    '- Output structured JSON text immediately, with no explanations or commentary.'
   ],
 
   instructions: [
     {
       type: 'subsection',
-      title: 'Planning Phase Process',
+      title: 'Planning Requirements',
       items: [
-        '- Analyze the objective and instructions to break them down into executable steps',
-        '- Each step should include:',
-        '  - id: Unique identifier',
-        '  - description: Brief summary of the step',
-        '  - dos: List of things to do (2-4 specific actions)',
-        '  - donts: List of things NOT to do (1-3 specific prohibitions)',
-        '  - actions: External tools to use (optional, only if tools are available)',
-        '- Aim for approximately 3-5 steps'
-      ]
-    },
-    {
-      type: 'subsection',
-      title: 'Available Tools',
-      items: [
-        '- No tools are available'
+        '- Create 3-5 concrete steps to achieve the objective',
+        '- Each step must have: id, description, dos (2-4 items), donts (1-3 items)',
+        '- Consider available tools when defining actions (currently none available)',
+        '- Ensure logical flow between steps',
+        '',
+        '**CRITICAL: Output Format**',
+        '- Respond ONLY with valid JSON text',
+        '- NO explanatory text before or after the JSON',
+        '- NO markdown code blocks (```json)',
+        '- Start directly with { and end with }'
       ]
     }
   ],
@@ -49,8 +45,8 @@ const planningBase: PromptModule<AgenticWorkflowContext> = {
   ],
 
   cue: [
-    'Output a JSON object containing the actual array of steps following the JSON Output Format below.',
-    'Generate actual data (an object with a steps property), not the JSON Schema definition itself.'
+    'Respond with a JSON-formatted string containing the execution plan.',
+    'Output format: {"steps": [...]}'
   ],
 
   schema: [
@@ -111,5 +107,3 @@ const planningBase: PromptModule<AgenticWorkflowContext> = {
     }
   ]
 };
-
-export const planning = merge(common, planningBase);

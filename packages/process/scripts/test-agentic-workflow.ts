@@ -17,9 +17,11 @@ import { fileURLToPath } from 'url';
  * Example:
  *   npx tsx scripts/test-agentic-workflow.ts
  *   npx tsx scripts/test-agentic-workflow.ts test-cases/meal-planning.json
+ *   FREEFORM_EXECUTION=true npx tsx scripts/test-agentic-workflow.ts test-cases/meal-planning.json
  *
  * Environment Variables:
  *   MLX_MODEL: Model to use (default: mlx-community/gemma-3-27b-it-qat-4bit)
+ *   FREEFORM_EXECUTION: Use freeform execution mode (default: false)
  *   SKIP_MLX_TESTS: Skip MLX tests (default: false)
  */
 
@@ -60,12 +62,14 @@ async function main() {
 
   // Model selection - can be overridden by environment variable
   const modelName = process.env.MLX_MODEL || 'mlx-community/gemma-3-27b-it-qat-4bit';
+  const useFreeform = process.env.FREEFORM_EXECUTION === 'true';
 
   console.log(`🧪 Agentic Workflow Test: ${testCase.name}\n`);
   if (testCase.description) {
     console.log(`📝 ${testCase.description}\n`);
   }
-  console.log(`📦 Model: ${modelName}\n`);
+  console.log(`📦 Model: ${modelName}`);
+  console.log(`🎨 Execution Mode: ${useFreeform ? 'Freeform (自由記述)' : 'Structured (JSON)'}\n`);
 
   // Logger setup for debug output
   defaultLogger.setLevel(LogLevel.DEBUG);
@@ -91,7 +95,10 @@ async function main() {
   try {
     // Run the workflow
     console.log('⚙️  Running agentic workflow...\n');
-    const result = await agenticProcess(driver, testCase.module, testCase.context, { logger: defaultLogger });
+    const result = await agenticProcess(driver, testCase.module, testCase.context, {
+      useFreeformExecution: useFreeform,
+      logger: defaultLogger
+    });
 
     // Display results
     console.log('✅ Workflow completed!\n');

@@ -25,7 +25,8 @@ export interface AgenticStep {
  */
 export interface AgenticExecutionLog {
   stepId: string;
-  result: string;
+  reasoning: string;    // Thought process and analysis
+  result: string;       // Execution result
   actionResult?: any;
   metadata?: any;
 }
@@ -61,5 +62,6 @@ export interface AgenticWorkflowOptions {
   maxSteps?: number;              // 最大ステップ数（デフォルト: 5）
   actions?: Record<string, ActionHandler>;  // 利用可能なアクション
   enablePlanning?: boolean;       // 計画フェーズの有効化（デフォルト: true）
+  useFreeformExecution?: boolean; // Use freeform execution module (デフォルト: false)
   logger?: any;                   // Logger instance for debug output
 }

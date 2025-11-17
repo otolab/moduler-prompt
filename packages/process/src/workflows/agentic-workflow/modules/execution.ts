@@ -1,19 +1,20 @@
-import { merge } from '@moduler-prompt/core';
 import type { PromptModule } from '@moduler-prompt/core';
 import type { AgenticWorkflowContext, AgenticStep } from '../types.js';
-import { common } from './common.js';
 
 /**
  * Execution phase module for agent workflow
  * Phase-specific definitions for executing a single step
  *
- * Should be merged with user's module:
- *   merge(execution, userModule)
+ * Should be merged with agentic and user's module:
+ *   merge(agentic, execution, userModule)
  */
-const executionBase: PromptModule<AgenticWorkflowContext> = {
+export const execution: PromptModule<AgenticWorkflowContext> = {
   methodology: [
     '',
-    'Currently in Execution phase. Execute only the current step of the execution plan and record the results.'
+    '**Current Phase: Execution**',
+    '',
+    '- Execute only the current step of the execution plan.',
+    '- Output the reasoning process and results as structured JSON text.'
   ],
 
   instructions: [
@@ -120,21 +121,35 @@ const executionBase: PromptModule<AgenticWorkflowContext> = {
         return null;
       }
 
-      // Show only the most recent execution result to reduce confusion
-      const lastLog = ctx.executionLog[ctx.executionLog.length - 1];
+      return ctx.executionLog.map((log) => {
+        const parts: string[] = [];
 
-      return {
-        type: 'material' as const,
-        id: `execution-result-${lastLog.stepId}`,
-        title: `Previous step result: ${lastLog.stepId}`,
-        content: lastLog.result
-      };
+        if (log.reasoning) {
+          parts.push(`[Reasoning]\n${log.reasoning}`);
+        }
+
+        parts.push(`[Result]\n${log.result}`);
+
+        if (log.actionResult !== undefined) {
+          const actionResultStr = typeof log.actionResult === 'string'
+            ? log.actionResult
+            : JSON.stringify(log.actionResult, null, 2);
+          parts.push(`[Action Result]\n${actionResultStr}`);
+        }
+
+        return {
+          type: 'material' as const,
+          id: `execution-result-${log.stepId}`,
+          title: `Previous step result: ${log.stepId}`,
+          content: parts.join('\n\n')
+        };
+      });
     }
   ],
 
   cue: [
     'Output a JSON object containing the execution result of the current step following the JSON Output Format below.',
-    'Generate actual data (an object with result and nextState properties), not the JSON Schema definition itself.'
+    'Generate actual data (an object with reasoning, result, and nextState properties), not the JSON Schema definition itself.'
   ],
 
   schema: [
@@ -143,19 +158,21 @@ const executionBase: PromptModule<AgenticWorkflowContext> = {
       content: {
         type: 'object',
         properties: {
+          reasoning: {
+            type: 'string',
+            description: 'Thought process and analysis: Explain your thinking, considerations, and decision-making process for this step.'
+          },
           result: {
             type: 'string',
-            description: 'Execution result: Describe what was done in this step and what results were obtained. Include specific findings and outputs.'
+            description: 'Execution result: Describe what was actually done in this step and what concrete results were obtained.'
           },
           nextState: {
             type: 'string',
             description: 'Handover note for the next step (simple text, not object/array)'
           }
         },
-        required: ['result', 'nextState']
+        required: ['reasoning', 'result', 'nextState']
       }
     }
   ]
 };
-
-export const execution = merge(common, executionBase);

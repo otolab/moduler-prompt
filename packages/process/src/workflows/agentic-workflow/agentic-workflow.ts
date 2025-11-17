@@ -6,6 +6,7 @@ import type { AgenticWorkflowContext, AgenticWorkflowOptions, AgenticPlan, Agent
 import { agentic } from './modules/agentic.js';
 import { planning } from './modules/planning.js';
 import { execution } from './modules/execution.js';
+import { executionFreeform } from './modules/execution-freeform.js';
 import { integration } from './modules/integration.js';
 
 /**
@@ -91,6 +92,7 @@ async function executeStep(
   step: AgenticPlan['steps'][number],
   actions: Record<string, ActionHandler>,
   executionLog: AgenticExecutionLog[],
+  useFreeform: boolean,
   logger?: any
 ): Promise<AgenticExecutionLog> {
   // Execute actions if specified
@@ -119,7 +121,14 @@ async function executeStep(
   }
 
   // Execute step with AI
-  const executionModule = merge(agentic, execution, module);
+  const executionPhaseModule = useFreeform ? executionFreeform : execution;
+
+  // For freeform mode, omit user's instructions to use plan-based dos/donts instead
+  const userModule = useFreeform
+    ? { ...module, instructions: undefined }
+    : module;
+
+  const executionModule = merge(agentic, executionPhaseModule, userModule);
   const stepContext: AgenticWorkflowContext = {
     ...context,
     currentStep: step,
@@ -147,16 +156,19 @@ async function executeStep(
       );
     }
 
-    // Get result and nextState from structured output
+    // Get reasoning, result and nextState from structured output
+    let reasoning: string;
     let result: string;
     let nextState: string;
 
     if (stepResult.structuredOutput) {
-      const output = stepResult.structuredOutput as { result: string; nextState: string };
+      const output = stepResult.structuredOutput as { reasoning: string; result: string; nextState: string };
+      reasoning = output.reasoning || '';
       result = output.result || stepResult.content;
       nextState = output.nextState || '';
     } else {
       // Fallback if structured output is not available
+      reasoning = '';
       result = stepResult.content;
       nextState = '';
     }
@@ -170,6 +182,7 @@ async function executeStep(
     // Create execution log entry (without nextState - it's in context.state now)
     return {
       stepId: step.id,
+      reasoning,
       result,
       actionResult,
       metadata: {
@@ -197,6 +210,7 @@ async function executeExecutionPhase(
   context: AgenticWorkflowContext,
   plan: AgenticPlan,
   actions: Record<string, ActionHandler>,
+  useFreeform: boolean,
   logger?: any
 ): Promise<AgenticExecutionLog[]> {
   const executionLog = context.executionLog || [];
@@ -207,7 +221,7 @@ async function executeExecutionPhase(
   // Execute each step
   for (let i = startIndex; i < plan.steps.length; i++) {
     const step = plan.steps[i];
-    const logEntry = await executeStep(driver, module, context, step, actions, executionLog, logger);
+    const logEntry = await executeStep(driver, module, context, step, actions, executionLog, useFreeform, logger);
     executionLog.push(logEntry);
   }
 
@@ -277,6 +291,7 @@ export async function agenticProcess(
     maxSteps = 5,
     actions = {},
     enablePlanning = true,
+    useFreeformExecution = false,
     logger
   } = options;
 
@@ -295,7 +310,7 @@ export async function agenticProcess(
 
   // Phase 2: Execution
   currentContext.phase = 'execution';
-  const executionLog = await executeExecutionPhase(driver, module, currentContext, plan, actions, logger);
+  const executionLog = await executeExecutionPhase(driver, module, currentContext, plan, actions, useFreeformExecution, logger);
   currentContext.executionLog = executionLog;
 
   // Phase 3: Integration

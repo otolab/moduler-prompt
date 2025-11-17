@@ -123,9 +123,13 @@ export function processGemmaChat(messages: MlxMessage[]): MlxMessage[] {
  * Note: llm-jp-3.1はforce-completion設定のため、chat APIは使用されない
  */
 export function processLlmJpCompletion(prompt: string): string {
-  // chat_templateのsystemメッセージと同じ固定文字列のみ
+  // llm-jpは複数言語の混ぜ書きに弱い傾向があるため、特定の言語を優先しないよう明示的に指示
+  const llmJpSpecificInstruction = '複数の言語の混ぜ書きだが、特定の言語を優先することをしない。\n\n';
+
+  // chat_templateのsystemメッセージと同じ固定文字列（良好な回答を得るために必要な固定プロンプト）
   return '<s>以下は、タスクを説明する指示です。要求を適切に満たす応答を書きなさい。' +
     '\n\n### 指示:\n' +
+    llmJpSpecificInstruction +
     prompt +
     '\n\n### 応答:';
 }

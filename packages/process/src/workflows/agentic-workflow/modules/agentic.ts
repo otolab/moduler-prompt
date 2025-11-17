@@ -4,24 +4,22 @@ import type { AgenticWorkflowContext } from '../types.js';
 /**
  * Agentic module - Common definitions for agent workflow
  * Defines the basic behavior and terminology for agentic processing
+ * This module is shared across all phases (planning, execution, integration)
  *
  * This module should be merged with user's module:
  *   agentProcess(driver, merge(agenticModule, userModule), context)
  */
 export const agentic: PromptModule<AgenticWorkflowContext> = {
   terms: [
-    '- instructions: Specific directives to achieve the Objective. Step execution procedures are provided separately in the methodology.'
+    '- Execution Plan: Objective and Instructions broken down into executable steps',
+    '- Action: External tool/API to use during execution (e.g., data retrieval, calculations)'
   ],
 
   methodology: [
-    {
-      type: 'subsection',
-      title: 'Fundamentals of Agent Processing',
-      items: [
-        'Multi-step processing that executes complex tasks in stages',
-        'Results from each step are passed to the next step',
-        'Integrate results from all steps to generate final output'
-      ]
-    }
+    '- Agentic workflow executes complex tasks through multi-step processing.',
+    '- This workflow has three phases: Planning → Execution → Integration.',
+    '  - Planning: analyzes the objective to create an execution plan.',
+    '  - Execution: processes each step sequentially, recording results.',
+    '  - Integration: combines all results into the final output.'
   ]
 };

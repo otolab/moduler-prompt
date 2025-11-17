@@ -1,19 +1,20 @@
-import { merge } from '@moduler-prompt/core';
 import type { PromptModule } from '@moduler-prompt/core';
 import type { AgenticWorkflowContext, AgenticStep } from '../types.js';
-import { common } from './common.js';
 
 /**
  * Integration phase module for agent workflow
  * Phase-specific definitions for integrating all step results
  *
- * Should be merged with user's module:
- *   merge(integration, userModule)
+ * Should be merged with agentic and user's module:
+ *   merge(agentic, integration, userModule)
  */
-const integrationBase: PromptModule<AgenticWorkflowContext> = {
+export const integration: PromptModule<AgenticWorkflowContext> = {
   methodology: [
     '',
-    'Currently in Integration phase. Integrate results from all steps to generate the final output achieving the overall objective.'
+    '**Current Phase: Integration**',
+    '',
+    '- Integrate results from all executed steps.',
+    '- Generate the final output that achieves the overall objective.'
   ],
 
   instructions: [
@@ -77,24 +78,33 @@ const integrationBase: PromptModule<AgenticWorkflowContext> = {
       }
 
       return ctx.executionLog.map((log) => {
-        let content = log.result;
+        const parts: string[] = [];
+
+        if (log.reasoning) {
+          parts.push(`[Reasoning]\n${log.reasoning}`);
+        }
+
+        parts.push(`[Result]\n${log.result}`);
 
         if (log.actionResult !== undefined) {
           const actionResultStr = typeof log.actionResult === 'string'
             ? log.actionResult
             : JSON.stringify(log.actionResult, null, 2);
-          content += `\n\n[Action Result]\n${actionResultStr}`;
+          parts.push(`[Action Result]\n${actionResultStr}`);
         }
 
         return {
           type: 'material' as const,
           id: `execution-result-${log.stepId}`,
           title: `Execution result: ${log.stepId}`,
-          content
+          content: parts.join('\n\n')
         };
       });
     }
+  ],
+
+  cue: [
+    'Integrate all execution results to generate the final output.',
+    'Summarize what was accomplished and provide the complete solution to the objective.'
   ]
 };
-
-export const integration = merge(common, integrationBase);

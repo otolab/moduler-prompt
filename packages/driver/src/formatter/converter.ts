@@ -85,13 +85,22 @@ export function formatPromptAsMessages(
       role: 'system',
       content: outputHeader
     });
-    
+
     // Convert each element to a message
     for (const element of prompt.output) {
       messages.push(...elementToMessages(element, formatter));
     }
   }
-  
+
+  // Add output schema if metadata.outputSchema exists
+  if (prompt.metadata?.outputSchema) {
+    const schemaContent = JSON.stringify(prompt.metadata.outputSchema, null, 2);
+    messages.push({
+      role: 'system',
+      content: `IMPORTANT: Output ONLY a valid JSON object. Do not include any explanation, commentary, or text before or after the JSON.\n\nJSON Output Format:\n${schemaContent}`
+    });
+  }
+
   return messages;
 }
 
@@ -177,7 +186,8 @@ function elementToMessages(element: Element, formatter: ElementFormatter): ChatM
     }
 
     case 'json': {
-      // Format JSONElement
+      // Format JSONElement (used in sections other than schema)
+      // Schema section's JSONElement is extracted to metadata.outputSchema and doesn't appear here
       const jsonContent = typeof element.content === 'string'
         ? element.content
         : JSON.stringify(element.content, null, 2);

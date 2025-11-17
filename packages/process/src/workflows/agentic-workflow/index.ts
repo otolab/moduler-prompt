@@ -7,3 +7,12 @@ export type {
   AgenticWorkflowOptions,
   ActionHandler
 } from './types.js';
+
+// Modules
+export {
+  agentic,
+  planning,
+  execution,
+  executionFreeform,
+  integration
+} from './modules/index.js';
