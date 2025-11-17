@@ -61,8 +61,12 @@ describe('agenticProcess', () => {
         {
           id: 'step-1',
           description: 'Get data',
-          action: 'getData',
-          params: { id: '123' }
+          actions: [
+            {
+              tool: 'getData',
+              params: { id: '123' }
+            }
+          ]
         },
         { id: 'step-2', description: 'Process data' }
       ]
@@ -242,7 +246,11 @@ describe('agenticProcess', () => {
         {
           id: 'step-1',
           description: 'Action step',
-          action: 'failingAction'
+          actions: [
+            {
+              tool: 'failingAction'
+            }
+          ]
         }
       ]
     };
@@ -274,7 +282,7 @@ describe('agenticProcess', () => {
 
     await expect(async () => {
       await agenticProcess(driver, userModule, context, { actions });
-    }).rejects.toThrow("Action 'failingAction' failed: Action failed");
+    }).rejects.toThrow("Tool 'failingAction' failed: Action failed");
   });
 
   it('should resume from partial execution', async () => {
