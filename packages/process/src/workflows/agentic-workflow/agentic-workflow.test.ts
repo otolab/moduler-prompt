@@ -1,12 +1,12 @@
 import { describe, it, expect } from 'vitest';
-import { agenticProcess } from './agent-workflow.js';
+import { agenticProcess } from './agentic-workflow.js';
 import { TestDriver } from '@moduler-prompt/driver';
-import type { AgenticWorkflowContext, AgentPlan } from './types.js';
+import type { AgenticWorkflowContext, AgenticPlan } from './types.js';
 
 describe('agenticProcess', () => {
   it('should execute a simple agent workflow', async () => {
     // Mock plan
-    const plan: AgentPlan = {
+    const plan: AgenticPlan = {
       steps: [
         { id: 'step-1', description: 'Analyze the input' },
         { id: 'step-2', description: 'Generate output' }
@@ -56,7 +56,7 @@ describe('agenticProcess', () => {
   });
 
   it('should handle actions in workflow', async () => {
-    const plan: AgentPlan = {
+    const plan: AgenticPlan = {
       steps: [
         {
           id: 'step-1',
@@ -107,7 +107,7 @@ describe('agenticProcess', () => {
   });
 
   it('should limit steps to maxSteps', async () => {
-    const plan: AgentPlan = {
+    const plan: AgenticPlan = {
       steps: [
         { id: 'step-1', description: 'Step 1' },
         { id: 'step-2', description: 'Step 2' },
@@ -148,7 +148,7 @@ describe('agenticProcess', () => {
   });
 
   it('should use existing plan when provided', async () => {
-    const plan: AgentPlan = {
+    const plan: AgenticPlan = {
       steps: [
         { id: 'step-1', description: 'Execute step' }
       ]
@@ -204,7 +204,7 @@ describe('agenticProcess', () => {
   });
 
   it('should handle workflow error in execution phase', async () => {
-    const plan: AgentPlan = {
+    const plan: AgenticPlan = {
       steps: [
         { id: 'step-1', description: 'First step' },
         { id: 'step-2', description: 'Second step' }
@@ -237,7 +237,7 @@ describe('agenticProcess', () => {
   });
 
   it('should handle action errors', async () => {
-    const plan: AgentPlan = {
+    const plan: AgenticPlan = {
       steps: [
         {
           id: 'step-1',
@@ -278,7 +278,7 @@ describe('agenticProcess', () => {
   });
 
   it('should resume from partial execution', async () => {
-    const plan: AgentPlan = {
+    const plan: AgenticPlan = {
       steps: [
         { id: 'step-1', description: 'First step' },
         { id: 'step-2', description: 'Second step' },

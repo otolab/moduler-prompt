@@ -186,7 +186,7 @@ describe('Completion API - Prompt Formatting with Section Headers', () => {
       expect(withTemplate).toContain('# Output');
 
       // サブセクションの確認
-      expect(withTemplate).toContain('### Phase Tasks');
+      expect(withTemplate).toContain('--- Phase Tasks ---');
 
       // 動的コンテンツの確認
       expect(withTemplate).toContain('Current phase: planning');
