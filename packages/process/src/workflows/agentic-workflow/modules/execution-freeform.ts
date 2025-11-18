@@ -44,6 +44,8 @@ export const executionFreeform: PromptModule<AgenticWorkflowContext> = {
         items.push('- **Build upon the previous step results shown in the Data section below**');
         items.push('- Use decisions and outputs from previous steps as the foundation for this step');
         items.push('- Do NOT repeat what previous steps have already accomplished');
+        items.push('- **Do NOT reproduce or quote previous step outputs in your response**');
+        items.push('- Output only NEW content specific to THIS step');
         items.push('- Focus on completing THIS step\'s specific task');
       } else {
         items.push('- Focus on the current step instructions only');
