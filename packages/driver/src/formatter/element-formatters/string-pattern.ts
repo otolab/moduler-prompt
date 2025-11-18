@@ -5,10 +5,10 @@
  * 適切な特殊トークンでラップする
  */
 
-import type { MlxCapabilities } from '../types.js';
+import type { SpecialToken, SpecialTokenPair } from '../types.js';
 
 export class StringPatternFormatter {
-  constructor(private specialTokens?: MlxCapabilities['special_tokens']) {}
+  constructor(private specialTokens?: Record<string, SpecialToken | SpecialTokenPair>) {}
 
   /**
    * 文字列化されたElementパターンを認識して特殊トークンを適用

@@ -3,7 +3,7 @@
  */
 
 import type { JSONElement } from '@moduler-prompt/core';
-import type { MlxCapabilities } from '../types.js';
+import type { SpecialToken, SpecialTokenPair } from '../types.js';
 import { BaseElementFormatter } from './base.js';
 
 export class JSONElementFormatter extends BaseElementFormatter<JSONElement> {
@@ -11,7 +11,7 @@ export class JSONElementFormatter extends BaseElementFormatter<JSONElement> {
 
   async format(
     element: JSONElement,
-    specialTokens?: MlxCapabilities['special_tokens']
+    specialTokens?: Record<string, SpecialToken | SpecialTokenPair>
   ): Promise<string> {
     // JSONスキーマ要素は構造化データとして明確にマーク
     const jsonContent = typeof element.content === 'string'

@@ -87,24 +87,21 @@ export class DefaultFormatter implements ElementFormatter {
   private updateMarkersFromSpecialTokens(tokens: Record<string, SpecialToken | SpecialTokenPair>): void {
     // Auto-configure markers based on special tokens if available
     const markers = this.options.markers;
-    
+
     // Update section markers if tokens are available
     if (tokens.system && this.isTokenPair(tokens.system)) {
       markers.sectionStart = markers.sectionStart || tokens.system.start.text;
       markers.sectionEnd = markers.sectionEnd || tokens.system.end.text;
     }
-    
-    // Update code block markers
-    if (tokens.code && this.isTokenPair(tokens.code)) {
-      markers.materialStart = markers.materialStart || tokens.code.start.text;
-      markers.materialEnd = markers.materialEnd || tokens.code.end.text;
-    }
-    
+
     // Update thinking/reasoning markers for subsections
     if (tokens.thinking && this.isTokenPair(tokens.thinking)) {
       markers.subsectionStart = markers.subsectionStart || tokens.thinking.start.text;
       markers.subsectionEnd = markers.subsectionEnd || tokens.thinking.end.text;
     }
+
+    // Note: Material formatting now uses special tokens directly in formatMaterial()
+    // with priority: quote > ref > citation > context
   }
   
   private isTokenPair(token: SpecialToken | SpecialTokenPair): token is SpecialTokenPair {
@@ -144,30 +141,54 @@ export class DefaultFormatter implements ElementFormatter {
   }
   
   private formatMaterial(element: MaterialElement): string {
-    const { markers, lineBreak } = this.options;
-    const lines: string[] = [];
-    
+    const { lineBreak } = this.options;
+
     // Handle content which can be string or Attachment[]
-    const contentStr = typeof element.content === 'string' 
-      ? element.content 
+    const contentStr = typeof element.content === 'string'
+      ? element.content
       : JSON.stringify(element.content);
-    
-    // Add custom markers if provided
-    if (markers.materialStart) lines.push(markers.materialStart);
-    
-    lines.push(`### ${element.title}`);
-    if (element.id) {
-      lines.push(`*ID: ${element.id}*`);
+
+    // Try to use special tokens with priority: quote > ref > citation > context
+    if (this.specialTokens) {
+      const quoteToken = this.getSpecialToken('quote');
+      if (quoteToken) {
+        return `${quoteToken.start}${element.title}${lineBreak}${contentStr}${quoteToken.end}${lineBreak}`;
+      }
+
+      const refToken = this.getSpecialToken('ref');
+      if (refToken) {
+        return `${refToken.start}${element.title}${lineBreak}${contentStr}${refToken.end}${lineBreak}`;
+      }
+
+      const citationToken = this.getSpecialToken('citation');
+      if (citationToken) {
+        return `${citationToken.start}${element.title}${lineBreak}${contentStr}${citationToken.end}${lineBreak}`;
+      }
+
+      const contextToken = this.getSpecialToken('context');
+      if (contextToken) {
+        return `${contextToken.start}Material: ${element.title}${lineBreak}${contentStr}${contextToken.end}${lineBreak}`;
+      }
     }
-    if (element.usage) {
-      lines.push(`*Usage: ${element.usage} tokens*`);
+
+    // Default: markdown quote format
+    const lines = contentStr.split(lineBreak);
+    const quotedContent = lines.map((line: string) => `> ${line}`).join(lineBreak);
+    return `### ${element.title}${lineBreak}${lineBreak}${quotedContent}${lineBreak}`;
+  }
+
+  private getSpecialToken(tokenName: string): { start: string; end: string } | null {
+    if (!this.specialTokens) return null;
+
+    const token = this.specialTokens[tokenName];
+    if (token && this.isTokenPair(token)) {
+      return {
+        start: token.start.text || '',
+        end: token.end.text || ''
+      };
     }
-    lines.push('');
-    lines.push(contentStr);
-    
-    if (markers.materialEnd) lines.push(markers.materialEnd);
-    
-    return lines.join(lineBreak);
+
+    return null;
   }
   
   private formatChunk(element: ChunkElement): string {

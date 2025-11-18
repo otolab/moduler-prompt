@@ -175,6 +175,11 @@ export class MlxDriver implements AIDriver {
     if (!this.capabilities) {
       try {
         this.capabilities = await this.process.getCapabilities();
+
+        // Update formatterOptions with special tokens from capabilities
+        if (this.capabilities.special_tokens) {
+          this.formatterOptions.specialTokens = this.capabilities.special_tokens;
+        }
       } catch (error) {
         console.error('Failed to get MLX capabilities:', error);
       }

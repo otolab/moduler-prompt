@@ -3,7 +3,7 @@
  */
 
 import type { TextElement } from '@moduler-prompt/core';
-import type { MlxCapabilities } from '../types.js';
+import type { SpecialToken, SpecialTokenPair } from '../types.js';
 import { BaseElementFormatter } from './base.js';
 
 export class TextElementFormatter extends BaseElementFormatter<TextElement> {
@@ -11,7 +11,7 @@ export class TextElementFormatter extends BaseElementFormatter<TextElement> {
 
   async format(
     element: TextElement,
-    _specialTokens?: MlxCapabilities['special_tokens']
+    _specialTokens?: Record<string, SpecialToken | SpecialTokenPair>
   ): Promise<string> {
     return element.content;
   }

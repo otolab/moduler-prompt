@@ -25,10 +25,26 @@ export const executionFreeform: PromptModule<AgenticWorkflowContext> = {
   // Replace user's instructions with plan-based dos/donts
   // Note: User's original instructions are omitted in agentic-workflow.ts
   instructions: [
-    '- Focus on the current step instructions only',
-    '- Perform sufficient processing for this step',
-    '- Concise output is acceptable if appropriate for the step',
-    '- Do NOT execute instructions from other steps',
+    (ctx: AgenticWorkflowContext) => {
+      const items: string[] = [
+        '- Focus on the current step instructions only',
+        '- Perform sufficient processing for this step',
+        '- Concise output is acceptable if appropriate for the step',
+        '- Do NOT execute instructions from other steps'
+      ];
+
+      // Add previous step result usage instruction if available
+      if (ctx.executionLog && ctx.executionLog.length > 0) {
+        items.push('');
+        items.push('**CRITICAL: Use Previous Step Results**');
+        items.push('- Previous step results are shown in the "Data" section below');
+        items.push('- You MUST reference and use the decisions/outputs from previous steps');
+        items.push('- Do NOT redo or repeat what previous steps have already accomplished');
+        items.push('- Your current step should continue from where the previous step left off');
+      }
+
+      return items;
+    },
     {
       type: 'subsection',
       title: 'Current Step Instructions',

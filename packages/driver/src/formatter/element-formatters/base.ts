@@ -3,7 +3,7 @@
  */
 
 import type { Element } from '@moduler-prompt/core';
-import type { MlxCapabilities } from '../types.js';
+import type { SpecialToken, SpecialTokenPair } from '../types.js';
 
 export interface ElementFormatter<T extends Element = Element> {
   /**
@@ -14,7 +14,7 @@ export interface ElementFormatter<T extends Element = Element> {
   /**
    * Elementを文字列にフォーマット
    */
-  format(element: T, specialTokens?: MlxCapabilities['special_tokens']): Promise<string>;
+  format(element: T, specialTokens?: Record<string, SpecialToken | SpecialTokenPair>): Promise<string>;
 }
 
 /**
@@ -27,14 +27,14 @@ export abstract class BaseElementFormatter<T extends Element = Element>
 
   abstract format(
     element: T,
-    specialTokens?: MlxCapabilities['special_tokens']
+    specialTokens?: Record<string, SpecialToken | SpecialTokenPair>
   ): Promise<string>;
 
   /**
    * 特殊トークンのヘルパーメソッド
    */
   protected getToken(
-    specialTokens: MlxCapabilities['special_tokens'] | undefined,
+    specialTokens: Record<string, SpecialToken | SpecialTokenPair> | undefined,
     tokenName: string
   ): { start: string; end: string } | null {
     if (!specialTokens) return null;
@@ -54,7 +54,7 @@ export abstract class BaseElementFormatter<T extends Element = Element>
    * 単一トークンのヘルパーメソッド
    */
   protected getSingleToken(
-    specialTokens: MlxCapabilities['special_tokens'] | undefined,
+    specialTokens: Record<string, SpecialToken | SpecialTokenPair> | undefined,
     tokenName: string
   ): string | null {
     if (!specialTokens) return null;
