@@ -72,13 +72,6 @@ export const executionFreeform: PromptModule<AgenticWorkflowContext> = {
           return items.length > 0 ? items : null;
         }
       ]
-    } as const,
-    {
-      type: 'subsection',
-      title: 'Available Tools',
-      items: [
-        '- No tools are available'
-      ]
     } as const
   ],
 
