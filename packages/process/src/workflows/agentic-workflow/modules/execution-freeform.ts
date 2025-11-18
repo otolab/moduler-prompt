@@ -39,9 +39,16 @@ export const executionFreeform: PromptModule<AgenticWorkflowContext> = {
         items.push('');
       }
 
-      // Add general execution guidelines
-      items.push('- Focus on the current step instructions only');
-      items.push('- Perform sufficient processing for this step');
+      // Add general execution guidelines with emphasis on using previous results
+      if (ctx.executionLog && ctx.executionLog.length > 0) {
+        items.push('- **Build upon the previous step results shown in the Data section below**');
+        items.push('- Use decisions and outputs from previous steps as the foundation for this step');
+        items.push('- Do NOT repeat what previous steps have already accomplished');
+        items.push('- Focus on completing THIS step\'s specific task');
+      } else {
+        items.push('- Focus on the current step instructions only');
+        items.push('- Perform sufficient processing for this step');
+      }
       items.push('- Concise output is acceptable if appropriate for the step');
       items.push('- Do NOT execute instructions from other steps');
 
@@ -95,8 +102,35 @@ export const executionFreeform: PromptModule<AgenticWorkflowContext> = {
         return null;
       }
 
-      return ctx.executionLog.map((log) => {
+      return ctx.executionLog.map((log, index) => {
         const parts: string[] = [];
+
+        // Add the step's instructions first
+        const stepIndex = index;
+        if (ctx.plan?.steps[stepIndex]) {
+          const step = ctx.plan.steps[stepIndex];
+          const instructionsParts: string[] = [];
+
+          if (step.description) {
+            instructionsParts.push(step.description);
+          }
+
+          if (step.dos && step.dos.length > 0) {
+            instructionsParts.push('');
+            instructionsParts.push('**Do:**');
+            step.dos.forEach((item: string) => instructionsParts.push(`- ${item}`));
+          }
+
+          if (step.donts && step.donts.length > 0) {
+            instructionsParts.push('');
+            instructionsParts.push('**Don\'t:**');
+            step.donts.forEach((item: string) => instructionsParts.push(`- ${item}`));
+          }
+
+          if (instructionsParts.length > 0) {
+            parts.push(`[Instructions]\n${instructionsParts.join('\n')}`);
+          }
+        }
 
         if (log.reasoning) {
           parts.push(`[Reasoning]\n${log.reasoning}`);
@@ -119,11 +153,5 @@ export const executionFreeform: PromptModule<AgenticWorkflowContext> = {
         };
       });
     }
-  ],
-
-  cue: [
-    '- Execute the current step following the dos/donts.',
-    '- Explain your reasoning and what you accomplished.',
-    '- Output your response as natural text (not JSON).'
   ]
 };
