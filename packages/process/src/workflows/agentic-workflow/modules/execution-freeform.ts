@@ -20,7 +20,7 @@ export const executionFreeform: PromptModule<AgenticWorkflowContext> = {
       return [
         `- **Current Phase: Execution (Step ${currentStepIndex}/${totalSteps})**`,
         '  - Execute only the current step of the execution plan.',
-        '  - Follow the dos/donts specified in the plan.',
+        '  - Follow the dos/don\'ts specified in the plan.',
         '  - Output the reasoning process and results as natural text.',
         ''
       ];
@@ -39,20 +39,16 @@ export const executionFreeform: PromptModule<AgenticWorkflowContext> = {
         items.push('');
       }
 
-      // Add general execution guidelines with emphasis on using previous results
+      // Add general execution guidelines
+      items.push('');
+      items.push('**Requirements:**');
       if (ctx.executionLog && ctx.executionLog.length > 0) {
-        items.push('- **Build upon the previous step results shown in the Data section below**');
-        items.push('- Use decisions and outputs from previous steps as the foundation for this step');
-        items.push('- Do NOT repeat what previous steps have already accomplished');
-        items.push('- **Do NOT reproduce or quote previous step outputs in your response**');
-        items.push('- Output only NEW content specific to THIS step');
-        items.push('- Focus on completing THIS step\'s specific task');
+        items.push('- Build upon previous step results (shown in Data section below)');
+        items.push('- Output only NEW content for THIS step - do NOT reproduce previous outputs');
       } else {
         items.push('- Focus on the current step instructions only');
-        items.push('- Perform sufficient processing for this step');
       }
-      items.push('- Concise output is acceptable if appropriate for the step');
-      items.push('- Do NOT execute instructions from other steps');
+      items.push('- Concise output is acceptable');
 
       // Add dos
       if (ctx.currentStep?.dos && ctx.currentStep.dos.length > 0) {

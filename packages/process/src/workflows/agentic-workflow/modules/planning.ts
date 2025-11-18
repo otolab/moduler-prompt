@@ -10,11 +10,9 @@ import type { AgenticWorkflowContext } from '../types.js';
  */
 export const planning: PromptModule<AgenticWorkflowContext> = {
   methodology: [
-    '',
-    '**Current Phase: Planning**',
-    '',
-    '- Generate an execution plan by breaking down the Objective and Instructions into 3-5 executable steps.',
-    '- Output structured JSON text immediately, with no explanations or commentary.'
+    '- **Current Phase: Planning**',
+    '  - Generate an execution plan by breaking down the Objective and Instructions into 3-5 executable steps.',
+    '  - Output structured JSON text immediately, with no explanations or commentary.'
   ],
 
   instructions: [
@@ -22,8 +20,11 @@ export const planning: PromptModule<AgenticWorkflowContext> = {
       type: 'subsection',
       title: 'Planning Requirements',
       items: [
-        '- Create 3-5 concrete steps to achieve the objective',
+        '- Break down the **Objective and Instructions shown above** into 3-5 concrete executable steps',
         '- Each step must have: id, description, dos (2-4 items), donts (1-3 items)',
+        '  - **dos**: Specific actions or guidelines TO DO in this step',
+        '  - **donts**: Specific actions or guidelines NOT TO DO in this step',
+        '- The steps should accomplish the Instructions in a logical sequence',
         '- Consider available tools when defining actions (currently none available)',
         '- Ensure logical flow between steps',
         '',
