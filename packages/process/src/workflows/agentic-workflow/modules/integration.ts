@@ -10,11 +10,9 @@ import type { AgenticWorkflowContext, AgenticStep } from '../types.js';
  */
 export const integration: PromptModule<AgenticWorkflowContext> = {
   methodology: [
-    '',
-    '**Current Phase: Integration**',
-    '',
-    '- Integrate results from all executed steps.',
-    '- Generate the final output that achieves the overall objective.'
+    '- **Current Phase: Integration**',
+    '  - Integrate results from all executed steps.',
+    '  - Generate the final output that achieves the overall objective.'
   ],
 
   instructions: [
@@ -25,13 +23,6 @@ export const integration: PromptModule<AgenticWorkflowContext> = {
         '- Integrate execution results from all steps in the "Execution Plan" to generate the final output',
         '- Verify that the objective has been achieved',
         '- Clearly describe important results from each step'
-      ]
-    },
-    {
-      type: 'subsection',
-      title: 'Available Tools',
-      items: [
-        '- No tools are available'
       ]
     },
     {

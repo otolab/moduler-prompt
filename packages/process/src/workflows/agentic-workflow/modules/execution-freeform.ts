@@ -7,7 +7,7 @@ import type { AgenticWorkflowContext, AgenticStep } from '../types.js';
  * This version differs from the standard execution module:
  * - Uses planned dos/donts as instructions (not fixed process steps)
  * - Outputs freeform text (not structured JSON)
- * - Accumulates all previous step results
+ * - Accumulates all previous step decisions
  *
  * Should be merged with agentic and user's module:
  *   merge(agentic, executionFreeform, userModule)
@@ -43,8 +43,10 @@ export const executionFreeform: PromptModule<AgenticWorkflowContext> = {
       items.push('');
       items.push('**Requirements:**');
       if (ctx.executionLog && ctx.executionLog.length > 0) {
-        items.push('- Build upon previous step results (shown in Data section below)');
-        items.push('- Output only NEW content for THIS step - do NOT reproduce previous outputs');
+        items.push('- Read and understand the previous step\'s decisions (shown in Data section below)');
+        items.push('- Use that understanding to complete THIS step\'s task');
+        items.push('- Produce only NEW content for this step');
+        items.push('- Do NOT copy or reproduce the previous outputs');
       } else {
         items.push('- Focus on the current step instructions only');
       }
@@ -145,11 +147,16 @@ export const executionFreeform: PromptModule<AgenticWorkflowContext> = {
 
         return {
           type: 'material' as const,
-          id: `execution-result-${log.stepId}`,
-          title: `Previous step result: ${log.stepId}`,
+          id: `execution-decision-${log.stepId}`,
+          title: `Previous step decision: ${log.stepId}`,
           content: parts.join('\n\n')
         };
       });
     }
+  ],
+
+  cue: [
+    'IMPORTANT: Follow the Instructions above carefully.',
+    'Output only what is required for THIS step based on the Requirements.'
   ]
 };

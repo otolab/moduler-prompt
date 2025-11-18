@@ -124,7 +124,7 @@ export function processGemmaChat(messages: MlxMessage[]): MlxMessage[] {
  */
 export function processLlmJpCompletion(prompt: string): string {
   // llm-jpは複数言語の混ぜ書きに弱い傾向があるため、特定の言語を優先しないよう明示的に指示
-  const llmJpSpecificInstruction = '複数の言語の混ぜ書きだが、特定の言語を優先することをしない。\n\n';
+  const llmJpSpecificInstruction = '指示は英語・日本語の混ぜ書きになっているが、どちらの言語も同等の指示として十分に理解すること。\n出力は与えられたタスクに対してふさわしい言語を選択する。\n\n';
 
   // chat_templateのsystemメッセージと同じ固定文字列（良好な回答を得るために必要な固定プロンプト）
   return '<s>以下は、タスクを説明する指示です。要求を適切に満たす応答を書きなさい。' +

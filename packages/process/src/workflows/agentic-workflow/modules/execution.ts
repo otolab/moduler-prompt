@@ -117,31 +117,62 @@ export const execution: PromptModule<AgenticWorkflowContext> = {
       };
     },
     (ctx) => {
-      if (!ctx.executionLog || ctx.executionLog.length === 0) {
+      if (!ctx.executionLog || ctx.executionLog.length === 0 || !ctx.plan) {
         return null;
       }
 
       return ctx.executionLog.map((log) => {
-        const parts: string[] = [];
+        // Find the corresponding step to get dos/donts
+        const step = ctx.plan!.steps.find((s: AgenticStep) => s.id === log.stepId);
 
-        if (log.reasoning) {
-          parts.push(`[Reasoning]\n${log.reasoning}`);
+        const contentParts: string[] = [];
+
+        // Instructions section
+        if (step) {
+          contentParts.push('## Instructions');
+          contentParts.push('');
+          contentParts.push(step.description);
+          contentParts.push('');
+
+          if (step.dos && step.dos.length > 0) {
+            contentParts.push('**Do:**');
+            step.dos.forEach(item => contentParts.push(`- ${item}`));
+            contentParts.push('');
+          }
+
+          if (step.donts && step.donts.length > 0) {
+            contentParts.push('**Don\'t:**');
+            step.donts.forEach(item => contentParts.push(`- ${item}`));
+            contentParts.push('');
+          }
         }
 
-        parts.push(`[Result]\n${log.result}`);
+        // Result section
+        contentParts.push('## Result');
+        contentParts.push('');
+
+        if (log.reasoning) {
+          contentParts.push('**Reasoning:**');
+          contentParts.push(log.reasoning);
+          contentParts.push('');
+        }
+
+        contentParts.push(log.result);
 
         if (log.actionResult !== undefined) {
           const actionResultStr = typeof log.actionResult === 'string'
             ? log.actionResult
             : JSON.stringify(log.actionResult, null, 2);
-          parts.push(`[Action Result]\n${actionResultStr}`);
+          contentParts.push('');
+          contentParts.push('**Action Result:**');
+          contentParts.push(actionResultStr);
         }
 
         return {
           type: 'material' as const,
-          id: `execution-result-${log.stepId}`,
-          title: `Previous step result: ${log.stepId}`,
-          content: parts.join('\n\n')
+          id: `previous-step-${log.stepId}`,
+          title: `Previous step decision: ${log.stepId}`,
+          content: contentParts.join('\n')
         };
       });
     }
