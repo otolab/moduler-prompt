@@ -14,65 +14,53 @@ import type { AgenticWorkflowContext, AgenticStep } from '../types.js';
  */
 export const executionFreeform: PromptModule<AgenticWorkflowContext> = {
   methodology: [
-    '',
-    '**Current Phase: Execution**',
-    '',
-    '- Execute only the current step of the execution plan.',
-    '- Follow the dos/donts specified in the plan.',
-    '- Output the reasoning process and results as natural text.'
+    (ctx: AgenticWorkflowContext) => {
+      const currentStepIndex = (ctx.executionLog?.length || 0) + 1;
+      const totalSteps = ctx.plan?.steps.length || 0;
+      return [
+        `- **Current Phase: Execution (Step ${currentStepIndex}/${totalSteps})**`,
+        '  - Execute only the current step of the execution plan.',
+        '  - Follow the dos/donts specified in the plan.',
+        '  - Output the reasoning process and results as natural text.',
+        ''
+      ];
+    }
   ],
 
   // Replace user's instructions with plan-based dos/donts
   // Note: User's original instructions are omitted in agentic-workflow.ts
   instructions: [
     (ctx: AgenticWorkflowContext) => {
-      const items: string[] = [
-        '- Focus on the current step instructions only',
-        '- Perform sufficient processing for this step',
-        '- Concise output is acceptable if appropriate for the step',
-        '- Do NOT execute instructions from other steps'
-      ];
+      const items: string[] = [];
 
-      // Add previous step result usage instruction if available
-      if (ctx.executionLog && ctx.executionLog.length > 0) {
+      // Add current step description first
+      if (ctx.currentStep?.description) {
+        items.push(ctx.currentStep.description);
         items.push('');
-        items.push('**CRITICAL: Use Previous Step Results**');
-        items.push('- Previous step results are shown in the "Data" section below');
-        items.push('- You MUST reference and use the decisions/outputs from previous steps');
-        items.push('- Do NOT redo or repeat what previous steps have already accomplished');
-        items.push('- Your current step should continue from where the previous step left off');
+      }
+
+      // Add general execution guidelines
+      items.push('- Focus on the current step instructions only');
+      items.push('- Perform sufficient processing for this step');
+      items.push('- Concise output is acceptable if appropriate for the step');
+      items.push('- Do NOT execute instructions from other steps');
+
+      // Add dos
+      if (ctx.currentStep?.dos && ctx.currentStep.dos.length > 0) {
+        items.push('');
+        items.push('**Do:**');
+        ctx.currentStep.dos.forEach((item: string) => items.push(`- ${item}`));
+      }
+
+      // Add donts
+      if (ctx.currentStep?.donts && ctx.currentStep.donts.length > 0) {
+        items.push('');
+        items.push('**Don\'t:**');
+        ctx.currentStep.donts.forEach((item: string) => items.push(`- ${item}`));
       }
 
       return items;
-    },
-    {
-      type: 'subsection',
-      title: 'Current Step Instructions',
-      items: [
-        (ctx: AgenticWorkflowContext) => {
-          if (!ctx.currentStep) {
-            return null;
-          }
-
-          const items: string[] = [];
-
-          // Add dos
-          if (ctx.currentStep.dos && ctx.currentStep.dos.length > 0) {
-            items.push('**Do:**');
-            ctx.currentStep.dos.forEach((item: string) => items.push(`- ${item}`));
-          }
-
-          // Add donts
-          if (ctx.currentStep.donts && ctx.currentStep.donts.length > 0) {
-            items.push('');
-            items.push('**Don\'t:**');
-            ctx.currentStep.donts.forEach((item: string) => items.push(`- ${item}`));
-          }
-
-          return items.length > 0 ? items : null;
-        }
-      ]
-    } as const
+    }
   ],
 
   state: [
