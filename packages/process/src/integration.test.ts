@@ -6,6 +6,8 @@ import type { MaterialContext } from './modules/material';
 import type { StreamProcessingContext } from './modules/stream-processing';
 import { agenticProcess } from './workflows/agentic-workflow/agentic-workflow';
 import type { AgenticWorkflowContext } from './workflows/agentic-workflow/types';
+import { agentProcess } from './workflows/agent-workflow';
+import type { AgentWorkflowContext } from './workflows/agent-workflow';
 import { TestDriver } from '@moduler-prompt/driver';
 
 describe('integration tests', () => {
@@ -205,5 +207,41 @@ describe('integration tests', () => {
     expect(fetchCalled).toBe(true);
     expect(result.context.executionLog?.[0].actionResult).toEqual({ data: [1, 2, 3] });
     expect(result.metadata?.actionsUsed).toBe(1);
+  });
+
+  it('agentProcessで簡易ワークフローが実行できる', async () => {
+    const plan = {
+      steps: [
+        { id: 'step-1', description: '調査結果を収集する' },
+        { id: 'step-2', description: '最終レポートを作成する' }
+      ]
+    };
+
+    const driver = new TestDriver({
+      responses: [
+        JSON.stringify(plan),
+        '一次情報を集めて整理しました。',
+        '集めた情報を元にレポートを作成しました。',
+        '最終レポートを提出します。'
+      ]
+    });
+
+    const context: AgentWorkflowContext = {
+      objective: '簡易レポートを作成する',
+      inputs: {
+        topic: 'テスト市場調査'
+      }
+    };
+
+    const userModule = {
+      objective: ['簡易レポートを作成する']
+    };
+
+    const result = await agentProcess(driver, userModule, context);
+
+    expect(result.output).toBe('最終レポートを提出します。');
+    expect(result.context.phase).toBe('complete');
+    expect(result.metadata?.planSteps).toBe(2);
+    expect(result.metadata?.executedSteps).toBe(2);
   });
 });
