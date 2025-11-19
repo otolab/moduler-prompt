@@ -1,11 +1,9 @@
 import { describe, it, expect } from 'vitest';
 import { compile } from '@moduler-prompt/core';
-import { DefaultModelSpecificProcessor } from '../../src/mlx-ml/process/model-specific.js';
+import { formatCompletionPrompt } from '../../src/formatter/converter.js';
 
 describe('MLX Processor Integration', () => {
   it('should process compiled prompt with materials', async () => {
-    const processor = new DefaultModelSpecificProcessor('gemma-3');
-
     // 通常のcompileの使い方
     const prompt = compile({
       instructions: ['Process the data'],
@@ -15,7 +13,7 @@ describe('MLX Processor Integration', () => {
       ]
     });
 
-    const result = await processor.formatCompletionPrompt(prompt);
+    const result = await formatCompletionPrompt(prompt);
 
     // デバッグ用に出力
     console.log('Compiled prompt structure:', JSON.stringify(prompt, null, 2));
