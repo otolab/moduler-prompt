@@ -8,7 +8,7 @@ import { compile } from '@moduler-prompt/core';
 import type { PromptModule } from '@moduler-prompt/core';
 import { createModelSpecificProcessor } from './model-specific.js';
 import { processLlmJpCompletion } from './model-handlers.js';
-import { defaultFormatterTexts } from '../../formatter/converter.js';
+import { formatCompletionPrompt, defaultFormatterTexts } from '../../formatter/converter.js';
 
 describe('Completion API - Prompt Formatting with Section Headers', () => {
   describe('formatCompletionPrompt - section headers generation', () => {
@@ -21,13 +21,7 @@ describe('Completion API - Prompt Formatting with Section Headers', () => {
       };
 
       const prompt = compile(module, {});
-      const processor = createModelSpecificProcessor(
-        'mlx-community/llm-jp-3.1-8x13b-instruct4-4bit',
-        undefined,
-        defaultFormatterTexts
-      );
-
-      const formatted = await processor.formatCompletionPrompt(prompt);
+      const formatted = await formatCompletionPrompt(prompt, defaultFormatterTexts);
 
       // セクションヘッダーが含まれているか確認
       expect(formatted).toContain('# Instructions');
@@ -42,13 +36,7 @@ describe('Completion API - Prompt Formatting with Section Headers', () => {
       };
 
       const prompt = compile(module, {});
-      const processor = createModelSpecificProcessor(
-        'mlx-community/llm-jp-3.1-8x13b-instruct4-4bit',
-        undefined,
-        defaultFormatterTexts
-      );
-
-      const formatted = await processor.formatCompletionPrompt(prompt);
+      const formatted = await formatCompletionPrompt(prompt, defaultFormatterTexts);
 
       // デフォルトのセクションディスクリプションが含まれているか確認
       expect(formatted).toContain('The following instructions should be prioritized');
@@ -63,13 +51,7 @@ describe('Completion API - Prompt Formatting with Section Headers', () => {
       };
 
       const prompt = compile(module, {});
-      const processor = createModelSpecificProcessor(
-        'mlx-community/llm-jp-3.1-8x13b-instruct4-4bit',
-        undefined,
-        defaultFormatterTexts
-      );
-
-      const formatted = await processor.formatCompletionPrompt(prompt);
+      const formatted = await formatCompletionPrompt(prompt, defaultFormatterTexts);
 
       const instructionsIndex = formatted.indexOf('# Instructions');
       const dataIndex = formatted.indexOf('# Data');
@@ -119,14 +101,10 @@ describe('Completion API - Prompt Formatting with Section Headers', () => {
       };
 
       const prompt = compile(module, {});
-      const processor = createModelSpecificProcessor(
-        'mlx-community/llm-jp-3.1-8x13b-instruct4-4bit',
-        undefined,
-        defaultFormatterTexts
-      );
+      const processor = createModelSpecificProcessor('mlx-community/llm-jp-3.1-8x13b-instruct4-4bit');
 
       // formatCompletionPrompt を実行
-      const formatted = await processor.formatCompletionPrompt(prompt);
+      const formatted = await formatCompletionPrompt(prompt, defaultFormatterTexts);
 
       // セクションヘッダーが生成されていることを確認
       expect(formatted).toContain('# Instructions');
@@ -171,13 +149,9 @@ describe('Completion API - Prompt Formatting with Section Headers', () => {
       };
 
       const prompt = compile(module, { phase: 'planning' });
-      const processor = createModelSpecificProcessor(
-        'mlx-community/llm-jp-3.1-8x13b-instruct4-4bit',
-        undefined,
-        defaultFormatterTexts
-      );
+      const processor = createModelSpecificProcessor('mlx-community/llm-jp-3.1-8x13b-instruct4-4bit');
 
-      const final = await processor.formatCompletionPrompt(prompt);
+      const final = await formatCompletionPrompt(prompt, defaultFormatterTexts);
       const withTemplate = processor.applyCompletionSpecificProcessing(final);
 
       // セクションヘッダーの確認
@@ -186,7 +160,7 @@ describe('Completion API - Prompt Formatting with Section Headers', () => {
       expect(withTemplate).toContain('# Output');
 
       // サブセクションの確認
-      expect(withTemplate).toContain('--- Phase Tasks ---');
+      expect(withTemplate).toContain('### Phase Tasks');
 
       // 動的コンテンツの確認
       expect(withTemplate).toContain('Current phase: planning');
@@ -208,14 +182,8 @@ describe('Completion API - Prompt Formatting with Section Headers', () => {
 
       const prompt = compile(module, {});
 
-      // formatterOptions を渡さない（実際のテストスクリプトと同じ）
-      const processor = createModelSpecificProcessor(
-        'mlx-community/llm-jp-3.1-8x13b-instruct4-4bit',
-        undefined
-        // formatterOptions なし
-      );
-
-      const formatted = await processor.formatCompletionPrompt(prompt);
+      // formatterOptions を渡さない（デフォルトを使用）
+      const formatted = await formatCompletionPrompt(prompt);
 
       // セクションヘッダーが含まれているか確認
       expect(formatted).toContain('# Instructions');
@@ -240,13 +208,9 @@ describe('Completion API - Prompt Formatting with Section Headers', () => {
       };
 
       const prompt = compile(module, {});
-      const processor = createModelSpecificProcessor(
-        'mlx-community/llm-jp-3.1-8x13b-instruct4-4bit',
-        undefined,
-        defaultFormatterTexts
-      );
+      const processor = createModelSpecificProcessor('mlx-community/llm-jp-3.1-8x13b-instruct4-4bit');
 
-      const formatted = await processor.formatCompletionPrompt(prompt);
+      const formatted = await formatCompletionPrompt(prompt, defaultFormatterTexts);
       const final = processor.applyCompletionSpecificProcessing(formatted);
 
       // 空でないセクションのヘッダーは含まれる
@@ -262,16 +226,10 @@ describe('Completion API - Prompt Formatting with Section Headers', () => {
       };
 
       const prompt = compile(module, {});
-      const processor = createModelSpecificProcessor(
-        'mlx-community/llm-jp-3.1-8x13b-instruct4-4bit',
-        undefined,
-        {
-          preamble: 'This is a test preamble',
-          sectionDescriptions: defaultFormatterTexts.sectionDescriptions
-        }
-      );
-
-      const formatted = await processor.formatCompletionPrompt(prompt);
+      const formatted = await formatCompletionPrompt(prompt, {
+        preamble: 'This is a test preamble',
+        sectionDescriptions: defaultFormatterTexts.sectionDescriptions
+      });
 
       expect(formatted).toContain('This is a test preamble');
       expect(formatted).toContain('# Instructions');

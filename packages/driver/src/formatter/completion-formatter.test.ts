@@ -65,15 +65,16 @@ describe('formatCompletionPrompt', () => {
     expect(result).toContain('Material content here');
   });
 
-  it('should apply Echo special tokens', () => {
+  it('should apply Echo special tokens for chunks', () => {
     const prompt: CompiledPrompt = {
       instructions: [],
       data: [
         {
-          type: 'material',
-          id: 'test',
-          title: 'Test',
-          content: 'Content'
+          type: 'chunk',
+          partOf: 'test-file',
+          index: 1,
+          total: 3,
+          content: 'Chunk content'
         }
       ],
       output: []
@@ -81,8 +82,12 @@ describe('formatCompletionPrompt', () => {
 
     const result = formatCompletionPrompt(prompt, ECHO_SPECIAL_TOKENS);
 
-    expect(result).toContain('<material>');
-    expect(result).toContain('</material>');
+    // formatCompletionPrompt always adds section headers
+    expect(result).toContain('# Data');
+    // ECHO_SPECIAL_TOKENS markers are applied to chunk elements
+    expect(result).toContain('<chunk>');
+    expect(result).toContain('</chunk>');
+    expect(result).toContain('# Output');
   });
 
   it('should format chunk elements', () => {
@@ -187,7 +192,9 @@ describe('formatCompletionPrompt', () => {
 
     const result = formatCompletionPrompt(prompt);
 
-    expect(result).toBe('');
+    // Even with empty prompt, Output section header is always included
+    expect(result).toContain('# Output');
+    expect(result).toContain('This section is where you write your response.');
   });
 
   it('should include preamble when provided', () => {

@@ -131,12 +131,14 @@ describe('formatCompletionPrompt', () => {
     };
     
     const result = formatCompletionPrompt(prompt);
-    
-    // Empty sections are not included
+
+    // Empty Instructions section is not included
     expect(result).not.toContain('# Instructions');
+    // Data section is included
     expect(result).toContain('# Data');
     expect(result).toContain('Some data');
-    expect(result).not.toContain('# Output');
+    // Output section is always included
+    expect(result).toContain('# Output');
   });
   
   it('should use custom line breaks', () => {
