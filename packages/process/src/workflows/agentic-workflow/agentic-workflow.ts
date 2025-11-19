@@ -123,7 +123,7 @@ async function executeStep(
   // Execute step with AI
   const executionPhaseModule = useFreeform ? executionFreeform : execution;
 
-  // For freeform mode, omit user's instructions to use plan-based dos/donts instead
+  // For freeform mode, omit user's instructions to use plan-based guidelines/constraints instead
   // For structured mode, use user's instructions as-is
   const userModule = useFreeform
     ? { ...module, instructions: undefined }

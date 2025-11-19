@@ -21,9 +21,9 @@ export const planning: PromptModule<AgenticWorkflowContext> = {
       title: 'Planning Requirements',
       items: [
         '- Break down the **Objective and Instructions shown above** into 3-5 concrete executable steps',
-        '- Each step must have: id, description, dos (2-4 items), donts (1-3 items)',
-        '  - **dos**: Specific actions or guidelines TO DO in this step',
-        '  - **donts**: Specific actions or guidelines NOT TO DO in this step',
+        '- Each step must have: id, description, guidelines (2-4 items), constraints (1-3 items)',
+        '  - **guidelines**: Specific actions or principles to follow in this step',
+        '  - **constraints**: Specific limitations or prohibitions for this step',
         '- The steps should accomplish the Instructions in a logical sequence',
         '- Consider available tools when defining actions (currently none available)',
         '- Ensure logical flow between steps',
@@ -69,15 +69,15 @@ export const planning: PromptModule<AgenticWorkflowContext> = {
                   type: 'string',
                   description: 'Brief summary of what this step accomplishes'
                 },
-                dos: {
+                guidelines: {
                   type: 'array',
                   items: { type: 'string' },
-                  description: 'List of specific things to do in this step (2-4 items)'
+                  description: 'Specific actions or principles to follow in this step (2-4 items)'
                 },
-                donts: {
+                constraints: {
                   type: 'array',
                   items: { type: 'string' },
-                  description: 'List of specific things NOT to do in this step (1-3 items)'
+                  description: 'Specific limitations or prohibitions for this step (1-3 items)'
                 },
                 actions: {
                   type: 'array',
@@ -98,7 +98,7 @@ export const planning: PromptModule<AgenticWorkflowContext> = {
                   description: 'External tools to use (optional, only if available actions exist)'
                 }
               },
-              required: ['id', 'description', 'dos', 'donts']
+              required: ['id', 'description', 'guidelines', 'constraints']
             },
             description: 'List of execution plan steps'
           }

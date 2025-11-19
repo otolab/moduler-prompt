@@ -52,18 +52,18 @@ export const executionFreeform: PromptModule<AgenticWorkflowContext> = {
       }
       items.push('- Concise output is acceptable');
 
-      // Add dos
-      if (ctx.currentStep?.dos && ctx.currentStep.dos.length > 0) {
+      // Add guidelines
+      if (ctx.currentStep?.guidelines && ctx.currentStep.guidelines.length > 0) {
         items.push('');
-        items.push('**Do:**');
-        ctx.currentStep.dos.forEach((item: string) => items.push(`- ${item}`));
+        items.push('**Guidelines:**');
+        ctx.currentStep.guidelines.forEach((item: string) => items.push(`- ${item}`));
       }
 
-      // Add donts
-      if (ctx.currentStep?.donts && ctx.currentStep.donts.length > 0) {
+      // Add constraints
+      if (ctx.currentStep?.constraints && ctx.currentStep.constraints.length > 0) {
         items.push('');
-        items.push('**Don\'t:**');
-        ctx.currentStep.donts.forEach((item: string) => items.push(`- ${item}`));
+        items.push('**Constraints:**');
+        ctx.currentStep.constraints.forEach((item: string) => items.push(`- ${item}`));
       }
 
       return items;
@@ -115,16 +115,16 @@ export const executionFreeform: PromptModule<AgenticWorkflowContext> = {
             instructionsParts.push(step.description);
           }
 
-          if (step.dos && step.dos.length > 0) {
+          if (step.guidelines && step.guidelines.length > 0) {
             instructionsParts.push('');
-            instructionsParts.push('**Do:**');
-            step.dos.forEach((item: string) => instructionsParts.push(`- ${item}`));
+            instructionsParts.push('**Guidelines:**');
+            step.guidelines.forEach((item: string) => instructionsParts.push(`- ${item}`));
           }
 
-          if (step.donts && step.donts.length > 0) {
+          if (step.constraints && step.constraints.length > 0) {
             instructionsParts.push('');
-            instructionsParts.push('**Don\'t:**');
-            step.donts.forEach((item: string) => instructionsParts.push(`- ${item}`));
+            instructionsParts.push('**Constraints:**');
+            step.constraints.forEach((item: string) => instructionsParts.push(`- ${item}`));
           }
 
           if (instructionsParts.length > 0) {

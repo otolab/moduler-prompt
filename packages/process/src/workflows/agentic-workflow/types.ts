@@ -12,8 +12,8 @@ export type ActionHandler<TContext = any> = (
 export interface AgenticStep {
   id: string;
   description: string;
-  dos?: string[];        // Things to do in this step
-  donts?: string[];      // Things NOT to do in this step
+  guidelines?: string[];  // Actions or principles to follow in this step
+  constraints?: string[]; // Limitations or prohibitions for this step
   actions?: Array<{      // External tools to use (supports multiple tools)
     tool: string;
     params?: any;

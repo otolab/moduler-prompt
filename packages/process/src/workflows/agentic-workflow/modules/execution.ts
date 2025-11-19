@@ -59,18 +59,18 @@ export const execution: PromptModule<AgenticWorkflowContext> = {
 
             const baseText = parts.join(' ');
 
-            // For currently executing step, show dos/donts
+            // For currently executing step, show guidelines/constraints
             if (step.id === currentStepId) {
               const details: string[] = [`- **${baseText}** ← **[Currently executing]**`];
 
-              if (step.dos && step.dos.length > 0) {
-                details.push('  **Do:**');
-                step.dos.forEach(item => details.push(`  - ${item}`));
+              if (step.guidelines && step.guidelines.length > 0) {
+                details.push('  **Guidelines:**');
+                step.guidelines.forEach(item => details.push(`  - ${item}`));
               }
 
-              if (step.donts && step.donts.length > 0) {
-                details.push('  **Don\'t:**');
-                step.donts.forEach(item => details.push(`  - ${item}`));
+              if (step.constraints && step.constraints.length > 0) {
+                details.push('  **Constraints:**');
+                step.constraints.forEach(item => details.push(`  - ${item}`));
               }
 
               return details;
@@ -134,15 +134,15 @@ export const execution: PromptModule<AgenticWorkflowContext> = {
           contentParts.push(step.description);
           contentParts.push('');
 
-          if (step.dos && step.dos.length > 0) {
-            contentParts.push('**Do:**');
-            step.dos.forEach(item => contentParts.push(`- ${item}`));
+          if (step.guidelines && step.guidelines.length > 0) {
+            contentParts.push('**Guidelines:**');
+            step.guidelines.forEach(item => contentParts.push(`- ${item}`));
             contentParts.push('');
           }
 
-          if (step.donts && step.donts.length > 0) {
-            contentParts.push('**Don\'t:**');
-            step.donts.forEach(item => contentParts.push(`- ${item}`));
+          if (step.constraints && step.constraints.length > 0) {
+            contentParts.push('**Constraints:**');
+            step.constraints.forEach(item => contentParts.push(`- ${item}`));
             contentParts.push('');
           }
         }
