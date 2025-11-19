@@ -160,31 +160,6 @@ const result = await agenticProcess(driver, userModule, context, {
 // AIが計画フェーズで必要なアクションを判断し、実行フェーズで自動的に呼び出す
 ```
 
-## テスト
-
-### テスト実行
-
-```bash
-# 全テスト実行
-npm test
-
-# 特定ファイルのみ
-npm test -- agent-workflow.test.ts
-
-# ウォッチモード
-npm test -- --watch
-```
-
-### テスト戦略
-
-このパッケージは2層のテスト戦略を採用しています：
-
-1. **モジュール単体テスト** - プロンプトモジュールとその構造を検証
-2. **ワークフロー機能テスト** - TestDriverでワークフロー全体を検証
-
-実モデルでの検証は手動実験スクリプトで実施します。
-
-詳細は[プロジェクト全体のテスト戦略](../../docs/TESTING_STRATEGY.md#moduler-promptprocess)を参照してください。
 
 ## ライセンス
 

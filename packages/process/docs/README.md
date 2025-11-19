@@ -1,62 +1,25 @@
-# @moduler-prompt/process
+# 実験とリサーチ
 
-## 概要
+このディレクトリには、@moduler-prompt/processパッケージに関連する実験やリサーチの記録を保存します。
 
-プロンプトモジュールを実際のAIモデルで実行するワークフローとサポートモジュールを提供します。
+## 現在の実験
 
-## 主要コンポーネント
+### Agentic Workflow モデル比較実験
 
-### ワークフロー
+プロジェクトルートの`experiments/agentic-workflow-model-comparison/`で実施中。
 
-- **streamProcess**: ステートフルな逐次処理
-- **concatProcess**: 独立した処理の結合
+**目的**:
+- 異なるLLMモデルでのワークフロー実行性能の比較
+- プロンプト設計の妥当性検証
+- モデル固有の最適化の発見
 
-### モジュール
+**詳細**:
+- [実験ディレクトリ](../../../experiments/agentic-workflow-model-comparison/)
+- テストケース: `test-cases/meal-planning.json`
+- 実行スクリプト: `packages/process/scripts/test-agentic-workflow.ts`
 
-- **Stream Processing**: チャンク処理とステート管理
-- **Material**: 参考資料の管理
-- **Dialogue**: 対話用プロンプト
-- **Summarize**: 要約用プロンプト
+## 今後の実験候補
 
-## 基本概念
-
-### ワークフロー
-
-ステートレス関数として実装され、すべての状態はコンテキストに保存されます。
-
-```typescript
-export async function workflowProcess(
-  driver: AIDriver,
-  module: PromptModule<TContext>,
-  context: TContext,
-  options?: TOptions
-): Promise<WorkflowResult<TContext>>
-```
-
-### エラーハンドリング
-
-動的エラー（ネットワークエラー、finishReason !== 'stop'）のみキャッチし、コンテキストを保持して再開可能にします。
-
-## 使用例
-
-```typescript
-import { streamProcess } from '@moduler-prompt/process';
-import { TestDriver } from '@moduler-prompt/driver';
-
-const driver = new TestDriver(["response1", "response2"]);
-const result = await streamProcess(
-  driver,
-  myModule,
-  {
-    chunks: [{content: "data1"}, {content: "data2"}],
-    state: { content: "", usage: 0 }
-  },
-  { tokenLimit: 1000 }
-);
-```
-
-## 詳細
-
-- [ワークフローAPI](./workflows.md)
-- [モジュールAPI](./modules.md)
-- [型定義](../src/workflows/types.ts)
+- ストリーム処理の最適なチャンクサイズ
+- 状態管理戦略の比較
+- 異なる対話パターンの評価
