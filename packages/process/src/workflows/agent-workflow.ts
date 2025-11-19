@@ -146,7 +146,7 @@ const executionModule: PromptModule<AgentWorkflowContext> = {
           }
 
           const completed = ctx.executionLog?.length || 0;
-          return ctx.plan.steps.map((step, index) => {
+          return ctx.plan.steps.map((step: AgentWorkflowStep, index: number) => {
             const prefix = index < completed
               ? '[done]'
               : (ctx.currentStep?.id === step.id ? '[current]' : '[todo]');
