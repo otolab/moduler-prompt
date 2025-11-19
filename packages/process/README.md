@@ -160,91 +160,7 @@ const result = await agenticProcess(driver, userModule, context, {
 // AIが計画フェーズで必要なアクションを判断し、実行フェーズで自動的に呼び出す
 ```
 
-## テスト戦略
-
-このパッケージは3層のテスト戦略を採用しています。
-
-### 1. モジュール単体テスト（Driver不使用）
-
-プロンプトモジュールの純粋なロジックを検証します。
-
-#### 基本的なモジュールテスト
-
-```typescript
-// material.test.ts の例
-it('材料がある場合はmaterialセクションを生成', () => {
-  const context: MaterialContext = {
-    materials: [{ id: 'doc1', title: 'Document 1', content: '...' }]
-  };
-  const result = compile(withMaterials, context);
-  expect(result.data).toBeDefined();
-});
-```
-
-#### プロンプト構造検証テスト
-
-```typescript
-// prompt-inspection.test.ts の例
-it('should include planning requirements and user inputs', () => {
-  const planningContext: AgenticWorkflowContext = {
-    objective: '文書を分析し、重要な洞察を抽出する',
-    inputs: { document: 'サンプルドキュメントの内容...' }
-  };
-
-  const mergedPlanning = merge(planning, userModule);
-  const planningPrompt = compile(mergedPlanning, planningContext);
-
-  const instructionText = collectText(planningPrompt.instructions);
-  expect(instructionText).toContain('Planning Requirements');
-  expect(instructionText).toContain('Respond ONLY with valid JSON text');
-});
-```
-
-**特徴:**
-- 高速・決定的
-- `compile()`の結果を検証
-- AIモデル不要
-- プロンプト構造や期待される文言を詳細に検証可能
-
-### 2. ワークフロー機能テスト（TestDriver使用）
-
-ワークフロー全体の動作を、モックレスポンスで検証します。
-
-```typescript
-// agent-workflow.test.ts の例
-it('executes planning, execution, and integration phases', async () => {
-  const driver = new TestDriver({
-    responses: [
-      JSON.stringify(plan),  // Planning
-      'step 1 result',        // Execution
-      'step 2 result',
-      'final output'          // Integration
-    ]
-  });
-
-  const result = await agentProcess(driver, userModule, context);
-  expect(result.output).toBe('final output');
-});
-```
-
-**特徴:**
-- 高速・決定的
-- ワークフロー全体の動作確認
-- 実際のAIモデルは使用しない
-
-### 3. 実モデルでの検証
-
-CI環境では実行せず、手動実験スクリプトで検証します。
-
-```bash
-# 実際のMLXモデルでワークフローをテスト
-npx tsx scripts/test-agentic-workflow.ts test-cases/meal-planning.json
-```
-
-**理由:**
-- 実行時間が長い
-- モデルの応答が不確定
-- API/GPU環境への依存
+## テスト
 
 ### テスト実行
 
@@ -258,6 +174,17 @@ npm test -- agent-workflow.test.ts
 # ウォッチモード
 npm test -- --watch
 ```
+
+### テスト戦略
+
+このパッケージは2層のテスト戦略を採用しています：
+
+1. **モジュール単体テスト** - プロンプトモジュールとその構造を検証
+2. **ワークフロー機能テスト** - TestDriverでワークフロー全体を検証
+
+実モデルでの検証は手動実験スクリプトで実施します。
+
+詳細は[プロジェクト全体のテスト戦略](../../docs/TESTING_STRATEGY.md#moduler-promptprocess)を参照してください。
 
 ## ライセンス
 
