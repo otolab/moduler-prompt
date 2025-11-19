@@ -26,8 +26,6 @@ describe('MLX Processor Integration', () => {
   });
 
   it('should process dynamic materials', async () => {
-    const processor = new DefaultModelSpecificProcessor('gemma-3');
-
     // DynamicContentとしてMaterialElementを返す
     const prompt = compile({
       instructions: ['Process the data'],
@@ -41,7 +39,7 @@ describe('MLX Processor Integration', () => {
       ]
     });
 
-    const result = await processor.formatCompletionPrompt(prompt);
+    const result = await formatCompletionPrompt(prompt);
 
     console.log('Dynamic material result:', result);
 
@@ -51,8 +49,6 @@ describe('MLX Processor Integration', () => {
   });
 
   it('should process JSON schema', async () => {
-    const processor = new DefaultModelSpecificProcessor('gemma-3');
-
     const prompt = compile({
       instructions: ['Generate response'],
       schema: [
@@ -68,13 +64,13 @@ describe('MLX Processor Integration', () => {
       ]
     });
 
-    const result = await processor.formatCompletionPrompt(prompt);
+    const result = await formatCompletionPrompt(prompt);
 
     console.log('Schema result:', result);
 
     // JSONElementが直接処理される
-    expect(result).toContain('JSON Schema');
-    expect(result).toContain('```json');
+    expect(result).toContain('JSON Output Format:');
     expect(result).toContain('"type": "object"');
+    expect(result).toContain('"properties"');
   });
 });
