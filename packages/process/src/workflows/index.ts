@@ -38,3 +38,11 @@ export type {
   AgenticWorkflowOptions,
   ActionHandler
 } from './agentic-workflow/index.js';
+
+// Simple agent workflow
+export { agentProcess } from './agent-workflow.js';
+export type {
+  AgentWorkflowContext,
+  AgentWorkflowOptions,
+  AgentWorkflowActionHandler
+} from './agent-workflow.js';

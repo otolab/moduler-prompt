@@ -18,6 +18,7 @@ npm install @moduler-prompt/process
 ### エージェント型ワークフロー
 
 - **`agenticProcess`** - 自律的な複数ステップ処理（計画→実行→統合）
+- **`agentProcess`** - シンプルな計画→実行→統合ワークフロー
 
 ## モジュール
 
@@ -95,6 +96,45 @@ console.log(result.output);  // 最終的な献立提案
 console.log(result.metadata); // { planSteps: 5, executedSteps: 5, actionsUsed: 0 }
 ```
 
+### 簡易エージェントワークフロー
+
+```typescript
+import { agentProcess } from '@moduler-prompt/process';
+import { TestDriver } from '@moduler-prompt/driver';
+
+const driver = new TestDriver();
+
+const userModule = {
+  objective: ['週末旅行プランを提案する'],
+  instructions: [
+    '- 交通手段・宿泊先・食事プランを検討する',
+    '- 入力データに応じて実行計画を自律的に組み立てる'
+  ]
+};
+
+const context = {
+  objective: '週末旅行プランを提案する',
+  inputs: {
+    budget: '50,000円',
+    city: '箱根'
+  }
+};
+
+const actions = {
+  lookupHotel: async (params: { city: string }) => {
+    return { recommended: [`${params.city} 温泉旅館`] };
+  }
+};
+
+const result = await agentProcess(driver, userModule, context, {
+  maxSteps: 4,
+  actions
+});
+
+console.log(result.output);
+console.log(result.metadata); // { planSteps: 3, executedSteps: 3, actionsUsed: 1 }
+```
+
 ### アクション（外部ツール）の使用
 
 ```typescript
@@ -119,6 +159,7 @@ const result = await agenticProcess(driver, userModule, context, {
 
 // AIが計画フェーズで必要なアクションを判断し、実行フェーズで自動的に呼び出す
 ```
+
 
 ## ライセンス
 

@@ -91,6 +91,107 @@ npm run test:system:mlx     # MLX関連のシステムテスト
 test/e2e/**/*.test.ts
 ```
 
+## パッケージ固有のテスト戦略
+
+### @moduler-prompt/process
+
+processパッケージは、プロンプトモジュールとワークフローの実行を担当します。そのテスト戦略は以下の2層構成です。
+
+#### 1. モジュール単体テスト（Driver不使用）
+
+プロンプトモジュールの純粋なロジックを検証します。
+
+##### 基本的なモジュールテスト
+
+```typescript
+// material.test.ts の例
+it('材料がある場合はmaterialセクションを生成', () => {
+  const context: MaterialContext = {
+    materials: [{ id: 'doc1', title: 'Document 1', content: '...' }]
+  };
+  const result = compile(withMaterials, context);
+  expect(result.data).toBeDefined();
+});
+```
+
+##### プロンプト構造検証テスト
+
+```typescript
+// prompt-inspection.test.ts の例
+it('should include planning requirements and user inputs', () => {
+  const planningContext: AgenticWorkflowContext = {
+    objective: '文書を分析し、重要な洞察を抽出する',
+    inputs: { document: 'サンプルドキュメントの内容...' }
+  };
+
+  const mergedPlanning = merge(planning, userModule);
+  const planningPrompt = compile(mergedPlanning, planningContext);
+
+  const instructionText = collectText(planningPrompt.instructions);
+  expect(instructionText).toContain('Planning Requirements');
+  expect(instructionText).toContain('Respond ONLY with valid JSON text');
+});
+```
+
+**特徴**:
+- 高速・決定的
+- `compile()`の結果を検証
+- AIモデル不要
+- プロンプト構造や期待される文言を詳細に検証可能
+
+#### 2. ワークフロー機能テスト（TestDriver使用）
+
+ワークフロー全体の動作を、モックレスポンスで検証します。
+
+```typescript
+// agent-workflow.test.ts の例
+it('executes planning, execution, and integration phases', async () => {
+  const plan = {
+    steps: [
+      { id: 'step-1', description: 'Collect the required facts' },
+      { id: 'step-2', description: 'Summarize the findings' }
+    ]
+  };
+
+  const driver = new TestDriver({
+    responses: [
+      JSON.stringify(plan),  // Planning
+      'step 1 result',        // Execution
+      'step 2 result',
+      'final output'          // Integration
+    ]
+  });
+
+  const result = await agentProcess(driver, userModule, context);
+  expect(result.output).toBe('final output');
+});
+```
+
+**特徴**:
+- 高速・決定的
+- ワークフロー全体の動作確認
+- 実際のAIモデルは使用しない
+
+#### 3. 実モデルでの検証
+
+CI環境では実行せず、手動実験スクリプトで検証します。
+
+```bash
+# 実際のMLXモデルでワークフローをテスト
+npx tsx packages/process/scripts/test-agentic-workflow.ts \
+  experiments/agentic-workflow-model-comparison/test-cases/meal-planning.json
+```
+
+**理由**:
+- 実行時間が長い（数分〜数十分）
+- モデルの応答が不確定
+- API/GPU環境への依存
+
+**検証内容**:
+- プロンプト品質の実評価
+- 異なるモデル間の比較
+- ワークフロー設計の妥当性確認
+
 ## テスト実装の指針
 
 ### パラメータ検証のテスト戦略
@@ -283,13 +384,6 @@ npm run test:system        # システムテストのみ
 npm run test:ci           # CI用（ユニット+統合）
 npm run test:all          # 全テスト実行
 ```
-
-## 今後の改善項目
-
-- [ ] システムテストの並列実行対応
-- [ ] テストデータの共有管理
-- [ ] パフォーマンステストの追加
-- [ ] ビジュアルリグレッションテスト（simple-chat UI）
 
 ---
 
