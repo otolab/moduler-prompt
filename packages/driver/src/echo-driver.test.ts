@@ -287,7 +287,7 @@ describe('EchoDriver', () => {
       expect(result.structuredOutput).toHaveProperty('metadata');
     });
 
-    it('returns undefined structuredOutput for text format', async () => {
+    it('returns schema as structuredOutput for text format', async () => {
       const driver = new EchoDriver({ format: 'text' });
       const promptWithSchema: CompiledPrompt = {
         ...samplePrompt,
@@ -298,8 +298,8 @@ describe('EchoDriver', () => {
 
       const result = await driver.query(promptWithSchema);
 
-      // Text format doesn't contain JSON, so no structured output
-      expect(result.structuredOutput).toBeUndefined();
+      // Text format includes schema in Output section, which gets extracted
+      expect(result.structuredOutput).toEqual({ type: 'object' });
     });
 
     it('returns undefined structuredOutput when no schema provided', async () => {
