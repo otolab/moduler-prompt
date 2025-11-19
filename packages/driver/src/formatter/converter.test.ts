@@ -177,7 +177,7 @@ describe('formatCompletionPrompt', () => {
         return super.format(element);
       }
     }
-    
+
     const prompt: CompiledPrompt = {
       instructions: [
         { type: 'text', content: 'Test instruction' }
@@ -185,12 +185,113 @@ describe('formatCompletionPrompt', () => {
       data: [],
       output: []
     };
-    
+
     const result = formatCompletionPrompt(prompt, {
       formatter: new CustomFormatter()
     });
-    
+
     expect(result).toContain('CUSTOM: Test instruction');
+  });
+
+  it('should apply specialTokens to material elements', () => {
+    const prompt: CompiledPrompt = {
+      instructions: [
+        { type: 'text', content: 'Process the data' }
+      ],
+      data: [
+        {
+          type: 'material',
+          id: 'doc-1',
+          title: 'Reference Document',
+          content: 'Important information here'
+        }
+      ],
+      output: []
+    };
+
+    const result = formatCompletionPrompt(prompt, {
+      specialTokens: {
+        quote: {
+          start: { text: '<quote>', id: 11 },
+          end: { text: '</quote>', id: 12 }
+        }
+      }
+    });
+
+    // Material should be wrapped with quote tokens
+    expect(result).toContain('<quote>');
+    expect(result).toContain('</quote>');
+    expect(result).toContain('Reference Document');
+    expect(result).toContain('Important information here');
+  });
+
+  it('should apply specialTokens to chunk elements', () => {
+    const prompt: CompiledPrompt = {
+      instructions: [],
+      data: [
+        {
+          type: 'chunk',
+          partOf: 'large-document.txt',
+          index: 1,
+          total: 3,
+          content: 'First part of the document'
+        }
+      ],
+      output: []
+    };
+
+    const result = formatCompletionPrompt(prompt, {
+      markers: {
+        chunkStart: '<<<CHUNK>>>',
+        chunkEnd: '<<</CHUNK>>>'
+      }
+    });
+
+    // Chunk should be wrapped with custom markers
+    expect(result).toContain('<<<CHUNK>>>');
+    expect(result).toContain('<<</CHUNK>>>');
+    expect(result).toContain('Chunk 1/3 of large-document.txt');
+  });
+
+  it('should combine specialTokens with other formatter options', () => {
+    const prompt: CompiledPrompt = {
+      instructions: [
+        { type: 'text', content: 'Follow these steps' }
+      ],
+      data: [
+        {
+          type: 'material',
+          id: 'guide',
+          title: 'User Guide',
+          content: 'Step-by-step instructions'
+        }
+      ],
+      output: [
+        { type: 'text', content: 'Provide your response' }
+      ]
+    };
+
+    const result = formatCompletionPrompt(prompt, {
+      preamble: 'Custom preamble text',
+      sectionDescriptions: {
+        instructions: 'Custom instructions description'
+      },
+      specialTokens: {
+        ref: {
+          start: { text: '<reference>', id: 7 },
+          end: { text: '</reference>', id: 8 }
+        }
+      }
+    });
+
+    // Should include preamble
+    expect(result).toContain('Custom preamble text');
+    // Should include section description
+    expect(result).toContain('Custom instructions description');
+    // Should apply special tokens to material
+    expect(result).toContain('<reference>');
+    expect(result).toContain('</reference>');
+    expect(result).toContain('User Guide');
   });
 });
 
