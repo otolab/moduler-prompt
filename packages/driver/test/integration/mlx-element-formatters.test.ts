@@ -4,7 +4,7 @@ import {
   MaterialElementFormatter,
   JSONElementFormatter,
   MessageElementFormatter
-} from '../../src/mlx-ml/process/element-formatters/index.js';
+} from '../../src/formatter/element-formatters/index.js';
 
 describe('MLX Element Formatters', () => {
   // Gemma-3風の特殊トークンモック

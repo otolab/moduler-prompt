@@ -71,19 +71,19 @@ describe('DefaultFormatter', () => {
         content: 'This is the API doc content.',
         usage: 100
       };
-      
+
       const result = formatter.format(element);
       expect(result).toContain('### API Documentation');
-      expect(result).toContain('*ID: api-doc*');
-      expect(result).toContain('*Usage: 100 tokens*');
-      expect(result).toContain('This is the API doc content.');
+      expect(result).toContain('> This is the API doc content.');
     });
     
-    it('should format material with custom markers', () => {
-      const formatter = new DefaultFormatter({ 
-        markers: {
-          materialStart: '<<<MATERIAL>>>',
-          materialEnd: '<<</MATERIAL>>>'
+    it('should format material with special tokens', () => {
+      const formatter = new DefaultFormatter({
+        specialTokens: {
+          'quote': {
+            start: { text: '<quote>', id: 1 },
+            end: { text: '</quote>', id: 2 }
+          }
         }
       });
       const element: MaterialElement = {
@@ -92,13 +92,12 @@ describe('DefaultFormatter', () => {
         title: 'Reference',
         content: 'Reference content'
       };
-      
+
       const result = formatter.format(element);
-      expect(result).toContain('<<<MATERIAL>>>');
-      expect(result).toContain('### Reference');
-      expect(result).toContain('*ID: ref-1*');
+      expect(result).toContain('<quote>');
+      expect(result).toContain('Reference');
       expect(result).toContain('Reference content');
-      expect(result).toContain('<<</MATERIAL>>>');
+      expect(result).toContain('</quote>');
     });
   });
   
@@ -333,28 +332,14 @@ describe('DefaultFormatter', () => {
 });
 
 describe('markers usage', () => {
-  it('should use material and chunk markers', () => {
+  it('should use chunk markers', () => {
     const formatter = new DefaultFormatter({
       markers: {
-        materialStart: '<<<MATERIAL>>>',
-        materialEnd: '<<</MATERIAL>>>',
         chunkStart: '<<<CHUNK>>>',
         chunkEnd: '<<</CHUNK>>>'
       }
     });
-    
-    // Test material markers
-    const material: MaterialElement = {
-      type: 'material',
-      id: 'mat1',
-      title: 'Test Material',
-      content: 'material content'
-    };
-    const materialResult = formatter.format(material);
-    expect(materialResult).toContain('<<<MATERIAL>>>');
-    expect(materialResult).toContain('### Test Material');
-    expect(materialResult).toContain('<<</MATERIAL>>>');
-    
+
     // Test chunk markers
     const chunk: ChunkElement = {
       type: 'chunk',
@@ -367,29 +352,15 @@ describe('markers usage', () => {
     expect(chunkResult).toContain('#### Chunk 1 of file.txt');
     expect(chunkResult).toContain('<<</CHUNK>>>');
   });
-  
+
   it('should handle partial marker configuration', () => {
     const formatter = new DefaultFormatter({
       markers: {
-        materialStart: '=== START ===',
-        // No materialEnd provided
         chunkEnd: '=== END ===',
-        // No chunkStart provided
+        // No chunkStart provided - will use default empty string
       }
     });
-    
-    // Material with only start marker
-    const material: MaterialElement = {
-      type: 'material',
-      id: 'mat1',
-      title: 'Title',
-      content: 'content'
-    };
-    const materialResult = formatter.format(material);
-    expect(materialResult).toContain('=== START ===');
-    expect(materialResult).toContain('### Title');
-    expect(materialResult).not.toContain('=== END ===');
-    
+
     // Chunk with only end marker
     const chunk: ChunkElement = {
       type: 'chunk',
@@ -398,7 +369,6 @@ describe('markers usage', () => {
       content: 'chunk'
     };
     const chunkResult = formatter.format(chunk);
-    expect(chunkResult).not.toContain('=== START ===');
     expect(chunkResult).toContain('#### Chunk 1 of data.txt');
     expect(chunkResult).toContain('=== END ===');
   });
@@ -439,18 +409,13 @@ describe('DefaultFormatter with Special Tokens', () => {
   });
 
   describe('formatting with special tokens', () => {
-    it('should use code tokens for material elements', () => {
-      const formatter = new DefaultFormatter({
-        markers: {
-          materialStart: '',
-          materialEnd: ''
-        }
-      });
+    it('should use ref tokens for material elements', () => {
+      const formatter = new DefaultFormatter();
 
       const specialTokens = {
-        code: {
-          start: { text: '<|code_start|>', id: 7 },
-          end: { text: '<|code_end|>', id: 8 }
+        ref: {
+          start: { text: '<ref>', id: 7 },
+          end: { text: '</ref>', id: 8 }
         } as SpecialTokenPair
       };
 
@@ -463,8 +428,8 @@ describe('DefaultFormatter with Special Tokens', () => {
       };
 
       const formatted = formatter.format(material);
-      expect(formatted).toContain('<|code_start|>');
-      expect(formatted).toContain('<|code_end|>');
+      expect(formatted).toContain('<ref>');
+      expect(formatted).toContain('</ref>');
       expect(formatted).toContain('console.log("Hello");');
     });
 
@@ -522,15 +487,14 @@ describe('DefaultFormatter with Special Tokens', () => {
       expect(formatted).toContain('## Instructions');
     });
 
-    it('should preserve existing markers if special tokens are not provided', () => {
-      const formatter = new DefaultFormatter({
-        markers: {
-          materialStart: '<custom-start>',
-          materialEnd: '<custom-end>'
-        }
-      });
+    it('should use quote tokens for material when provided', () => {
+      const formatter = new DefaultFormatter();
 
       const specialTokens = {
+        quote: {
+          start: { text: '<quote>', id: 11 },
+          end: { text: '</quote>', id: 12 }
+        } as SpecialTokenPair,
         thinking: {
           start: { text: '<|thinking|>', id: 9 },
           end: { text: '</thinking>', id: 10 }
@@ -546,9 +510,9 @@ describe('DefaultFormatter with Special Tokens', () => {
       };
 
       const formatted = formatter.format(material);
-      // Should keep custom markers since code tokens were not provided
-      expect(formatted).toContain('<custom-start>');
-      expect(formatted).toContain('<custom-end>');
+      // Should use quote tokens for material
+      expect(formatted).toContain('<quote>');
+      expect(formatted).toContain('</quote>');
     });
   });
 });
