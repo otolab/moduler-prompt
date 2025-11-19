@@ -1,10 +1,54 @@
-import { describe, it } from 'vitest';
-import { EchoDriver, defaultFormatterTexts } from '@moduler-prompt/driver';
+import { describe, it, expect } from 'vitest';
 import { compile, merge } from '@moduler-prompt/core';
 import { planning } from './modules/planning.js';
 import { execution } from './modules/execution.js';
 import { integration } from './modules/integration.js';
-import type { AgenticWorkflowContext, AgentPlan } from './types.js';
+import type { AgenticWorkflowContext, AgenticPlan } from './types.js';
+
+function collectText(elements: any[] = []): string {
+  const lines: string[] = [];
+  for (const element of elements) {
+    if (!element) {
+      continue;
+    }
+    if (typeof element === 'string') {
+      lines.push(element);
+      continue;
+    }
+    if (Array.isArray(element)) {
+      lines.push(collectText(element));
+      continue;
+    }
+    if (element.type === 'section' || element.type === 'subsection') {
+      if (element.title) {
+        lines.push(element.title);
+      }
+      if (element.items) {
+        lines.push(collectText(element.items));
+      }
+      continue;
+    }
+    if (element.type === 'material') {
+      if (element.title) {
+        lines.push(element.title);
+      }
+      if (element.content) {
+        lines.push(element.content);
+      }
+      continue;
+    }
+    if (element.type === 'text') {
+      if (element.content) {
+        lines.push(element.content);
+      }
+      continue;
+    }
+    if (element.content) {
+      lines.push(element.content);
+    }
+  }
+  return lines.join('\n');
+}
 
 describe('Agent Workflow Prompt Inspection', () => {
   const userModule = {
@@ -16,7 +60,7 @@ describe('Agent Workflow Prompt Inspection', () => {
     ]
   };
 
-  const plan: AgentPlan = {
+  const plan: AgenticPlan = {
     steps: [
       {
         id: 'step-1',
@@ -69,14 +113,7 @@ describe('Agent Workflow Prompt Inspection', () => {
     }
   ];
 
-  it('should show planning phase prompt', async () => {
-    const driver = new EchoDriver({
-      format: 'text',
-      formatterOptions: {
-        sectionDescriptions: defaultFormatterTexts.sectionDescriptions
-      }
-    });
-
+  it('should include planning requirements and user inputs', () => {
     const planningContext: AgenticWorkflowContext = {
       objective: '文書を分析し、重要な洞察を抽出する',
       inputs: { document: 'サンプルドキュメントの内容...' }
@@ -84,61 +121,57 @@ describe('Agent Workflow Prompt Inspection', () => {
 
     const mergedPlanning = merge(planning, userModule);
     const planningPrompt = compile(mergedPlanning, planningContext);
-    await driver.query(planningPrompt);
 
-    await driver.close();
+    const instructionText = collectText(planningPrompt.instructions);
+    expect(instructionText).toContain('Planning Requirements');
+    expect(instructionText).toContain('Respond ONLY with valid JSON text');
+
+    const dataText = collectText(planningPrompt.data);
+    expect(dataText).toContain('Phase: planning');
+    expect(dataText).toContain('サンプルドキュメントの内容');
+
+    const outputText = collectText(planningPrompt.output);
+    expect(outputText).toContain('Respond with a JSON-formatted string containing the execution plan.');
+    expect(outputText).toContain('Output format: {"steps": [...]}');
   });
 
-  it('should show execution phase prompts for all steps', async () => {
-    const driver = new EchoDriver({
-      format: 'text',
-      formatterOptions: {
-        sectionDescriptions: defaultFormatterTexts.sectionDescriptions
+  it('should surface current step context and previous logs in execution phase', () => {
+    const executionContext: AgenticWorkflowContext = {
+      objective: '文書を分析し、重要な洞察を抽出する',
+      inputs: { document: 'サンプルドキュメントの内容...' },
+      plan,
+      currentStep: plan.steps[1],
+      executionLog: [
+        {
+          stepId: stepExecutionResults[0].stepId,
+          result: stepExecutionResults[0].result
+        }
+      ],
+      state: {
+        content: stepExecutionResults[0].nextState,
+        usage: 1700
       }
-    });
-
-    // Simulate execution of all 4 steps
-    const executionLogs = [];
-    let currentState = {
-      content: '計画を完了しました。実行を開始します。',
-      usage: 1200
     };
 
-    for (let i = 0; i < plan.steps.length; i++) {
-      const step = plan.steps[i];
-      const executionContext: AgenticWorkflowContext = {
-        objective: '文書を分析し、重要な洞察を抽出する',
-        inputs: { document: 'サンプルドキュメントの内容...' },
-        plan: plan,
-        currentStep: step,
-        executionLog: [...executionLogs],
-        state: currentState
-      };
+    const mergedExecution = merge(execution, userModule);
+    const executionPrompt = compile(mergedExecution, executionContext);
 
-      const mergedExecution = merge(execution, userModule);
-      const executionPrompt = compile(mergedExecution, executionContext);
-      await driver.query(executionPrompt);
+    const instructionText = collectText(executionPrompt.instructions);
+    expect(instructionText).toContain('**Current Phase: Execution**');
+    expect(instructionText).toContain(plan.steps[1].description);
+    expect(instructionText).toContain('[Currently executing]');
 
-      // Simulate execution result for next iteration
-      const stepResult = stepExecutionResults[i];
-      executionLogs.push({ stepId: stepResult.stepId, result: stepResult.result });
-      currentState = {
-        content: stepResult.nextState,
-        usage: 1200 + (i + 1) * 500
-      };
-    }
+    const dataText = collectText(executionPrompt.data);
+    expect(dataText).toContain('Progress: 1/4 steps completed');
+    expect(dataText).toContain('テーマの特定が完了。次はポイントの抽出に進みます。');
 
-    await driver.close();
+    const materialElements = executionPrompt.data.filter((element: any) => element.type === 'material');
+    expect(materialElements).toHaveLength(1);
+    expect(materialElements[0].title).toContain('Previous step decision: step-1');
+    expect(materialElements[0].content).toContain('主要なテーマ');
   });
 
-  it('should show integration phase prompt', async () => {
-    const driver = new EchoDriver({
-      format: 'text',
-      formatterOptions: {
-        sectionDescriptions: defaultFormatterTexts.sectionDescriptions
-      }
-    });
-
+  it('should include all execution results in the integration phase', () => {
     const integrationContext: AgenticWorkflowContext = {
       objective: '文書を分析し、重要な洞察を抽出する',
       inputs: { document: 'サンプルドキュメントの内容...' },
@@ -152,8 +185,16 @@ describe('Agent Workflow Prompt Inspection', () => {
 
     const mergedIntegration = merge(integration, userModule);
     const integrationPrompt = compile(mergedIntegration, integrationContext);
-    await driver.query(integrationPrompt);
 
-    await driver.close();
+    const instructionText = collectText(integrationPrompt.instructions);
+    expect(instructionText).toContain('Integration Phase Process');
+    expect(instructionText).toContain('Execution Plan (All Steps Completed)');
+
+    const materialElements = integrationPrompt.data.filter((element: any) => element.type === 'material');
+    expect(materialElements).toHaveLength(stepExecutionResults.length);
+    expect(materialElements[materialElements.length - 1].content).toContain('洞察');
+
+    const dataText = collectText(integrationPrompt.data);
+    expect(dataText).toContain('All 4 steps completed');
   });
 });
