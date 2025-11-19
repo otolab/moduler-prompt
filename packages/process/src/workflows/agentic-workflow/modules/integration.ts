@@ -52,7 +52,6 @@ export const integration: PromptModule<AgenticWorkflowContext> = {
 
   state: [
     (ctx) => {
-      const completed = ctx.executionLog?.length || 0;
       const total = ctx.plan?.steps.length || 0;
       return `All ${total} steps completed. Generating final output.`;
     }

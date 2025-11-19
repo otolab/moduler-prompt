@@ -84,12 +84,7 @@ describe('Agent Workflow Prompt Inspection', () => {
 
     const mergedPlanning = merge(planning, userModule);
     const planningPrompt = compile(mergedPlanning, planningContext);
-    const planningResult = await driver.query(planningPrompt);
-
-    console.log('\n' + '='.repeat(80));
-    console.log('Phase 1: PLANNING');
-    console.log('='.repeat(80));
-    console.log(planningResult.content);
+    await driver.query(planningPrompt);
 
     await driver.close();
   });
@@ -122,12 +117,7 @@ describe('Agent Workflow Prompt Inspection', () => {
 
       const mergedExecution = merge(execution, userModule);
       const executionPrompt = compile(mergedExecution, executionContext);
-      const executionResult = await driver.query(executionPrompt);
-
-      console.log('\n' + '='.repeat(80));
-      console.log(`Phase 2: EXECUTION (Step ${i + 1}/${plan.steps.length})`);
-      console.log('='.repeat(80));
-      console.log(executionResult.content);
+      await driver.query(executionPrompt);
 
       // Simulate execution result for next iteration
       const stepResult = stepExecutionResults[i];
@@ -162,12 +152,7 @@ describe('Agent Workflow Prompt Inspection', () => {
 
     const mergedIntegration = merge(integration, userModule);
     const integrationPrompt = compile(mergedIntegration, integrationContext);
-    const integrationResult = await driver.query(integrationPrompt);
-
-    console.log('\n' + '='.repeat(80));
-    console.log('Phase 3: INTEGRATION');
-    console.log('='.repeat(80));
-    console.log(integrationResult.content);
+    await driver.query(integrationPrompt);
 
     await driver.close();
   });

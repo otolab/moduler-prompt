@@ -1,5 +1,5 @@
 import type { PromptModule } from '@moduler-prompt/core';
-import type { AgenticWorkflowContext, AgenticStep } from '../types.js';
+import type { AgenticWorkflowContext } from '../types.js';
 
 /**
  * Execution phase module (freeform version) for agent workflow
