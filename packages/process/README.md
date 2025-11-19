@@ -168,6 +168,8 @@ const result = await agenticProcess(driver, userModule, context, {
 
 プロンプトモジュールの純粋なロジックを検証します。
 
+#### 基本的なモジュールテスト
+
 ```typescript
 // material.test.ts の例
 it('材料がある場合はmaterialセクションを生成', () => {
@@ -179,10 +181,30 @@ it('材料がある場合はmaterialセクションを生成', () => {
 });
 ```
 
+#### プロンプト構造検証テスト
+
+```typescript
+// prompt-inspection.test.ts の例
+it('should include planning requirements and user inputs', () => {
+  const planningContext: AgenticWorkflowContext = {
+    objective: '文書を分析し、重要な洞察を抽出する',
+    inputs: { document: 'サンプルドキュメントの内容...' }
+  };
+
+  const mergedPlanning = merge(planning, userModule);
+  const planningPrompt = compile(mergedPlanning, planningContext);
+
+  const instructionText = collectText(planningPrompt.instructions);
+  expect(instructionText).toContain('Planning Requirements');
+  expect(instructionText).toContain('Respond ONLY with valid JSON text');
+});
+```
+
 **特徴:**
 - 高速・決定的
 - `compile()`の結果を検証
 - AIモデル不要
+- プロンプト構造や期待される文言を詳細に検証可能
 
 ### 2. ワークフロー機能テスト（TestDriver使用）
 
@@ -210,30 +232,7 @@ it('executes planning, execution, and integration phases', async () => {
 - ワークフロー全体の動作確認
 - 実際のAIモデルは使用しない
 
-### 3. プロンプト生成検証テスト（EchoDriver使用）
-
-実際に生成されるプロンプトを確認・検証します。
-
-```typescript
-// prompt-inspection.test.ts の例
-it('should show planning phase prompt', async () => {
-  const driver = new EchoDriver({
-    format: 'text',
-    formatterOptions: { ... }
-  });
-
-  const planningPrompt = compile(mergedPlanning, context);
-  await driver.query(planningPrompt);
-  // テスト実行時にプロンプトがコンソールに出力される
-});
-```
-
-**特徴:**
-- プロンプト内容の可視化
-- 開発・デバッグ時に有用
-- `npm test`実行時にプロンプトを確認可能
-
-### 実モデルでの検証
+### 3. 実モデルでの検証
 
 CI環境では実行せず、手動実験スクリプトで検証します。
 
