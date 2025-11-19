@@ -53,6 +53,11 @@ run_test() {
         echo "  エラーログ: ${output_file}"
     fi
     echo ""
+
+    # メモリ解放のための待機時間
+    echo "メモリ解放のため5秒待機..."
+    sleep 5
+    echo ""
 }
 
 # ヘッダー
