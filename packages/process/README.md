@@ -160,6 +160,106 @@ const result = await agenticProcess(driver, userModule, context, {
 // AIが計画フェーズで必要なアクションを判断し、実行フェーズで自動的に呼び出す
 ```
 
+## テスト戦略
+
+このパッケージは3層のテスト戦略を採用しています。
+
+### 1. モジュール単体テスト（Driver不使用）
+
+プロンプトモジュールの純粋なロジックを検証します。
+
+```typescript
+// material.test.ts の例
+it('材料がある場合はmaterialセクションを生成', () => {
+  const context: MaterialContext = {
+    materials: [{ id: 'doc1', title: 'Document 1', content: '...' }]
+  };
+  const result = compile(withMaterials, context);
+  expect(result.data).toBeDefined();
+});
+```
+
+**特徴:**
+- 高速・決定的
+- `compile()`の結果を検証
+- AIモデル不要
+
+### 2. ワークフロー機能テスト（TestDriver使用）
+
+ワークフロー全体の動作を、モックレスポンスで検証します。
+
+```typescript
+// agent-workflow.test.ts の例
+it('executes planning, execution, and integration phases', async () => {
+  const driver = new TestDriver({
+    responses: [
+      JSON.stringify(plan),  // Planning
+      'step 1 result',        // Execution
+      'step 2 result',
+      'final output'          // Integration
+    ]
+  });
+
+  const result = await agentProcess(driver, userModule, context);
+  expect(result.output).toBe('final output');
+});
+```
+
+**特徴:**
+- 高速・決定的
+- ワークフロー全体の動作確認
+- 実際のAIモデルは使用しない
+
+### 3. プロンプト生成検証テスト（EchoDriver使用）
+
+実際に生成されるプロンプトを確認・検証します。
+
+```typescript
+// prompt-inspection.test.ts の例
+it('should show planning phase prompt', async () => {
+  const driver = new EchoDriver({
+    format: 'text',
+    formatterOptions: { ... }
+  });
+
+  const planningPrompt = compile(mergedPlanning, context);
+  await driver.query(planningPrompt);
+  // テスト実行時にプロンプトがコンソールに出力される
+});
+```
+
+**特徴:**
+- プロンプト内容の可視化
+- 開発・デバッグ時に有用
+- `npm test`実行時にプロンプトを確認可能
+
+### 実モデルでの検証
+
+CI環境では実行せず、手動実験スクリプトで検証します。
+
+```bash
+# 実際のMLXモデルでワークフローをテスト
+npx tsx scripts/test-agentic-workflow.ts test-cases/meal-planning.json
+```
+
+**理由:**
+- 実行時間が長い
+- モデルの応答が不確定
+- API/GPU環境への依存
+
+### テスト実行
+
+```bash
+# 全テスト実行
+npm test
+
+# 特定ファイルのみ
+npm test -- agent-workflow.test.ts
+
+# ウォッチモード
+npm test -- --watch
+```
+
 ## ライセンス
 
 MIT
