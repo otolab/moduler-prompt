@@ -42,9 +42,10 @@ interface TestCase {
 }
 
 function loadTestCase(filePath: string): TestCase {
+  // 絶対パス、または現在の作業ディレクトリからの相対パス
   const fullPath = filePath.startsWith('/')
     ? filePath
-    : join(__dirname, filePath);
+    : join(process.cwd(), filePath);
 
   const content = readFileSync(fullPath, 'utf-8');
   return JSON.parse(content);
@@ -56,8 +57,12 @@ async function main() {
     return;
   }
 
-  // Get test case file from command line argument or use default
-  const testCaseFile = process.argv[2] || 'test-cases/meal-planning.json';
+  // Get test case file from command line argument or use default based on LANG
+  const lang = process.env.LANG || 'ja';
+  const defaultTestCase = lang === 'en'
+    ? 'test-cases/meal-planning-en.json'
+    : 'test-cases/meal-planning.json';
+  const testCaseFile = process.argv[2] || defaultTestCase;
   const testCase = loadTestCase(testCaseFile);
 
   // Model selection - can be overridden by environment variable
