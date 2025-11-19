@@ -1,0 +1,11 @@
+# llm-jp-3.1モデルへの質問用プロファイル
+model: "mlx-community/llm-jp-3.1-8x13b-instruct4-4bit"
+driver: "mlx"
+
+systemPrompt: |
+  あなたは日本語を理解し日本語で応答するAIアシスタントです。
+  ユーザーの質問に対して、明確で具体的な回答を提供してください。
+
+options:
+  temperature: 0.7
+  maxTokens: 4000

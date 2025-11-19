@@ -66,9 +66,10 @@ export {
 } from './formatter/formatter.js';
 
 export {
-  formatPrompt,
   formatPromptAsMessages,
-  defaultFormatterTexts
+  formatCompletionPrompt,
+  defaultFormatterTexts,
+  ECHO_SPECIAL_TOKENS
 } from './formatter/converter.js';
 
 // Driver Registry and AI Service exports

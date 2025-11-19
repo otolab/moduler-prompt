@@ -10,8 +10,6 @@ import { mergeWithPreset } from './presets.js';
 import { ModelCapabilityDetector } from './detector.js';
 import { MessageValidator } from './validator.js';
 import type { MlxProcess } from '../process/index.js';
-import { formatMessagesAsPrompt } from '../../formatter/converter.js';
-import type { FormatterOptions, ChatMessage } from '../../formatter/types.js';
 
 /**
  * ModelSpec管理クラス
@@ -199,31 +197,7 @@ export class ModelSpecManager {
     }
     return prompt;
   }
-  
-  /**
-   * プロンプト生成（チャットテンプレートがない場合）
-   */
-  generatePrompt(messages: MlxMessage[]): string {
-    if (this.spec.customProcessor?.generatePrompt) {
-      return this.spec.customProcessor.generatePrompt(messages);
-    }
-    
-    // formatterを使用してプロンプト生成
-    const chatMessages: ChatMessage[] = messages.map(msg => ({
-      role: msg.role,
-      content: msg.content
-    }));
-    
-    // ModelSpecに基づいたFormatterOptionsを構築
-    const formatterOptions: FormatterOptions = {
-      // モデルに応じたspecial tokensがあれば設定
-      specialTokens: this.spec.capabilities?.specialTokens,
-      // MLXモデル用のデフォルトマーカー設定は既にDefaultFormatterで処理される
-    };
-    
-    return formatMessagesAsPrompt(chatMessages, formatterOptions);
-  }
-  
+
   /**
    * スペック情報の取得
    */

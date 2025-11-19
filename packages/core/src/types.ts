@@ -50,6 +50,7 @@ export interface SectionElement<TContext = any> {
 }
 
 // サブセクション要素（第2階層）
+// 入れ子の複雑な構造を許さないように、サブセクションは構造化されないテキストのみを出力できる
 export interface SubSectionElement<TContext = any> {
   type: 'subsection';
   title: string;

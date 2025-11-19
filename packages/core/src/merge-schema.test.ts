@@ -133,20 +133,9 @@ describe('merge with schema section', () => {
       required: ['analysis']
     });
 
-    // Check that JSONElement is in output section
+    // JSONElementはmetadata.outputSchemaに抽出され、output配列からは除外される
     const jsonElements = compiled.output.filter(e => e.type === 'json');
-    expect(jsonElements).toHaveLength(1);
-    expect(jsonElements[0]).toEqual({
-      type: 'json',
-      content: {
-        type: 'object',
-        properties: {
-          analysis: { type: 'string' },
-          score: { type: 'number' }
-        },
-        required: ['analysis']
-      }
-    });
+    expect(jsonElements).toHaveLength(0);
   });
 
   it('should handle multiple JSONElements in merged schema', () => {
@@ -179,9 +168,10 @@ describe('merge with schema section', () => {
       type: 'object'
     });
 
-    // But both JSONElements should be in the output
+    // JSONElementはmetadata.outputSchemaに抽出され、output配列からは除外される
+    // （最初のJSONElementのみがoutputSchemaとして使用され、2つ目は無視される）
     const jsonElements = compiled.output.filter(e => e.type === 'json');
-    expect(jsonElements).toHaveLength(2);
+    expect(jsonElements).toHaveLength(0);
   });
 
   it('should preserve other Elements in schema section', () => {

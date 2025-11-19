@@ -1,10 +1,12 @@
-import type { 
-  Element, 
-  MessageElement, 
+import type {
+  Element,
   CompiledPrompt
 } from '@moduler-prompt/core';
 import type { ChatMessage, FormatterOptions, ElementFormatter } from './types.js';
 import { DefaultFormatter } from './formatter.js';
+
+// Re-export completion formatter
+export { formatCompletionPrompt, ECHO_SPECIAL_TOKENS } from './completion-formatter.js';
 
 /**
  * Default preamble and section descriptions
@@ -18,85 +20,6 @@ export const defaultFormatterTexts = {
   }
 };
 
-/**
- * Format a compiled prompt into a single text string
- */
-export function formatPrompt(
-  prompt: CompiledPrompt, 
-  options: FormatterOptions = {}
-): string {
-  const formatter = options.formatter || new DefaultFormatter(options);
-  const { lineBreak = '\n', preamble, sectionDescriptions } = options;
-  const sections: string[] = [];
-  
-  // Add preamble if provided
-  if (preamble) {
-    sections.push(preamble);
-    sections.push('');
-  }
-  
-  // Format instructions section
-  if (prompt.instructions && prompt.instructions.length > 0) {
-    sections.push('# Instructions');
-    if (sectionDescriptions?.instructions) {
-      sections.push('');
-      sections.push(sectionDescriptions.instructions);
-    }
-    sections.push('');
-    sections.push(formatter.formatAll(prompt.instructions));
-  }
-  
-  // Format data section
-  if (prompt.data && prompt.data.length > 0) {
-    if (sections.length > 0) sections.push('');
-    sections.push('# Data');
-    if (sectionDescriptions?.data) {
-      sections.push('');
-      sections.push(sectionDescriptions.data);
-    }
-    sections.push('');
-    sections.push(formatter.formatAll(prompt.data));
-  }
-  
-  // Format output section
-  if (prompt.output && prompt.output.length > 0) {
-    if (sections.length > 0) sections.push('');
-    sections.push('# Output');
-    if (sectionDescriptions?.output) {
-      sections.push('');
-      sections.push(sectionDescriptions.output);
-    }
-    sections.push('');
-    sections.push(formatter.formatAll(prompt.output));
-  }
-  
-  return sections.join(lineBreak);
-}
-
-/**
- * Format messages directly without CompiledPrompt structure
- * Used for MLX completion API when chat template is not available
- */
-export function formatMessagesAsPrompt(
-  messages: ChatMessage[],
-  options: FormatterOptions = {}
-): string {
-  const formatter = options.formatter || new DefaultFormatter(options);
-  const { lineBreak = '\n' } = options;
-  const sections: string[] = [];
-  
-  for (const msg of messages) {
-    // Use formatter's message formatting with role-based markers
-    const element: MessageElement = {
-      type: 'message',
-      role: msg.role,
-      content: msg.content
-    };
-    sections.push(formatter.format(element));
-  }
-  
-  return sections.join(lineBreak + lineBreak);
-}
 
 /**
  * Format a compiled prompt as chat messages
@@ -106,7 +29,7 @@ export function formatPromptAsMessages(
   options: FormatterOptions = {}
 ): ChatMessage[] {
   const messages: ChatMessage[] = [];
-  const { preamble, sectionDescriptions } = options;
+  const { preamble, sectionDescriptions = defaultFormatterTexts.sectionDescriptions } = options;
   const formatter = options.formatter || new DefaultFormatter(options);
   
   // Add preamble as first message if provided
@@ -161,13 +84,22 @@ export function formatPromptAsMessages(
       role: 'system',
       content: outputHeader
     });
-    
+
     // Convert each element to a message
     for (const element of prompt.output) {
       messages.push(...elementToMessages(element, formatter));
     }
   }
-  
+
+  // Add output schema if metadata.outputSchema exists
+  if (prompt.metadata?.outputSchema) {
+    const schemaContent = JSON.stringify(prompt.metadata.outputSchema, null, 2);
+    messages.push({
+      role: 'system',
+      content: `IMPORTANT: Output ONLY a valid JSON object. Do not include any explanation, commentary, or text before or after the JSON.\n\nJSON Output Format:\n${schemaContent}`
+    });
+  }
+
   return messages;
 }
 
@@ -253,7 +185,8 @@ function elementToMessages(element: Element, formatter: ElementFormatter): ChatM
     }
 
     case 'json': {
-      // Format JSONElement
+      // Format JSONElement (used in sections other than schema)
+      // Schema section's JSONElement is extracted to metadata.outputSchema and doesn't appear here
       const jsonContent = typeof element.content === 'string'
         ? element.content
         : JSON.stringify(element.content, null, 2);

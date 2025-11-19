@@ -3,7 +3,7 @@
  */
 
 import type { MessageElement } from '@moduler-prompt/core';
-import type { MlxCapabilities } from '../types.js';
+import type { SpecialToken, SpecialTokenPair } from '../types.js';
 import { BaseElementFormatter } from './base.js';
 
 export class MessageElementFormatter extends BaseElementFormatter<MessageElement> {
@@ -15,7 +15,7 @@ export class MessageElementFormatter extends BaseElementFormatter<MessageElement
 
   async format(
     element: MessageElement,
-    specialTokens?: MlxCapabilities['special_tokens']
+    specialTokens?: Record<string, SpecialToken | SpecialTokenPair>
   ): Promise<string> {
     // 特殊トークンが利用可能な場合は使用
     if (specialTokens) {

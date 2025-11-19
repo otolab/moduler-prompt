@@ -3,7 +3,7 @@
  */
 
 import type { ChunkElement } from '@moduler-prompt/core';
-import type { MlxCapabilities } from '../types.js';
+import type { SpecialToken, SpecialTokenPair } from '../types.js';
 import { BaseElementFormatter } from './base.js';
 
 export class ChunkElementFormatter extends BaseElementFormatter<ChunkElement> {
@@ -11,7 +11,7 @@ export class ChunkElementFormatter extends BaseElementFormatter<ChunkElement> {
 
   async format(
     element: ChunkElement,
-    _specialTokens?: MlxCapabilities['special_tokens']
+    _specialTokens?: Record<string, SpecialToken | SpecialTokenPair>
   ): Promise<string> {
     // Chunkは構造化データの一部を表す
     return `[Chunk ${element.index}/${element.total} of ${element.partOf}]\n${element.content}\n`;

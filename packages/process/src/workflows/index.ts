@@ -30,3 +30,11 @@ export type {
   ConcatProcessContext,
   ConcatProcessOptions
 } from './concat-process-workflow.js';
+
+// Agentic workflow
+export { agenticProcess } from './agentic-workflow/index.js';
+export type {
+  AgenticWorkflowContext,
+  AgenticWorkflowOptions,
+  ActionHandler
+} from './agentic-workflow/index.js';

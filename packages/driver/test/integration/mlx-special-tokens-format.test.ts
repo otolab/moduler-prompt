@@ -1,12 +1,10 @@
 import { describe, it, expect } from 'vitest';
 import { compile } from '@moduler-prompt/core';
-import { DefaultModelSpecificProcessor } from '../../src/mlx-ml/process/model-specific.js';
+import { formatCompletionPrompt } from '../../src/formatter/converter.js';
 
 describe('MLX Special Tokens Formatting', () => {
   describe('Material element with special tokens', () => {
     it('should format JSON material with code block tokens', async () => {
-      const processor = new DefaultModelSpecificProcessor('gemma-3');
-
       // materialsセクションはSectionElementとしてコンパイルされる
       // DynamicContentとしてMaterialElementを返す
       const prompt = compile({
@@ -22,7 +20,7 @@ describe('MLX Special Tokens Formatting', () => {
         output: []
       });
 
-      const result = await processor.formatCompletionPrompt(prompt);
+      const result = await formatCompletionPrompt(prompt);
 
       // materialsセクションの内容を確認
       expect(result).toContain('Configuration');
@@ -31,8 +29,6 @@ describe('MLX Special Tokens Formatting', () => {
     });
 
     it('should format code material with code block tokens', async () => {
-      const processor = new DefaultModelSpecificProcessor('gemma-3');
-
       const prompt = compile({
         instructions: ['Review the code'],
         materials: [
@@ -46,7 +42,7 @@ describe('MLX Special Tokens Formatting', () => {
         output: []
       });
 
-      const result = await processor.formatCompletionPrompt(prompt);
+      const result = await formatCompletionPrompt(prompt);
 
       expect(result).toContain('Example Function');
       expect(result).toContain('function hello()');
@@ -57,8 +53,6 @@ describe('MLX Special Tokens Formatting', () => {
 
   describe('Schema output with special tokens', () => {
     it('should format schema output with JSON tokens', async () => {
-      const processor = new DefaultModelSpecificProcessor('gemma-3');
-
       const prompt = compile({
         instructions: ['Generate response'],
         cue: ['Generate JSON in the specified format'],
@@ -75,20 +69,18 @@ describe('MLX Special Tokens Formatting', () => {
         ]
       });
 
-      const result = await processor.formatCompletionPrompt(prompt);
+      const result = await formatCompletionPrompt(prompt);
 
-      // JSON出力形式が特殊トークンでマークされることを確認
-      // schemaセクションのJSONElementが```jsonブロックとしてフォーマットされる
-      expect(result).toContain('```json');
+      // JSON出力形式が含まれることを確認
+      // schemaセクションのJSONElementがJSON Output Formatとしてフォーマットされる
+      expect(result).toContain('JSON Output Format:');
       expect(result).toContain('"type": "object"');
-      expect(result).toContain('```');
+      expect(result).toContain('"properties"');
     });
   });
 
   describe('Section with heading tokens', () => {
     it('should format section titles appropriately', async () => {
-      const processor = new DefaultModelSpecificProcessor('gemma-3');
-
       const prompt = compile({
         instructions: [
           'Process the following:',
@@ -100,7 +92,7 @@ describe('MLX Special Tokens Formatting', () => {
         ]
       });
 
-      const result = await processor.formatCompletionPrompt(prompt);
+      const result = await formatCompletionPrompt(prompt);
 
       // セクションタイトルが適切にフォーマットされることを確認
       expect(result).toContain('Important Rules');

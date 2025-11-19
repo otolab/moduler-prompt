@@ -43,11 +43,9 @@ export function compile<TContext = any>(
       actualContext
     );
 
-    // セクションタイプに応じて分類
-    compiled[sectionDef.type].push(...elements);
-
-    // schemaセクションの場合、JSONElementを探す
+    // schemaセクションの場合、JSONElementを探してmetadataに抽出し、プロンプトから除外
     if (sectionName === 'schema') {
+      let schemaExtracted = false;
       for (const element of elements) {
         if (element.type === 'json') {
           const jsonElement = element as JSONElement;
@@ -57,9 +55,20 @@ export function compile<TContext = any>(
           compiled.metadata = {
             outputSchema: schema
           };
+          schemaExtracted = true;
           break;
         }
       }
+      // schemaセクションのJSONElementのみを除外
+      if (schemaExtracted) {
+        const elementsWithoutJson = elements.filter(el => el.type !== 'json');
+        compiled[sectionDef.type].push(...elementsWithoutJson);
+      } else {
+        compiled[sectionDef.type].push(...elements);
+      }
+    } else {
+      // schema以外のセクションはJSONElementも含めて全て追加
+      compiled[sectionDef.type].push(...elements);
     }
   }
 

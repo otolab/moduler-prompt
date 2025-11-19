@@ -1,0 +1,30 @@
+{
+  "name": "Meal Planning (English)",
+  "description": "Plan today's dinner menu based on refrigerator ingredients and past meals",
+  "module": {
+    "objective": ["Determine tonight's dinner menu"],
+    "instructions": [
+      "- Consider main dish options that can be made from refrigerator ingredients",
+      "- Compare with past meals to avoid repetition",
+      "- Suggest side dishes that complement the chosen main dish",
+      "- Create a shopping list if any ingredients are missing",
+      "- Output the final result in English"
+    ]
+  },
+  "context": {
+    "objective": "Determine tonight's dinner menu",
+    "inputs": {
+      "refrigerator": {
+        "proteins": ["Chicken thigh 300g", "Pork belly 200g", "6 eggs", "1 block tofu"],
+        "vegetables": ["Cabbage", "Carrots", "2 onions", "3 potatoes", "Bell peppers", "Bean sprouts"],
+        "seasonings": ["Soy sauce", "Mirin", "Sake", "Miso", "Vegetable oil", "Sesame oil", "Salt", "Pepper"],
+        "other": ["Rice", "Dried wakame seaweed"]
+      },
+      "pastMeals": [
+        { "date": "Yesterday", "mainDish": "Curry rice (pork, potatoes, carrots, onions)" },
+        { "date": "Day before yesterday", "mainDish": "Ginger pork (pork, onions)" },
+        { "date": "3 days ago", "mainDish": "Teriyaki chicken (chicken thigh)" }
+      ]
+    }
+  }
+}

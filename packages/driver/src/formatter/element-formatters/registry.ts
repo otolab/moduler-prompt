@@ -5,7 +5,7 @@
  */
 
 import type { Element } from '@moduler-prompt/core';
-import type { MlxCapabilities } from '../types.js';
+import type { SpecialToken, SpecialTokenPair } from '../types.js';
 import type { ElementFormatter } from './base.js';
 
 import { TextElementFormatter } from './text.js';
@@ -49,7 +49,7 @@ export class ElementFormatterRegistry {
    */
   async formatElement(
     element: Element,
-    specialTokens?: MlxCapabilities['special_tokens']
+    specialTokens?: Record<string, SpecialToken | SpecialTokenPair>
   ): Promise<string> {
     const formatter = this.getFormatter(element.type);
 
@@ -67,7 +67,7 @@ export class ElementFormatterRegistry {
    */
   async formatOutputElement(
     element: Element,
-    specialTokens: MlxCapabilities['special_tokens'] | undefined,
+    specialTokens: Record<string, SpecialToken | SpecialTokenPair> | undefined,
     hasOutputSchema: boolean
   ): Promise<string> {
     // schema情報がある場合はJSONブロックとしてマーク

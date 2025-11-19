@@ -3,7 +3,7 @@
  */
 
 import type { SectionElement, SubSectionElement } from '@moduler-prompt/core';
-import type { MlxCapabilities } from '../types.js';
+import type { SpecialToken, SpecialTokenPair } from '../types.js';
 import { BaseElementFormatter } from './base.js';
 import type { ElementFormatterRegistry } from './registry.js';
 import { StringPatternFormatter } from './string-pattern.js';
@@ -17,7 +17,7 @@ export class SectionElementFormatter extends BaseElementFormatter<SectionElement
 
   async format(
     element: SectionElement,
-    specialTokens?: MlxCapabilities['special_tokens']
+    specialTokens?: Record<string, SpecialToken | SpecialTokenPair>
   ): Promise<string> {
     // 文字列パターンフォーマッターを作成
     const patternFormatter = new StringPatternFormatter(specialTokens);
@@ -53,7 +53,7 @@ export class SubSectionElementFormatter extends BaseElementFormatter<SubSectionE
 
   async format(
     element: SubSectionElement,
-    _specialTokens?: MlxCapabilities['special_tokens']
+    _specialTokens?: Record<string, SpecialToken | SpecialTokenPair>
   ): Promise<string> {
     const subsectionContent = element.items.join('\n');
     return `--- ${element.title} ---\n${subsectionContent}\n`;

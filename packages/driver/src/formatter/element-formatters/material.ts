@@ -3,7 +3,7 @@
  */
 
 import type { MaterialElement } from '@moduler-prompt/core';
-import type { MlxCapabilities } from '../types.js';
+import type { SpecialToken, SpecialTokenPair } from '../types.js';
 import { BaseElementFormatter } from './base.js';
 
 export class MaterialElementFormatter extends BaseElementFormatter<MaterialElement> {
@@ -11,7 +11,7 @@ export class MaterialElementFormatter extends BaseElementFormatter<MaterialEleme
 
   async format(
     element: MaterialElement,
-    specialTokens?: MlxCapabilities['special_tokens']
+    specialTokens?: Record<string, SpecialToken | SpecialTokenPair>
   ): Promise<string> {
     // materialは主に引用・参照文書として扱う
 

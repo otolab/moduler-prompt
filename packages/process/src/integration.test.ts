@@ -4,13 +4,16 @@ import { withMaterials } from './modules/material';
 import { streamProcessing } from './modules/stream-processing';
 import type { MaterialContext } from './modules/material';
 import type { StreamProcessingContext } from './modules/stream-processing';
+import { agenticProcess } from './workflows/agentic-workflow/agentic-workflow';
+import type { AgenticWorkflowContext } from './workflows/agentic-workflow/types';
+import { TestDriver } from '@moduler-prompt/driver';
 
 describe('integration tests', () => {
   it('materialモジュールとstreamProcessingを統合できる', () => {
     type CombinedContext = MaterialContext & StreamProcessingContext;
-    
+
     const combinedModule = merge(withMaterials, streamProcessing);
-    
+
     const context: CombinedContext = {
       materials: [
         { id: 'doc1', title: 'Document 1', content: 'Content 1' }
@@ -22,20 +25,20 @@ describe('integration tests', () => {
         content: 'Previous state'
       }
     };
-    
+
     const result = compile(combinedModule, context);
-    
+
     // 両方のモジュールのセクションが含まれることを確認
     const allSections = [
       ...result.instructions,
       ...result.data,
       ...result.output
     ];
-    
+
     const sectionTitles = allSections
       .filter(e => e.type === 'section')
       .map(s => s.title);
-    
+
     expect(sectionTitles).toContain('Term Explanations'); // withMaterialsのterms
     expect(sectionTitles).toContain('Objective and Role'); // streamProcessingのobjective
   });
@@ -74,5 +77,133 @@ describe('integration tests', () => {
     
     // 各セクションに内容があることを確認
     expect(result.instructions.length).toBeGreaterThan(0);
+  });
+
+  it('agenticProcessでエンドツーエンドのワークフローが実行できる', async () => {
+    // 計画、実行、統合の3フェーズを含む完全なワークフローをテスト
+    const plan = {
+      steps: [
+        {
+          id: 'step-1',
+          description: '入力データを分析する',
+          dos: ['データの形式を確認', '主要な項目を特定'],
+          donts: ['データを変更しない']
+        },
+        {
+          id: 'step-2',
+          description: '分析結果をまとめる',
+          dos: ['重要な発見を整理', '次のステップを提案'],
+          donts: ['結論を急がない']
+        }
+      ]
+    };
+
+    const driver = new TestDriver({
+      responses: [
+        // Planning phase response
+        JSON.stringify(plan),
+        // Execution step-1 response (structured output)
+        JSON.stringify({
+          reasoning: 'データを確認しました',
+          result: 'データは正しい形式です',
+          nextState: 'データ分析完了'
+        }),
+        // Execution step-2 response (structured output)
+        JSON.stringify({
+          reasoning: '分析結果を整理しました',
+          result: '重要な発見: データ品質が良好',
+          nextState: 'まとめ完了'
+        }),
+        // Integration phase response
+        'データ分析とまとめが完了しました。データ品質は良好で、次のステップに進む準備が整いました。'
+      ]
+    });
+
+    const context: AgenticWorkflowContext = {
+      objective: 'サンプルデータを分析する',
+      inputs: {
+        data: [1, 2, 3, 4, 5]
+      }
+    };
+
+    const userModule = {
+      objective: ['サンプルデータを分析する'],
+      instructions: [
+        '- データの形式を確認する',
+        '- 統計情報を計算する',
+        '- 結果をレポートする'
+      ]
+    };
+
+    const result = await agenticProcess(driver, userModule, context);
+
+    // ワークフローが正常に完了することを確認
+    expect(result.output).toBeDefined();
+    expect(result.context.phase).toBe('complete');
+    expect(result.context.executionLog).toHaveLength(2);
+    expect(result.metadata?.planSteps).toBe(2);
+    expect(result.metadata?.executedSteps).toBe(2);
+  });
+
+  it('agenticProcessでアクション付きワークフローが実行できる', async () => {
+    const plan = {
+      steps: [
+        {
+          id: 'step-1',
+          description: 'データを取得する',
+          actions: [
+            {
+              tool: 'fetchData',
+              params: { source: 'api' }
+            }
+          ]
+        },
+        {
+          id: 'step-2',
+          description: 'データを処理する'
+        }
+      ]
+    };
+
+    let fetchCalled = false;
+    const actions = {
+      fetchData: async (params: any) => {
+        fetchCalled = true;
+        expect(params.source).toBe('api');
+        return { data: [1, 2, 3] };
+      }
+    };
+
+    const driver = new TestDriver({
+      responses: [
+        JSON.stringify(plan),
+        JSON.stringify({
+          reasoning: 'データ取得を実行',
+          result: 'データ取得完了',
+          nextState: 'データ準備完了'
+        }),
+        JSON.stringify({
+          reasoning: 'データ処理を実行',
+          result: '処理完了',
+          nextState: '全工程完了'
+        }),
+        '全ての処理が完了しました'
+      ]
+    });
+
+    const context: AgenticWorkflowContext = {
+      objective: 'データを取得して処理する'
+    };
+
+    const userModule = {
+      objective: ['データを取得して処理する']
+    };
+
+    const result = await agenticProcess(driver, userModule, context, { actions });
+
+    // アクションが実行されたことを確認
+    expect(fetchCalled).toBe(true);
+    expect(result.context.executionLog?.[0].actionResult).toEqual({ data: [1, 2, 3] });
+    expect(result.metadata?.actionsUsed).toBe(1);
   });
 });

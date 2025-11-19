@@ -2,6 +2,7 @@
  * MLX Driver API v2.0 型定義
  */
 import type { MlxMlModelOptions } from '../types.js';
+import type { SpecialToken, SpecialTokenPair } from '../../formatter/types.js';
 
 export type { MlxMlModelOptions };
 
@@ -41,17 +42,6 @@ export interface MlxCompletionRequest extends MlxBaseRequest {
 }
 
 export type MlxRequest = MlxCapabilitiesRequest | MlxFormatTestRequest | MlxChatRequest | MlxCompletionRequest;
-
-// API v2.0 レスポンス型定義
-export interface SpecialToken {
-  text: string;
-  id: number;
-}
-
-export interface SpecialTokenPair {
-  start: SpecialToken;
-  end: SpecialToken;
-}
 
 export interface ChatTemplateInfo {
   template_string?: string;

@@ -2,6 +2,7 @@ import { Readable } from 'stream';
 import type { AIDriver, QueryOptions, QueryResult, StreamResult } from '../types.js';
 import type { FormatterOptions, ChatMessage } from '../formatter/types.js';
 import { formatPromptAsMessages } from '../formatter/converter.js';
+import { formatCompletionPrompt } from '../formatter/completion-formatter.js';
 import { MlxProcess } from './process/index.js';
 import type { MlxMessage, MlxMlModelOptions } from './types.js';
 import type { MlxCapabilities } from './process/types.js';
@@ -157,10 +158,9 @@ export class MlxDriver implements AIDriver {
   constructor(config: MlxDriverConfig) {
     this.model = config.model;
     this.defaultOptions = config.defaultOptions || {};
-    this.process = new MlxProcess(config.model, config.modelSpec, config.customProcessor);
-    // special_tokensを取得できるようにプロセスを渡す
-    this.modelProcessor = createModelSpecificProcessor(config.model, this.process);
     this.formatterOptions = config.formatterOptions || {};
+    this.process = new MlxProcess(config.model, config.modelSpec, config.customProcessor);
+    this.modelProcessor = createModelSpecificProcessor(config.model);
     this.preferMessageFormat = true; // MLX uses message format
   }
 
@@ -175,6 +175,11 @@ export class MlxDriver implements AIDriver {
     if (!this.capabilities) {
       try {
         this.capabilities = await this.process.getCapabilities();
+
+        // Update formatterOptions with special tokens from capabilities
+        if (this.capabilities.special_tokens) {
+          this.formatterOptions.specialTokens = this.capabilities.special_tokens;
+        }
       } catch (error) {
         console.error('Failed to get MLX capabilities:', error);
       }
@@ -195,9 +200,11 @@ export class MlxDriver implements AIDriver {
 
     let stream: Readable;
     if (api === 'completion') {
-      // completion APIを使用 - Element情報を保持したまま処理
-      const processedPrompt = await this.modelProcessor.formatCompletionPrompt(prompt);
-      stream = await this.process.completion(processedPrompt, mlxOptions);
+      // completion APIを使用 - 標準フォーマッターを使用
+      let formattedPrompt = formatCompletionPrompt(prompt, this.formatterOptions);
+      // モデル固有の後処理を適用
+      formattedPrompt = this.modelProcessor.applyCompletionSpecificProcessing(formattedPrompt);
+      stream = await this.process.completion(formattedPrompt, mlxOptions);
     } else {
       // chat APIを使用 - メッセージ変換して処理
       const messages = formatPromptAsMessages(prompt, this.formatterOptions);

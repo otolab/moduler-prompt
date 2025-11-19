@@ -22,18 +22,13 @@ describe('compile with static Elements', () => {
 
       const result = compile(module);
 
-      // JSONElementはoutputセクションに配置される（SectionElementなし）
-      expect(result.output).toHaveLength(1);
-
-      // JSONElementが直接追加される
-      expect(result.output[0]).toEqual({
-        type: 'json',
-        content: {
-          type: 'object',
-          properties: {
-            name: { type: 'string' },
-            age: { type: 'number' }
-          }
+      // JSONElementはmetadata.outputSchemaに抽出され、output配列からは除外される
+      expect(result.output).toHaveLength(0);
+      expect(result.metadata?.outputSchema).toEqual({
+        type: 'object',
+        properties: {
+          name: { type: 'string' },
+          age: { type: 'number' }
         }
       });
     });
@@ -51,9 +46,11 @@ describe('compile with static Elements', () => {
 
       const result = compile(module);
 
-      expect(result.output[0]).toEqual({
-        type: 'json',
-        content: jsonString
+      // JSONElementはmetadata.outputSchemaに抽出され（パース後）、output配列からは除外される
+      expect(result.output).toHaveLength(0);
+      expect(result.metadata?.outputSchema).toEqual({
+        type: 'object',
+        properties: { id: { type: 'string' } }
       });
     });
   });

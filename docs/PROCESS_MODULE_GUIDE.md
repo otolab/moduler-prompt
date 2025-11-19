@@ -44,7 +44,7 @@ PromptModuleフレームワーク自体は標準セクションの使い方を�
 
 各Dataセクションは特定の構造を期待します：
 
-**state**: 文字列または`{content: string, usage?: number}`形式
+**state**: `{content: string, usage?: number}`形式
 
 **inputs**: 各プロセスモジュールがContext型で構造を定義。inputsセクションに配置する際は文字列に変換（通常はJSON.stringify）
 
@@ -100,14 +100,17 @@ PromptModuleフレームワーク自体は標準セクションの使い方を�
 ```typescript
 /**
  * プロセス固有のContext型を定義
- * （以下はAgent workflowの例）
+ * （以下はAgentic workflowの例）
  */
-export interface AgentWorkflowContext {
+export interface AgenticWorkflowContext {
   inputs?: any;                   // 入力データ
-  plan?: AgentPlan;               // 実行計画
-  executionLog?: AgentExecutionLog[];  // 実行履歴
-  state?: string;                 // 前ステップからの申し送り
-  currentStep?: AgentStep;        // 現在のステップ
+  plan?: AgenticPlan;               // 実行計画
+  executionLog?: AgenticExecutionLog[];  // 実行履歴
+  state?: {                       // 前ステップからの申し送り
+    content: string;
+    usage?: number;
+  };
+  currentStep?: AgenticStep;        // 現在のステップ
   actionResult?: any;             // アクション実行結果
   phase?: 'planning' | 'execution' | 'integration' | 'complete';
 }
@@ -201,7 +204,7 @@ export const processModule: PromptModule<WorkflowContext> = {
 - **methodology**: 処理手法の指示（文字列またはsubsectionで構造化）
 - **terms**: 用語の定義・再定義（必要に応じて）
 - **state/inputs/materials/chunks/messages**: Contextからデータを取り出し、各セクションが期待する構造に変換して配置
-  - state: 文字列または`{content, usage}`形式
+  - state: `{content, usage}`形式
   - inputs: Context型で定義された構造を文字列に変換（例: JSON.stringify）
   - materials: MaterialElement配列（`{type, id, title, content, usage?}`）
   - chunks: ChunkElement配列（`{type, partOf, index, total, content}`）
@@ -334,7 +337,7 @@ interface TypicalWorkflowContext {
 | materials | 参考資料（構造化された資料） |
 | state | 初期状態（処理開始時の状態や継続情報） |
 
-**注記**: `inputs`の構造は各プロセスモジュールが定義します（例：dialogueでは`messages`配列、agentでは任意のデータ）
+**注記**: `inputs`の構造は各プロセスモジュールが定義します（例：dialogueでは`messages`配列、agenticでは任意のデータ）
 
 #### ワークフロー内部管理フィールド
 
@@ -346,7 +349,7 @@ interface TypicalWorkflowContext {
 | | chunks | chunks | 分割データ（実行結果など） |
 | | phase | state | 処理フェーズ |
 | | range | （配置なし） | バッチ処理の範囲指定 |
-| **Agent** | plan | materials | 実行計画 |
+| **Agentic** | plan | materials | 実行計画 |
 | | executionLog | chunks | 実行履歴 |
 | | currentStep | state | 現在のステップ |
 | | actionResult | materials | アクション実行結果 |
@@ -388,12 +391,12 @@ interface SummarizeWorkflowContext {
 }
 
 // エージェントワークフロー
-interface AgentWorkflowContext {
+interface AgenticWorkflowContext {
   inputs?: any;
-  state?: string;  // 注: 現在はstring型（将来的に{content, usage}形式に統一予定）
-  plan?: AgentPlan;
-  executionLog?: AgentExecutionLog[];
-  currentStep?: AgentStep;
+  state?: { content: string; usage?: number };
+  plan?: AgenticPlan;
+  executionLog?: AgenticExecutionLog[];
+  currentStep?: AgenticStep;
   actionResult?: any;
   phase?: 'planning' | 'execution' | 'integration' | 'complete';
 }
@@ -433,7 +436,7 @@ chunksセクションには分割データを配置します：
 ## 5. ベストプラクティス
 
 1. **Contextフィールドとセクションを区別する**: ユーザーはContextにデータを提供、プロセスモジュールがセクションに配置
-2. **stateは構造化する**: 将来的には`{content, usage}`形式を推奨（現在は一部ワークフローで`string`型も使用）
+2. **stateは構造化する**: `{content, usage}`形式を使用
 3. **Contextフィールドの責任を明確にする**: データ提供元（ユーザー/ワークフロー）を明確に
 4. **chunksとmaterialsを適切に使い分ける**:
    - `materials`: 参考資料（Contextの`materials`フィールドから）
@@ -445,6 +448,5 @@ chunksセクションには分割データを配置します：
 
 - [ ] **ワークフロー内部生成物の配置**: executionLogなどをchunksに配置するか、独自フィールドにするか
 - [ ] **Contextフィールド名の統一**: executionLog, analysisReportなど、ワークフロー固有フィールドの命名規則
-- [ ] **stateの構造統一**: `string`型と`{content, usage}`型のどちらに統一するか
 - [ ] **chunksとmaterialsの使い分け**: より明確な基準の確立
 - [ ] **schemaのマージ戦略**: 上書き vs 結合 vs エラー

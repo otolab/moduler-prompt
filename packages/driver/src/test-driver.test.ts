@@ -590,4 +590,105 @@ describe('TestDriver', () => {
     });
   });
 
+  describe('finishReason support', () => {
+    it('returns custom finishReason with MockResponse object', async () => {
+      driver = new TestDriver({
+        responses: [
+          { content: 'Response 1', finishReason: 'stop' },
+          { content: 'Response 2', finishReason: 'length' },
+          { content: 'Response 3', finishReason: 'error' }
+        ]
+      });
+
+      const prompt: CompiledPrompt = {
+        instructions: [{ type: 'text', content: 'test' }],
+        data: [],
+        output: []
+      };
+
+      const result1 = await driver.query(prompt);
+      expect(result1.content).toBe('Response 1');
+      expect(result1.finishReason).toBe('stop');
+
+      const result2 = await driver.query(prompt);
+      expect(result2.content).toBe('Response 2');
+      expect(result2.finishReason).toBe('length');
+
+      const result3 = await driver.query(prompt);
+      expect(result3.content).toBe('Response 3');
+      expect(result3.finishReason).toBe('error');
+    });
+
+    it('defaults to stop when finishReason not specified', async () => {
+      driver = new TestDriver({
+        responses: ['Simple string']
+      });
+
+      const prompt: CompiledPrompt = {
+        instructions: [{ type: 'text', content: 'test' }],
+        data: [],
+        output: []
+      };
+
+      const result = await driver.query(prompt);
+      expect(result.finishReason).toBe('stop');
+    });
+
+    it('supports finishReason in function provider', async () => {
+      driver = new TestDriver({
+        responses: (prompt) => {
+          if (prompt.instructions.length > 5) {
+            return { content: 'Too long', finishReason: 'length' };
+          }
+          return { content: 'OK', finishReason: 'stop' };
+        }
+      });
+
+      const shortPrompt: CompiledPrompt = {
+        instructions: [{ type: 'text', content: 'short' }],
+        data: [],
+        output: []
+      };
+
+      const longPrompt: CompiledPrompt = {
+        instructions: Array(10).fill({ type: 'text', content: 'long' }),
+        data: [],
+        output: []
+      };
+
+      const result1 = await driver.query(shortPrompt);
+      expect(result1.finishReason).toBe('stop');
+
+      const result2 = await driver.query(longPrompt);
+      expect(result2.finishReason).toBe('length');
+    });
+
+    it('supports finishReason in streamQuery', async () => {
+      driver = new TestDriver({
+        responses: [
+          { content: 'Stream test', finishReason: 'length' }
+        ]
+      });
+
+      const prompt: CompiledPrompt = {
+        instructions: [{ type: 'text', content: 'test' }],
+        data: [],
+        output: []
+      };
+
+      const { stream, result } = await driver.streamQuery(prompt);
+
+      // Consume stream
+      let streamedContent = '';
+      for await (const chunk of stream) {
+        streamedContent += chunk;
+      }
+
+      expect(streamedContent).toBe('Stream test');
+
+      const finalResult = await result;
+      expect(finalResult.finishReason).toBe('length');
+    });
+  });
+
 });

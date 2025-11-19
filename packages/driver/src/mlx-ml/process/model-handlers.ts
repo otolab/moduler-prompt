@@ -119,14 +119,19 @@ export function processGemmaChat(messages: MlxMessage[]): MlxMessage[] {
 
 /**
  * llm-jp-3.1用のCompletion処理
+ * chat_templateに厳密に準拠した形式
+ * Note: llm-jp-3.1はforce-completion設定のため、chat APIは使用されない
  */
 export function processLlmJpCompletion(prompt: string): string {
-  // 各行を配列で管理し、\nで結合
-  return '<s>\n\n### 指示:\n' +
-    '指示は英語と日本語の混ぜ書きになっています。以下の指示書(prompt)を丁寧に読んで実行してください。\n' +
-    '\n' +
-    prompt + '\n' +
-    '\n### 応答:';
+  // llm-jpは複数言語の混ぜ書きに弱い傾向があるため、特定の言語を優先しないよう明示的に指示
+  const llmJpSpecificInstruction = '指示は英語・日本語の混ぜ書きになっているが、どちらの言語も同等の指示として十分に理解すること。\n出力は与えられたタスクに対してふさわしい言語を選択する。\n\n';
+
+  // chat_templateのsystemメッセージと同じ固定文字列（良好な回答を得るために必要な固定プロンプト）
+  return '<s>以下は、タスクを説明する指示です。要求を適切に満たす応答を書きなさい。' +
+    '\n\n### 指示:\n' +
+    llmJpSpecificInstruction +
+    prompt +
+    '\n\n### 応答:';
 }
 
 /**
@@ -149,6 +154,7 @@ export function processGemmaCompletion(prompt: string): string {
  * モデル名に基づいてChat処理を選択
  */
 export function selectChatProcessor(modelName: string): ((messages: MlxMessage[]) => MlxMessage[]) | null {
+  // Note: llm-jp-3.1はforce-completion設定のため、ここには含めない
   if (modelName.includes('Tanuki-8B-dpo-v1')) {
     return processTanukiChat;
   }
