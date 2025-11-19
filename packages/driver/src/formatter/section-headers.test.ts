@@ -155,6 +155,7 @@ describe('Section Headers in Prompts', () => {
   describe('Complex prompt module compilation with section headers', () => {
     it('should preserve section headers after compiling a complex module', () => {
       // Simulate an agent-workflow-like module structure
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       const module: PromptModule<{ phase: string; inputs: any }> = {
         terms: [
           '- Objective: The ultimate goal',
@@ -221,11 +222,13 @@ describe('Section Headers in Prompts', () => {
     });
 
     it('should handle merged modules with section headers', () => {
+      // eslint-disable-next-line @typescript-eslint/no-empty-object-type
       const baseModule: PromptModule<{}> = {
         terms: ['Base term'],
         methodology: ['Base methodology']
       };
 
+      // eslint-disable-next-line @typescript-eslint/no-empty-object-type
       const specificModule: PromptModule<{}> = {
         objective: ['Specific objective'],
         instructions: ['Specific instruction'],
@@ -233,6 +236,7 @@ describe('Section Headers in Prompts', () => {
       };
 
       // Manual merge (same as merge function behavior)
+      // eslint-disable-next-line @typescript-eslint/no-empty-object-type
       const merged: PromptModule<{}> = {
         ...baseModule,
         ...specificModule,

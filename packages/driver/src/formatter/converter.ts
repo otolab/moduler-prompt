@@ -1,6 +1,5 @@
 import type {
   Element,
-  MessageElement,
   CompiledPrompt
 } from '@moduler-prompt/core';
 import type { ChatMessage, FormatterOptions, ElementFormatter } from './types.js';
