@@ -1,5 +1,5 @@
 import { compile, merge } from '@moduler-prompt/core';
-import type { PromptModule } from '@moduler-prompt/core';
+import type { PromptModule, CompiledPrompt } from '@moduler-prompt/core';
 import { WorkflowExecutionError } from '../types.js';
 import type { AIDriver, WorkflowResult } from '../types.js';
 import type {
@@ -137,14 +137,16 @@ async function executeStep(
     }
   }
 
-  // Build prompt directly from generated prompt (bypass moduler-prompt compilation)
-  // Use freeform output for compatibility with low-quality models and repeated execution
-  const executionModule: PromptModule<SelfPromptingWorkflowContext> = {
-    instructions: step.prompt.instructions,
-    inputs: step.prompt.data
+  // Use the generated prompt string directly
+  // Create a minimal CompiledPrompt structure with just the prompt text
+  const executionPrompt: CompiledPrompt = {
+    instructions: [{
+      type: 'text',
+      content: step.prompt
+    }],
+    data: [],
+    output: []
   };
-
-  const executionPrompt = compile(executionModule, context);
 
   try {
     const result = await driver.query(executionPrompt);

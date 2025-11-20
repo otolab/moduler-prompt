@@ -8,14 +8,11 @@ export type ActionHandler<TContext = any> = (
 
 /**
  * Self-prompting workflow step definition
- * Each step contains a complete prompt that will be executed directly
+ * Each step contains a complete prompt string that will be executed directly
  */
 export interface SelfPromptingStep {
   id: string;
-  prompt: {
-    instructions: string[];  // Instruction section content
-    data: string[];          // Data section content
-  };
+  prompt: string;           // Complete prompt text for this step
   actions?: Array<{         // External tools to use (supports multiple tools)
     tool: string;
     params?: any;

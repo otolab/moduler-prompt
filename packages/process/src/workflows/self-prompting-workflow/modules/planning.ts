@@ -28,18 +28,14 @@ export const planning: PromptModule<SelfPromptingWorkflowContext> = {
         '  - Do NOT assume the executor knows about other steps or the overall plan',
         '  - Do NOT use relative references like "step-1の結果" or "前のステップ" or "2ヶ月目"',
         '  - Each step must include full context needed to understand and execute it',
-        '- Each step must have: id, prompt.instructions[], prompt.data[]',
-        '  - **prompt.instructions**: Complete instruction array for this step (as if writing a prompt for AI)',
-        '    - Start with the specific objective/goal of THIS step within the overall objective',
-        '    - Include specific actions, principles, and constraints for THIS step',
-        '    - Write clear, actionable instructions that can be executed independently',
-        '    - Typically 3-7 instruction items per step',
-        '  - **prompt.data**: Data array providing full context for this step',
-        '    - Include the overall objective and relevant constraints that apply to this step',
-        '    - Include relevant portions from Input Data section that are needed for this step',
-        '    - Use original reference materials (e.g., trend information, guidelines) as-is when relevant',
-        '    - Do NOT create new structured data - reuse existing input data',
-        '    - Typically 1-5 data items per step (more than execution-only steps since context is needed)',
+        '- Each step must have: id, prompt',
+        '  - **id**: Unique step identifier (e.g., "step-1", "step-2")',
+        '  - **prompt**: Complete prompt text for this step as a single string',
+        '    - Include the specific objective/goal of THIS step',
+        '    - Include all necessary context (overall objective, constraints, reference materials)',
+        '    - Include clear, actionable instructions',
+        '    - Use natural language - write as if giving instructions to a human',
+        '    - The prompt should be self-contained and executable without any other information',
         '- The steps should accomplish the Instructions in a logical sequence',
         '- Consider available tools when defining actions (currently none available)',
         '- Ensure logical flow between steps',
@@ -59,7 +55,7 @@ export const planning: PromptModule<SelfPromptingWorkflowContext> = {
 
   cue: [
     'Respond with a JSON-formatted string containing the execution plan.',
-    'Output format: {"steps": [{"id": "...", "prompt": {"instructions": [...], "data": [...]}}]}'
+    'Output format: {"steps": [{"id": "step-1", "prompt": "Complete prompt text for this step..."}]}'
   ],
 
   schema: [
@@ -78,21 +74,8 @@ export const planning: PromptModule<SelfPromptingWorkflowContext> = {
                   description: 'Unique step ID (e.g., step-1, step-2)'
                 },
                 prompt: {
-                  type: 'object',
-                  properties: {
-                    instructions: {
-                      type: 'array',
-                      items: { type: 'string' },
-                      description: 'Complete instruction array for this step (3-7 items typically)'
-                    },
-                    data: {
-                      type: 'array',
-                      items: { type: 'string' },
-                      description: 'Data array providing context for this step (0-3 items typically)'
-                    }
-                  },
-                  required: ['instructions', 'data'],
-                  description: 'Complete prompt for executing this step'
+                  type: 'string',
+                  description: 'Complete prompt text for executing this step independently'
                 },
                 actions: {
                   type: 'array',
@@ -115,7 +98,7 @@ export const planning: PromptModule<SelfPromptingWorkflowContext> = {
               },
               required: ['id', 'prompt']
             },
-            description: 'List of execution plan steps with complete prompts'
+            description: 'List of execution plan steps, each with a complete self-contained prompt'
           }
         },
         required: ['steps']
