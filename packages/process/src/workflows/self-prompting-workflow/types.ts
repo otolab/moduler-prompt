@@ -43,7 +43,6 @@ export interface SelfPromptingPlan {
  * Context for self-prompting workflow
  */
 export interface SelfPromptingWorkflowContext {
-  objective: string;                            // Goal to achieve
   inputs?: any;                                 // Input data
   state?: {                                     // State from previous step
     content: string;
