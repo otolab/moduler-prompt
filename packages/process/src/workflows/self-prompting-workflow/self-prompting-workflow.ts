@@ -158,12 +158,21 @@ async function executeStep(
 
   // Use the generated prompt string directly
   // Create a minimal CompiledPrompt structure with just the prompt text
+  // Add previous step results as materials for context
+  const previousResults = context.executionLog || [];
+  const materials = previousResults.map((log) => ({
+    type: 'material' as const,
+    id: `previous-step-${log.stepId}`,
+    title: `Result from ${log.stepId}`,
+    content: log.result
+  }));
+
   const executionPrompt: CompiledPrompt = {
     instructions: [{
       type: 'text',
       content: step.prompt
     }],
-    data: [],
+    data: materials,
     output: []
   };
 
