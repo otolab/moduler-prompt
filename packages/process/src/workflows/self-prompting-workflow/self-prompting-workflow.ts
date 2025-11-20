@@ -34,7 +34,8 @@ async function executePlanningPhase(
   driver: AIDriver,
   module: PromptModule<SelfPromptingWorkflowContext>,
   context: SelfPromptingWorkflowContext,
-  maxSteps: number
+  maxSteps: number,
+  logger?: any
 ): Promise<SelfPromptingPlan> {
   const planningPrompt = compile(merge(baseSelfPromptingModule, planning, module), context);
 
@@ -66,8 +67,16 @@ async function executePlanningPhase(
     let plan: SelfPromptingPlan;
     const rawOutput = planResult.structuredOutput as any;
 
+    // Debug: Log raw model output
+    if (logger) {
+      logger.info(`Raw planning output: ${JSON.stringify(rawOutput, null, 2)}`);
+    }
+
     // Handle case where model returns a single step object instead of {steps: [...]}
     if ('id' in rawOutput && 'prompt' in rawOutput && !('steps' in rawOutput)) {
+      if (logger) {
+        logger.info('Model returned single step object, wrapping in array');
+      }
       plan = { steps: [rawOutput as SelfPromptingStep] };
     } else {
       plan = rawOutput as SelfPromptingPlan;
@@ -283,7 +292,7 @@ export async function selfPromptingProcess(
       logger.info('Starting planning phase');
     }
     currentContext.phase = 'planning';
-    plan = await executePlanningPhase(driver, module, currentContext, maxSteps);
+    plan = await executePlanningPhase(driver, module, currentContext, maxSteps, logger);
     currentContext.plan = plan;
     if (logger) {
       logger.info(`Planning completed: ${plan.steps.length} steps`);

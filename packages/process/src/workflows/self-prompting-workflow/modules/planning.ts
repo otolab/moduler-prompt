@@ -23,26 +23,14 @@ export const planning: PromptModule<SelfPromptingWorkflowContext> = {
       title: 'Planning Requirements',
       items: [
         '- Break down the **Objective and Instructions shown above** into 3-5 concrete executable steps',
-        '- **CRITICAL**: Each step prompt must be completely self-contained and executable independently',
-        '  - Do NOT assume the executor knows about other steps or the overall plan',
-        '  - Do NOT use relative references like "step-1の結果" or "前のステップ" or "2ヶ月目"',
-        '  - Each step must include full context needed to understand and execute it',
         '- Each step must have: id, prompt',
         '  - **id**: Unique step identifier (e.g., "step-1", "step-2")',
-        '  - **prompt**: Complete prompt text for this step as a single string',
-        '    - Include the specific objective/goal of THIS step',
-        '    - Include all necessary context (overall objective, constraints, reference materials)',
-        '    - Include clear, actionable instructions',
-        '    - Use natural language - write as if giving instructions to a human',
-        '    - The prompt should be self-contained and executable without any other information',
+        '  - **prompt**: Complete self-contained prompt text for this step',
+        '- The prompt must include all necessary context and instructions to execute the step independently',
         '- The steps should accomplish the Instructions in a logical sequence',
         '- Consider available tools when defining actions (currently none available)',
-        '- Ensure logical flow between steps',
         '',
         '**CRITICAL: Output Format**',
-        '- The response MUST be a JSON object with a "steps" array',
-        '- The root object MUST have this structure: {"steps": [...]}'  ,
-        '- Each element in the "steps" array is a step object with "id" and "prompt" fields',
         '- Respond ONLY with valid JSON text',
         '- NO explanatory text before or after the JSON',
         '- NO markdown code blocks (```json)',
@@ -56,8 +44,8 @@ export const planning: PromptModule<SelfPromptingWorkflowContext> = {
   ],
 
   cue: [
-    'Respond with a JSON-formatted string containing the execution plan.',
-    'Output format: {"steps": [{"id": "step-1", "prompt": "Complete prompt text..."}, {"id": "step-2", "prompt": "Complete prompt text..."}, {"id": "step-3", "prompt": "Complete prompt text..."}]}'
+    'Respond with a JSON-formatted execution plan.',
+    'Format: {"steps": [{"id": "step-1", "prompt": "..."}, {"id": "step-2", "prompt": "..."}, ...]}'
   ],
 
   schema: [
