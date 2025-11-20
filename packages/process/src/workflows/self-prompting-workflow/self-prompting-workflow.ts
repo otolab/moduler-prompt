@@ -101,6 +101,15 @@ async function executeStep(
 ): Promise<SelfPromptingExecutionLog> {
   let actionResult: any;
 
+  // TODO: Reconsider action handling in self-prompting workflow
+  // In the current implementation, actions are executed before the prompt,
+  // but this may not align with the self-prompting philosophy where the AI
+  // generates complete prompts that should be self-contained.
+  // Possible alternatives:
+  // 1. Actions should be part of the generated prompt instructions
+  // 2. Actions should be executed based on the step result (not before)
+  // 3. Remove action support entirely for this workflow variant
+
   // Execute actions if specified
   if (step.actions) {
     for (const action of step.actions) {
