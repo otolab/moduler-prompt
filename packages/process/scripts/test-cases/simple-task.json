@@ -1,0 +1,18 @@
+{
+  "name": "Simple Task Test",
+  "description": "self-prompting-workflowの基本的な動作テスト",
+  "module": {
+    "objective": ["プログラミング未経験者が3ヶ月でWebアプリケーション開発の基礎を習得するための学習計画を立てる"],
+    "instructions": [
+      "現在のスキルレベル（プログラミング未経験）を考慮する",
+      "3ヶ月という期間内で実現可能な段階的な学習計画を作成する",
+      "具体的な学習リソースと評価方法を含める",
+      "最新のWeb開発トレンドを参考にする"
+    ]
+  },
+  "context": {
+    "inputs": {
+      "trends": "2024年のWeb開発トレンド: フロントエンドではTypeScript、React、Next.js、TailwindCSSが主流。バックエンドではNode.js、Python（FastAPI/Django）、Go言語が人気。データベースはPostgreSQL、MongoDBが広く使われている。開発環境はVSCode、GitとGitHubが標準。AI支援ツール（GitHub Copilot等）の活用も増えている。"
+    }
+  }
+}
