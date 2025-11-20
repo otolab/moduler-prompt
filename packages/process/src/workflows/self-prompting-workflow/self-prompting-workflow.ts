@@ -129,6 +129,7 @@ async function executeStep(
   }
 
   // Build prompt directly from generated prompt (bypass moduler-prompt compilation)
+  // Use freeform output for compatibility with low-quality models and repeated execution
   const executionPrompt = {
     instructions: step.prompt.instructions.map(text => ({
       type: 'text' as const,
@@ -138,28 +139,7 @@ async function executeStep(
       type: 'text' as const,
       content: text
     })),
-    output: [
-      {
-        type: 'text' as const,
-        content: 'Output a JSON object containing the execution result of the current step.'
-      }
-    ],
-    metadata: {
-      outputSchema: {
-        type: 'object',
-        properties: {
-          result: {
-            type: 'string',
-            description: 'Execution result: Describe what was done in this step and what results were obtained.'
-          },
-          nextState: {
-            type: 'string',
-            description: 'Handover note for the next step (simple text, not object/array)'
-          }
-        },
-        required: ['result', 'nextState']
-      }
-    }
+    output: []  // Freeform output - no schema constraints
   };
 
   try {
@@ -177,25 +157,13 @@ async function executeStep(
       );
     }
 
-    // Extract result from structured output or content
-    let executionResult: string;
-    let nextState: string | undefined;
-
-    if (result.structuredOutput) {
-      const output = result.structuredOutput as { result?: string; nextState?: string };
-      executionResult = output.result || result.content;
-      nextState = output.nextState;
-    } else {
-      executionResult = result.content;
-    }
-
+    // Freeform output - use content directly
     return {
       stepId: step.id,
-      result: executionResult,
+      result: result.content,
       actionResult,
       metadata: {
-        usage: result.usage,
-        nextState
+        usage: result.usage
       }
     };
   } catch (error) {
@@ -226,14 +194,6 @@ async function executeExecutionPhase(
     const logEntry = await executeStep(driver, module, context, currentStep, actions);
     executionLog.push(logEntry);
     context.executionLog = executionLog;
-
-    // Update state from execution result
-    if (logEntry.metadata?.nextState) {
-      context.state = {
-        content: logEntry.metadata.nextState,
-        usage: logEntry.metadata.usage
-      };
-    }
   }
 
   return executionLog;

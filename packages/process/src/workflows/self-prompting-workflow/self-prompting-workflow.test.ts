@@ -40,10 +40,10 @@ describe('selfPromptingProcess', () => {
       responses: [
         // Planning - return JSON for structured output
         JSON.stringify(plan),
-        // Execution: step 1 - structured output with result and nextState
-        JSON.stringify({ result: 'Analysis complete: Input analyzed successfully', nextState: 'Ready for output generation' }),
-        // Execution: step 2 - structured output with result and nextState
-        JSON.stringify({ result: 'Output generated successfully', nextState: 'Ready for integration' }),
+        // Execution: step 1 - freeform text output
+        'Analysis complete: Input analyzed successfully',
+        // Execution: step 2 - freeform text output
+        'Output generated successfully',
         // Integration
         'Final result: Task completed successfully'
       ]
@@ -71,8 +71,6 @@ describe('selfPromptingProcess', () => {
     expect(result.context.executionLog).toHaveLength(2);
     expect(result.context.executionLog?.[0].result).toBe('Analysis complete: Input analyzed successfully');
     expect(result.context.executionLog?.[1].result).toBe('Output generated successfully');
-    // nextState is stored in context.state, updated after each step
-    expect(result.context.state?.content).toBe('Ready for integration');
     expect(result.metadata?.planSteps).toBe(2);
     expect(result.metadata?.executedSteps).toBe(2);
   });
@@ -122,8 +120,8 @@ describe('selfPromptingProcess', () => {
     const driver = new TestDriver({
       responses: [
         JSON.stringify(plan),
-        JSON.stringify({ result: 'Data retrieved and processed', nextState: 'Data available for processing' }),
-        JSON.stringify({ result: 'Processing complete', nextState: 'Ready for final output' }),
+        'Data retrieved and processed',
+        'Processing complete',
         'Final output'
       ]
     });
@@ -181,9 +179,9 @@ describe('selfPromptingProcess', () => {
     const driver = new TestDriver({
       responses: [
         JSON.stringify(plan),
-        JSON.stringify({ result: 'Step 1 done', nextState: 'Step 1 complete' }),
-        JSON.stringify({ result: 'Step 2 done', nextState: 'Step 2 complete' }),
-        JSON.stringify({ result: 'Step 3 done', nextState: 'Step 3 complete' }),
+        'Step 1 done',
+        'Step 2 done',
+        'Step 3 done',
         'Final'
       ]
     });
@@ -226,7 +224,7 @@ describe('selfPromptingProcess', () => {
     const driver = new TestDriver({
       responses: [
         // No planning needed - only execution + integration
-        JSON.stringify({ result: 'Step executed', nextState: 'Execution complete' }),
+        'Step executed',
         'Integration done'
       ]
     });
@@ -291,7 +289,7 @@ describe('selfPromptingProcess', () => {
         // Planning (returns valid plan)
         JSON.stringify(plan),
         // Execution: step 1 succeeds
-        JSON.stringify({ result: 'Step 1 done', nextState: 'Moving to step 2' }),
+        'Step 1 done',
         // Execution: step 2 fails with error
         { content: 'Partial execution...', finishReason: 'error' }
       ]
@@ -386,8 +384,8 @@ describe('selfPromptingProcess', () => {
       responses: [
         // No planning needed (plan already exists)
         // Only step-2 and step-3 execution + integration
-        JSON.stringify({ result: 'Second step completed', nextState: 'Ready for step 3' }),
-        JSON.stringify({ result: 'Third step completed', nextState: 'All steps done' }),
+        'Second step completed',
+        'Third step completed',
         'All steps integrated'
       ]
     });
