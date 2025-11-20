@@ -11,7 +11,6 @@ import type {
   ActionHandler
 } from './types.js';
 import { planning } from './modules/planning.js';
-import { execution } from './modules/execution.js';
 import { integration } from './modules/integration.js';
 
 /**
@@ -129,14 +128,39 @@ async function executeStep(
     }
   }
 
-  const executionPrompt = compile(
-    merge(baseSelfPromptingModule, execution, module),
-    {
-      ...context,
-      currentStep: step,
-      actionResult
+  // Build prompt directly from generated prompt (bypass moduler-prompt compilation)
+  const executionPrompt = {
+    instructions: step.prompt.instructions.map(text => ({
+      type: 'text' as const,
+      content: text
+    })),
+    data: step.prompt.data.map(text => ({
+      type: 'text' as const,
+      content: text
+    })),
+    output: [
+      {
+        type: 'text' as const,
+        content: 'Output a JSON object containing the execution result of the current step.'
+      }
+    ],
+    metadata: {
+      outputSchema: {
+        type: 'object',
+        properties: {
+          result: {
+            type: 'string',
+            description: 'Execution result: Describe what was done in this step and what results were obtained.'
+          },
+          nextState: {
+            type: 'string',
+            description: 'Handover note for the next step (simple text, not object/array)'
+          }
+        },
+        required: ['result', 'nextState']
+      }
     }
-  );
+  };
 
   try {
     const result = await driver.query(executionPrompt);

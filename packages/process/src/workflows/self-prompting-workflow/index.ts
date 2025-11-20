@@ -8,7 +8,6 @@
 
 export { selfPromptingProcess } from './self-prompting-workflow.js';
 export { planning } from './modules/planning.js';
-export { execution } from './modules/execution.js';
 export { integration } from './modules/integration.js';
 export type {
   SelfPromptingWorkflowContext,
