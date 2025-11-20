@@ -63,13 +63,23 @@ async function executePlanningPhase(
       );
     }
 
-    const plan = planResult.structuredOutput as SelfPromptingPlan;
+    let plan: SelfPromptingPlan;
+    const rawOutput = planResult.structuredOutput as any;
+
+    // Handle case where model returns a single step object instead of {steps: [...]}
+    if ('id' in rawOutput && 'prompt' in rawOutput && !('steps' in rawOutput)) {
+      plan = { steps: [rawOutput as SelfPromptingStep] };
+    } else {
+      plan = rawOutput as SelfPromptingPlan;
+    }
+
     if (!plan.steps || !Array.isArray(plan.steps)) {
       throw new WorkflowExecutionError(
         'Plan must contain steps array',
         context,
         {
-          phase: 'planning'
+          phase: 'planning',
+          partialResult: JSON.stringify(plan, null, 2)
         }
       );
     }

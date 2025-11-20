@@ -12,9 +12,8 @@ export const planning: PromptModule<SelfPromptingWorkflowContext> = {
   methodology: [
     '- **Current Phase: Planning**',
     '  - Generate an execution plan by breaking down the Objective and Instructions into 3-5 executable steps.',
-    '  - **For each step, generate a complete prompt** consisting of:',
-    '    - `instructions`: Array of instruction strings that will guide the AI in executing this step',
-    '    - `data`: Array of data strings that provide context, materials, or state information for this step',
+    '  - **For each step, generate a complete prompt string** that will be executed directly.',
+    '  - Each prompt must be self-contained with full context, instructions, and necessary data.',
     '  - Output structured JSON text immediately, with no explanations or commentary.'
   ],
 
@@ -41,10 +40,13 @@ export const planning: PromptModule<SelfPromptingWorkflowContext> = {
         '- Ensure logical flow between steps',
         '',
         '**CRITICAL: Output Format**',
+        '- The response MUST be a JSON object with a "steps" array',
+        '- The root object MUST have this structure: {"steps": [...]}'  ,
+        '- Each element in the "steps" array is a step object with "id" and "prompt" fields',
         '- Respond ONLY with valid JSON text',
         '- NO explanatory text before or after the JSON',
         '- NO markdown code blocks (```json)',
-        '- Start directly with { and end with }'
+        '- Start directly with { "steps": [ and end with ]}'
       ]
     }
   ],
@@ -55,7 +57,7 @@ export const planning: PromptModule<SelfPromptingWorkflowContext> = {
 
   cue: [
     'Respond with a JSON-formatted string containing the execution plan.',
-    'Output format: {"steps": [{"id": "step-1", "prompt": "Complete prompt text for this step..."}]}'
+    'Output format: {"steps": [{"id": "step-1", "prompt": "Complete prompt text..."}, {"id": "step-2", "prompt": "Complete prompt text..."}, {"id": "step-3", "prompt": "Complete prompt text..."}]}'
   ],
 
   schema: [

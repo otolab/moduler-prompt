@@ -111,9 +111,10 @@ async function main() {
     console.log('');
     console.log('Plan:');
     result.context.plan?.steps.forEach((step, i) => {
-      console.log(`  ${i + 1}. [${step.id}]`);
-      console.log(`     Instructions: ${step.prompt.instructions.length} items`);
-      console.log(`     Data: ${step.prompt.data.length} items`);
+      const promptPreview = step.prompt.length > 100
+        ? step.prompt.substring(0, 100) + '...'
+        : step.prompt;
+      console.log(`  ${i + 1}. [${step.id}] ${promptPreview}`);
     });
     console.log('');
     console.log('Final output:');
