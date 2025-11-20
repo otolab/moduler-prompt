@@ -50,10 +50,6 @@ export const planning: PromptModule<SelfPromptingWorkflowContext> = {
     (ctx) => ctx.inputs ? JSON.stringify(ctx.inputs, null, 2) : null
   ],
 
-  state: [
-    'Phase: planning'
-  ],
-
   cue: [
     'Respond with a JSON-formatted string containing the execution plan.',
     'Output format: {"steps": [{"id": "...", "prompt": {"instructions": [...], "data": [...]}}]}'
