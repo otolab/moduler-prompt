@@ -130,17 +130,12 @@ async function executeStep(
 
   // Build prompt directly from generated prompt (bypass moduler-prompt compilation)
   // Use freeform output for compatibility with low-quality models and repeated execution
-  const executionPrompt = {
-    instructions: step.prompt.instructions.map(text => ({
-      type: 'text' as const,
-      content: text
-    })),
-    data: step.prompt.data.map(text => ({
-      type: 'text' as const,
-      content: text
-    })),
-    output: []  // Freeform output - no schema constraints
+  const executionModule: PromptModule<SelfPromptingWorkflowContext> = {
+    instructions: step.prompt.instructions,
+    inputs: step.prompt.data
   };
+
+  const executionPrompt = compile(executionModule, context);
 
   try {
     const result = await driver.query(executionPrompt);
