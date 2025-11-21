@@ -63,32 +63,12 @@ export function determineApiSelection(
     throw new Error('Model supports neither chat nor completion API');
   }
 
-  const hasMessageEl = hasMessageElement(prompt);
-
-  if (hasMessageEl) {
-    // MessageElementがある場合はchatを優先
-    if (canUseChat) {
-      return 'chat';
-    } else {
-      // chatが使えない場合はcompletionにフォールバック
-      return 'completion';
-    }
-  } else {
-    // MessageElementがない場合
-    if (!canUseChat) {
-      // chatが使えない場合はcompletion
-      return 'completion';
-    } else if (!canUseCompletion) {
-      // completionが使えない場合はchat
-      return 'chat';
-    } else {
-      // 両方使える場合はモデルの特性に応じて判定
-      const messages = formatPromptAsMessages(prompt, formatterOptions);
-      const mlxMessages = convertMessages(messages);
-      const preprocessedMessages = specManager.preprocessMessages(mlxMessages);
-      return specManager.determineApi(preprocessedMessages);
-    }
-  }
+  // apiStrategyを常に考慮するため、specManager.determineApi()に判定を委譲
+  // MessageElementの有無に関わらず、モデルの設定を尊重する
+  const messages = formatPromptAsMessages(prompt, formatterOptions);
+  const mlxMessages = convertMessages(messages);
+  const preprocessedMessages = specManager.preprocessMessages(mlxMessages);
+  return specManager.determineApi(preprocessedMessages);
 }
 
 // ========================================================================
@@ -152,7 +132,6 @@ export class MlxDriver implements AIDriver {
   private capabilities: MlxCapabilities | null = null;
   private modelProcessor;
   private formatterOptions: FormatterOptions;
-  private preferMessageFormat: boolean = true;
   
   
   constructor(config: MlxDriverConfig) {
@@ -161,7 +140,6 @@ export class MlxDriver implements AIDriver {
     this.formatterOptions = config.formatterOptions || {};
     this.process = new MlxProcess(config.model, config.modelSpec, config.customProcessor);
     this.modelProcessor = createModelSpecificProcessor(config.model);
-    this.preferMessageFormat = true; // MLX uses message format
   }
 
   /**
