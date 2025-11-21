@@ -6,7 +6,7 @@
 
 import type { MlxMessage } from '../process/types.js';
 import type { ModelSpec, ApiStrategy, ModelCustomProcessor } from './types.js';
-import { mergeWithPreset } from './presets.js';
+import { getPresetSpec } from './presets.js';
 import { ModelCapabilityDetector } from './detector.js';
 import { MessageValidator } from './validator.js';
 import type { MlxProcess } from '../process/index.js';
@@ -29,8 +29,8 @@ export class ModelSpecManager {
     this.process = process;
     this.detector = new ModelCapabilityDetector(process, modelName);
 
-    // プリセット設定を取得（customSpecは渡さない - 優先度を明示的に制御）
-    const presetSpec = mergeWithPreset(modelName);
+    // プリセット設定を取得（優先度を明示的に制御）
+    const presetSpec = getPresetSpec(modelName);
 
     // マージ戦略（パラメータごとに異なるマージ深さを使用）:
     //

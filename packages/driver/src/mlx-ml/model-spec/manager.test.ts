@@ -262,10 +262,13 @@ describe('ModelSpecManager', () => {
     const createMockProcess = () => ({
       ensureInitialized: vi.fn(),
       getCapabilities: vi.fn().mockResolvedValue({
-        capabilities: {
-          hasApplyChatTemplate: true,
-          supportsCompletion: true
-        }
+        features: {
+          apply_chat_template: true
+        },
+        special_tokens: {}
+      }),
+      formatTest: vi.fn().mockResolvedValue({
+        success: true
       }),
       chat: vi.fn(),
       completion: vi.fn(),

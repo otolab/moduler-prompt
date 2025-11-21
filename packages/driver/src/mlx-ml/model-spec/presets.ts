@@ -111,14 +111,13 @@ export function findPreset(modelName: string): ModelSpecPreset | undefined {
  *
  * マージは呼び出し側で明示的に行うため、ここではプリセットのみを返す
  */
-export function mergeWithPreset(
-  modelName: string,
-  customSpec?: Partial<import('./types.js').ModelSpec>
+export function getPresetSpec(
+  modelName: string
 ): Partial<import('./types.js').ModelSpec> {
   const preset = findPreset(modelName);
 
   if (!preset) {
-    return customSpec || {};
+    return {};
   }
 
   // プリセット設定をそのまま返す（マージは呼び出し側で明示的に制御）
@@ -126,4 +125,22 @@ export function mergeWithPreset(
     ...preset.spec,
     modelName
   };
+}
+
+/**
+ * @deprecated Use getPresetSpec() instead. This function name is misleading.
+ * 後方互換性のため残しているが、新しいコードでは getPresetSpec() を使用してください
+ */
+export function mergeWithPreset(
+  modelName: string,
+  customSpec?: Partial<import('./types.js').ModelSpec>
+): Partial<import('./types.js').ModelSpec> {
+  const presetSpec = getPresetSpec(modelName);
+
+  if (!customSpec) {
+    return presetSpec;
+  }
+
+  // 後方互換性: customSpecが渡された場合は単純に返す
+  return customSpec;
 }
