@@ -14,6 +14,21 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - 箇条書きが必要な場合は、items内で明示的に`- `を付ける必要があります
   - 例: `items: ['- item1', '- item2']`
 
+## [0.2.6] - 2025-01-21
+
+### Fixed
+- **Driver Package (@moduler-prompt/driver@0.2.6)**
+  - ModelSpecのカスタム設定がプリセットで上書きされる問題を修正（Issue #29）
+  - `apiStrategy: 'force-completion'`などのカスタム設定が正しく優先されるように修正
+  - `chatRestrictions: undefined`でプリセット制限をクリアできるように修正
+  - マージ戦略を明確化：パラメータごとに異なるマージ深さを使用
+    - apiStrategy: SHALLOW MERGE（完全置換）
+    - capabilities: DEEP MERGE（プロパティごとにマージ）
+    - chatRestrictions: SHALLOW MERGE with undefined support（完全置換またはクリア）
+    - customProcessor: SHALLOW MERGE（優先度チェーン）
+  - `getPresetSpec()`関数を追加（`mergeWithPreset()`は非推奨だが後方互換性のため残存）
+  - テストケースを追加してカスタム設定の優先順位を保証
+
 ## [0.1.2] - 2025-09-10
 
 ### Fixed
