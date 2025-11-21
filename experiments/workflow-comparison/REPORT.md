@@ -54,6 +54,34 @@ Agentic-workflow と Self-prompting-workflow の比較実験を実施しまし�
 - 簡潔な指示
 - 必要最小限の説明
 
+#### テンプレート追加後の実験結果（Gemma 27B）
+
+**実行ファイル**: `results/gemma-27b-self-prompting-after-template.txt`
+
+✅ **成功**:
+- プロンプトに冷蔵庫の材料と過去の献立データが正しく含まれる
+- 4ステップに適切に分解（主菜候補→選択→副菜→買い出し）
+- 主菜: 豚バラ肉とキャベツのもやし炒め
+- 副菜: 人参と豆腐の和風サラダ、ピーマンの味噌炒め
+- 買い出しリスト: なし（全て冷蔵庫の材料で作成可能）
+
+⚠️ **小さな問題**: step-4で冷蔵庫にある材料を買い出しリストに含めてしまった（ロジックの問題、テンプレートの問題ではない）
+
+#### シンプル化後の実験結果（Gemma 27B）
+
+**実行ファイル**: `results/gemma-27b-self-prompting-simplified.txt`
+
+✅ **成功**:
+- プロンプト生成品質を維持
+- 同様に4ステップに分解
+- 主菜: 豚バラ肉とキャベツのもやし炒め
+- 副菜: 人参と豆腐の和風サラダ、ピーマンの味噌炒め
+- 買い出しリスト: なし
+
+**プロンプトサイズの改善**:
+- 行数: 58行 → 30行（約48%削減）
+- 冗長性を削減しながら品質を維持
+
 **結果**: データの包含、適切なタスク分解、日本語での自然な指示生成はすべて維持されました。
 
 ## 📈 ワークフロー比較結果
@@ -187,7 +215,7 @@ Agentic-workflow と Self-prompting-workflow の比較実験を実施しまし�
 ```
 experiments/workflow-comparison/
 ├── README.md              # 実験概要と実行方法
-├── REPORT.md             # この結果レポート（今回追加）
+├── REPORT.md             # この結果レポート
 ├── run-comparison.sh     # 実験実行スクリプト
 ├── test-cases/
 │   └── meal-planning.json  # 献立作成テストケース
@@ -197,8 +225,10 @@ experiments/workflow-comparison/
 │   ├── llm-jp-8x13b-agentic-plan.txt
 │   └── llm-jp-8x13b-self-prompting-plan.txt
 └── results/              # 完全な実行ログ
-    ├── gemma-27b-agentic.txt
-    ├── gemma-27b-self-prompting.txt
+    ├── gemma-27b-agentic.txt                      # 初期実験
+    ├── gemma-27b-self-prompting.txt               # 初期実験（データ欠落）
+    ├── gemma-27b-self-prompting-after-template.txt # テンプレート追加後
+    ├── gemma-27b-self-prompting-simplified.txt    # シンプル化後
     ├── llm-jp-8x13b-agentic.txt
     └── llm-jp-8x13b-self-prompting.txt
 ```
