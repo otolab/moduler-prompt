@@ -10,13 +10,16 @@ import type { SelfPromptingWorkflowContext } from '../types.js';
  */
 export const planning: PromptModule<SelfPromptingWorkflowContext> = {
   terms: [
-    '- **Processing Step**: A unit of work that will be executed to accomplish the objective',
-    '  - NOT a part or section of the final deliverable',
-    '  - Example for "create a 3-month plan": Processing steps are "Research resources", "Draft weekly schedules", "Define evaluations"',
-    '  - NOT "Month 1", "Month 2", "Month 3" - these are parts of the deliverable',
-    '- **Self-contained Prompt**: Instruction text for executing one processing step',
-    '  - Includes: what to create, what data to use, requirements to follow',
-    '  - Example: "Research beginner-friendly web development resources. Focus on HTML, CSS, JavaScript. List at least 5 free online courses with brief descriptions."'
+    '- **Processing Step**: A unit of work to accomplish the objective (NOT a part of the deliverable)',
+    '- **Self-contained Prompt**: Complete instruction text for executing one step independently',
+    '  - Template structure:',
+    '    ```',
+    '    # Instructions',
+    '    [What to do, requirements]',
+    '    ',
+    '    # Data',
+    '    [All necessary data]',
+    '    ```'
   ],
 
   methodology: [
@@ -31,25 +34,25 @@ export const planning: PromptModule<SelfPromptingWorkflowContext> = {
       type: 'subsection',
       title: 'Planning Requirements',
       items: [
-        '- Break down the **Objective and Instructions shown above** into 3-5 **processing steps**',
-        '- Each processing step must have: id, prompt',
-        '  - **id**: Unique identifier (e.g., "step-1", "step-2")',
-        '  - **prompt**: Self-contained instruction text for this processing step',
-        '    - Write as a command: "Research...", "Create...", "Analyze..."',
-        '    - Include what to create or do',
-        '    - Include what information or data to use',
-        '    - Include any specific requirements',
-        '- The processing steps should accomplish the work in a logical sequence',
-        '- **Important**: When a step depends on previous steps:',
-        '  - You can reference previous steps (e.g., "based on resources from step-1")',
-        '  - The results from all previous steps will be automatically provided as reference materials',
-        '  - Each step will receive: its own prompt + results from all previous steps',
+        '- Break down the Objective and Instructions into 3-5 processing steps',
+        '- Each step must have: id, prompt',
+        '  - **id**: Unique identifier (step-1, step-2, ...)',
+        '  - **prompt**: Self-contained text following template:',
+        '    ```',
+        '    # Instructions',
+        '    [What to do]',
+        '    ',
+        '    # Data',
+        '    [All necessary data from Input Data section]',
+        '    ```',
+        '  - Include all data needed to execute the step',
+        '  - For steps depending on previous steps: mention "Results from step-X will be provided"',
         '',
-        '**CRITICAL: Output Format**',
-        '- Respond ONLY with valid JSON text',
-        '- NO explanatory text before or after the JSON',
-        '- NO markdown code blocks (```json)',
-        '- Start directly with { "steps": [ and end with ]}'
+        '**Output Format**',
+        '- Respond ONLY with valid JSON',
+        '- NO explanatory text',
+        '- NO markdown code blocks',
+        '- Start with { "steps": [ and end with ]}'
       ]
     }
   ],
@@ -59,8 +62,7 @@ export const planning: PromptModule<SelfPromptingWorkflowContext> = {
   ],
 
   cue: [
-    'Respond with a JSON-formatted execution plan.',
-    'Format: {"steps": [{"id": "step-1", "prompt": "..."}, {"id": "step-2", "prompt": "..."}, ...]}'
+    'Respond with JSON execution plan: {"steps": [{"id": "step-1", "prompt": "..."}, ...]}'
   ],
 
   schema: [
@@ -80,7 +82,7 @@ export const planning: PromptModule<SelfPromptingWorkflowContext> = {
                 },
                 prompt: {
                   type: 'string',
-                  description: 'Instruction text for AI: what to create, what data to use, requirements'
+                  description: 'Self-contained prompt text following template: "# Instructions\\n[command]\\n[requirements]\\n\\n# Data\\n[all necessary data]"'
                 },
                 actions: {
                   type: 'array',
