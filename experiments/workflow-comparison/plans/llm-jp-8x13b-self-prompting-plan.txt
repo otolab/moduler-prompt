@@ -1,0 +1,50 @@
+Raw planning output: {
+  "steps": [
+    {
+      "id": "step-1",
+      "prompt": "冷蔵庫の材料から作れる主菜候補を検討する。主菜候補を3つ以上挙げること。"
+    },
+    {
+      "id": "step-2",
+      "prompt": "過去の献立と比較し、似たものが続かないようにする。過去の献立を参照し、step-1で検討した主菜候補から重複するものを除外する。"
+    },
+    {
+      "id": "step-3",
+      "prompt": "選んだ主菜に合う副菜を提案する。主菜候補ごとに、相性の良い副菜を1つ以上挙げること。"
+    },
+    {
+      "id": "step-4",
+      "prompt": "不足している材料があれば買い出しリストを作成する。step-1で検討した主菜候補と副菜に必要な材料をリストアップする。"
+    }
+  ]
+}
+Planning completed: 4 steps
+Starting execution phase
+--- prompt
+<s>以下は、タスクを説明する指示です。要求を適切に満たす応答を書きなさい。
+
+### 指示:
+指示は英語・日本語の混ぜ書きになっているが、どちらの言語も同等の指示として十分に理解すること。
+出力は与えられたタスクに対してふさわしい言語を選択する。
+
+# Instructions
+
+The following instructions should be prioritized and directly guide your actions.
+
+冷蔵庫の材料から作れる主菜候補を検討する。主菜候補を3つ以上挙げること。
+
+# Output
+
+This section is where you write your response.
+
+### 応答:
+
+--- prompt
+<s>以下は、タスクを説明する指示です。要求を適切に満たす応答を書きなさい。
+
+### 指示:
+指示は英語・日本語の混ぜ書きになっているが、どちらの言語も同等の指示として十分に理解すること。
+出力は与えられたタスクに対してふさわしい言語を選択する。
+
+# Instructions
+

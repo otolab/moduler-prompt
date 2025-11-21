@@ -240,26 +240,29 @@ console.log('\nUsage:', finalResult.usage);
 
 ## カスタムドライバーの作成
 
-独自のドライバーを作成するには、`BaseDriver`クラスを継承します：
+独自のドライバーを作成するには、`AIDriver`インターフェースを実装します：
 
 ```typescript
-import { BaseDriver } from '@moduler-prompt/driver';
-import type { ChatMessage, QueryOptions, QueryResult } from '@moduler-prompt/driver';
+import type { AIDriver, CompiledPrompt, QueryOptions, QueryResult, StreamResult } from '@moduler-prompt/driver';
 
-export class CustomDriver extends BaseDriver {
+export class CustomDriver implements AIDriver {
+  private apiKey: string;
+  private model: string;
+
   constructor(config: CustomConfig) {
-    super();
-    // 初期化コード
-    this.preferMessageFormat = true;  // メッセージ形式を使用する場合
+    this.apiKey = config.apiKey;
+    this.model = config.model;
+    // その他の初期化コード
   }
-  
-  protected async queryWithMessages(
-    messages: ChatMessage[], 
-    options?: QueryOptions
-  ): Promise<QueryResult> {
-    // メッセージベースのAPI実装
-    const response = await yourAPI.chat(messages);
-    
+
+  async query(prompt: CompiledPrompt, options?: QueryOptions): Promise<QueryResult> {
+    // プロンプトをAPIリクエストに変換
+    const response = await yourAPI.complete({
+      prompt: prompt,
+      temperature: options?.temperature,
+      maxTokens: options?.maxTokens
+    });
+
     return {
       content: response.text,
       finishReason: 'stop',
@@ -270,17 +273,32 @@ export class CustomDriver extends BaseDriver {
       }
     };
   }
-  
-  // オプション: ストリーミングの実装
-  async *streamQuery(prompt: CompiledPrompt, options?: QueryOptions) {
-    const stream = await yourAPI.stream(prompt);
-    for await (const chunk of stream) {
-      yield chunk.text;
-    }
+
+  async streamQuery(prompt: CompiledPrompt, options?: QueryOptions): Promise<StreamResult> {
+    const stream = await yourAPI.stream(prompt, options);
+
+    // ストリーミングレスポンスを処理
+    const chunks: string[] = [];
+    const asyncIterable = {
+      async *[Symbol.asyncIterator]() {
+        for await (const chunk of stream) {
+          chunks.push(chunk.text);
+          yield chunk.text;
+        }
+      }
+    };
+
+    return {
+      stream: asyncIterable,
+      result: Promise.resolve({
+        content: chunks.join(''),
+        finishReason: 'stop'
+      })
+    };
   }
-  
-  // オプション: クリーンアップ
+
   async close(): Promise<void> {
+    // リソースのクリーンアップ
     await yourAPI.disconnect();
   }
 }
@@ -288,12 +306,17 @@ export class CustomDriver extends BaseDriver {
 
 ## フォーマッター設定
 
-ドライバーはプロンプトのフォーマット方法をカスタマイズできます：
+ドライバーはプロンプトのフォーマット方法をカスタマイズできます。FormatterOptionsを使用して、マーカー、プリアンブル、セクション説明などをカスタマイズします：
 
 ```typescript
-class CustomDriver extends BaseDriver {
-  constructor() {
-    super({
+import type { FormatterOptions } from '@moduler-prompt/driver';
+
+export class CustomDriver implements AIDriver {
+  private formatterOptions: FormatterOptions;
+
+  constructor(config: CustomConfig) {
+    // フォーマッターオプションの設定
+    this.formatterOptions = {
       preamble: 'Custom instructions for the AI',
       sectionDescriptions: {
         instructions: 'Follow these instructions carefully',
@@ -301,8 +324,18 @@ class CustomDriver extends BaseDriver {
         output: 'Generate output here'
       },
       lineBreak: '\n',
-      formatter: new CustomFormatter()  // カスタムフォーマッター
-    });
+      // 必要に応じて他のオプションも設定
+      ...config.formatterOptions
+    };
+  }
+
+  async query(prompt: CompiledPrompt, options?: QueryOptions): Promise<QueryResult> {
+    // フォーマッターを使用してプロンプトを変換
+    const formattedPrompt = formatCompletionPrompt(prompt, this.formatterOptions);
+    // または
+    const messages = formatPromptAsMessages(prompt, this.formatterOptions);
+
+    // APIに送信...
   }
 }
 ```

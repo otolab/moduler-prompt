@@ -77,14 +77,18 @@ describe('MLXDriver Utility Functions', () => {
   });
 
   describe('determineApiSelection', () => {
-    const createMockSpecManager = (canChat: boolean, canCompletion: boolean) => ({
+    const createMockSpecManager = (
+      canChat: boolean,
+      canCompletion: boolean,
+      apiResult: 'chat' | 'completion' = 'chat'
+    ) => ({
       canUseChat: () => canChat,
       canUseCompletion: () => canCompletion,
       preprocessMessages: (msgs: MlxMessage[]) => msgs,
-      determineApi: () => 'chat' as const
+      determineApi: () => apiResult
     });
 
-    it('should prefer chat when MessageElement is present and chat is available', () => {
+    it('should delegate to specManager.determineApi() for all prompts', () => {
       const prompt: CompiledPrompt = {
         instructions: [{ type: 'message', role: 'system', content: 'test' }],
         data: [],
@@ -93,30 +97,31 @@ describe('MLXDriver Utility Functions', () => {
 
       const result = determineApiSelection(
         prompt,
-        createMockSpecManager(true, true),
+        createMockSpecManager(true, true, 'chat'),
         {}
       );
 
       expect(result).toBe('chat');
     });
 
-    it('should fallback to completion when MessageElement is present but chat unavailable', () => {
+    it('should respect determineApi() result even with MessageElement', () => {
       const prompt: CompiledPrompt = {
         instructions: [{ type: 'message', role: 'system', content: 'test' }],
         data: [],
         output: []
       };
 
+      // specManager.determineApi()が'completion'を返す場合（force-completionなど）
       const result = determineApiSelection(
         prompt,
-        createMockSpecManager(false, true),
+        createMockSpecManager(true, true, 'completion'),
         {}
       );
 
       expect(result).toBe('completion');
     });
 
-    it('should use completion when no MessageElement and chat unavailable', () => {
+    it('should use determineApi() result for text-only prompts', () => {
       const prompt: CompiledPrompt = {
         instructions: [{ type: 'text', content: 'test' }],
         data: [],
@@ -125,44 +130,9 @@ describe('MLXDriver Utility Functions', () => {
 
       const result = determineApiSelection(
         prompt,
-        createMockSpecManager(false, true),
+        createMockSpecManager(true, true, 'completion'),
         {}
       );
-
-      expect(result).toBe('completion');
-    });
-
-    it('should use chat when no MessageElement and completion unavailable', () => {
-      const prompt: CompiledPrompt = {
-        instructions: [{ type: 'text', content: 'test' }],
-        data: [],
-        output: []
-      };
-
-      const result = determineApiSelection(
-        prompt,
-        createMockSpecManager(true, false),
-        {}
-      );
-
-      expect(result).toBe('chat');
-    });
-
-    it('should use model determination when both APIs available and no MessageElement', () => {
-      const prompt: CompiledPrompt = {
-        instructions: [{ type: 'text', content: 'test' }],
-        data: [],
-        output: []
-      };
-
-      const mockSpecManager = {
-        canUseChat: () => true,
-        canUseCompletion: () => true,
-        preprocessMessages: (msgs: MlxMessage[]) => msgs,
-        determineApi: () => 'completion' as const
-      };
-
-      const result = determineApiSelection(prompt, mockSpecManager, {});
 
       expect(result).toBe('completion');
     });
@@ -181,6 +151,28 @@ describe('MLXDriver Utility Functions', () => {
           {}
         );
       }).toThrow('Model supports neither chat nor completion API');
+    });
+
+    it('should call preprocessMessages before determineApi', () => {
+      const prompt: CompiledPrompt = {
+        instructions: [{ type: 'message', role: 'system', content: 'test' }],
+        data: [],
+        output: []
+      };
+
+      let preprocessCalled = false;
+      const mockSpecManager = {
+        canUseChat: () => true,
+        canUseCompletion: () => true,
+        preprocessMessages: (msgs: MlxMessage[]) => {
+          preprocessCalled = true;
+          return msgs;
+        },
+        determineApi: () => 'chat' as const
+      };
+
+      determineApiSelection(prompt, mockSpecManager, {});
+      expect(preprocessCalled).toBe(true);
     });
   });
 });
