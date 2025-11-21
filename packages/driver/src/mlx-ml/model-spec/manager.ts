@@ -32,22 +32,30 @@ export class ModelSpecManager {
     // プリセット設定を取得（customSpecは渡さない - 優先度を明示的に制御）
     const presetSpec = mergeWithPreset(modelName);
 
-    // 明示的な優先度でマージ: customSpec > presetSpec > デフォルト
-    // apiStrategy: カスタム > プリセット > 'auto'
+    // マージ戦略（パラメータごとに異なるマージ深さを使用）:
+    //
+    // 1. apiStrategy: SHALLOW MERGE（値の完全置換）
+    //    - カスタム指定があればそれを使用、なければプリセット、なければ'auto'
     const apiStrategy = customSpec?.apiStrategy ?? presetSpec.apiStrategy ?? 'auto';
 
-    // capabilities: カスタム > プリセット > {}
+    // 2. capabilities: DEEP MERGE（プロパティごとにマージ）
+    //    - プリセットの全プロパティを保持しつつ、カスタムで上書き
+    //    - 例: プリセット{a:1, b:2} + カスタム{b:3, c:4} = {a:1, b:3, c:4}
     const capabilities = {
       ...presetSpec.capabilities,
       ...customSpec?.capabilities
     };
 
-    // chatRestrictions: カスタムで明示的に指定された場合のみ使用、未指定ならプリセット
+    // 3. chatRestrictions: SHALLOW MERGE with undefined support（完全置換 or クリア）
+    //    - customSpecでundefined指定: プリセット制限をクリア
+    //    - customSpecで値指定: その値で完全置換（プリセット無視）
+    //    - customSpec未指定: プリセットを使用
     const chatRestrictions = customSpec?.chatRestrictions !== undefined
       ? customSpec.chatRestrictions
       : presetSpec.chatRestrictions;
 
-    // customProcessor: 引数 > カスタムSpec > プリセット
+    // 4. customProcessor: SHALLOW MERGE（優先度チェーン）
+    //    - 引数 > カスタムSpec > プリセット
     const processor = customProcessor ?? customSpec?.customProcessor ?? presetSpec.customProcessor;
 
     this.spec = {
