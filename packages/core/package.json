@@ -28,7 +28,7 @@
     "clean": "rm -rf dist",
     "lint": "eslint src",
     "typecheck": "tsc --noEmit",
-    "prepublishOnly": "npm run clean && npm run build && cp ../../docs/COMPLETE_GUIDE.md ./GUIDE.md"
+    "prepublishOnly": "npm run clean && npm run build"
   },
   "devDependencies": {
     "@eslint/js": "^9.34.0",
