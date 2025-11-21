@@ -28,16 +28,34 @@ export class ModelSpecManager {
   ) {
     this.process = process;
     this.detector = new ModelCapabilityDetector(process, modelName);
-    
-    // プリセットとカスタム設定をマージ
-    const baseSpec = mergeWithPreset(modelName, customSpec);
-    
-    // デフォルト値を設定
+
+    // プリセット設定を取得（customSpecは渡さない - 優先度を明示的に制御）
+    const presetSpec = mergeWithPreset(modelName);
+
+    // 明示的な優先度でマージ: customSpec > presetSpec > デフォルト
+    // apiStrategy: カスタム > プリセット > 'auto'
+    const apiStrategy = customSpec?.apiStrategy ?? presetSpec.apiStrategy ?? 'auto';
+
+    // capabilities: カスタム > プリセット > {}
+    const capabilities = {
+      ...presetSpec.capabilities,
+      ...customSpec?.capabilities
+    };
+
+    // chatRestrictions: カスタムで明示的に指定された場合のみ使用、未指定ならプリセット
+    const chatRestrictions = customSpec?.chatRestrictions !== undefined
+      ? customSpec.chatRestrictions
+      : presetSpec.chatRestrictions;
+
+    // customProcessor: 引数 > カスタムSpec > プリセット
+    const processor = customProcessor ?? customSpec?.customProcessor ?? presetSpec.customProcessor;
+
     this.spec = {
       modelName,
-      apiStrategy: 'auto',
-      ...baseSpec,
-      customProcessor: customProcessor || baseSpec.customProcessor,
+      apiStrategy,
+      capabilities,
+      chatRestrictions,
+      customProcessor: processor,
       validatedPatterns: new Map()
     };
   }
@@ -47,24 +65,20 @@ export class ModelSpecManager {
    */
   async initialize(): Promise<void> {
     if (this.initialized) return;
-    
+
     // 動的に能力を検出
     const detectedSpec = await this.detector.detectCapabilities();
-    
-    // 検出結果をマージ（既存の設定を優先）
+
+    // capabilitiesのみ検出結果とマージ
+    // apiStrategyとchatRestrictionsはconstructorで設定済みの値を保持
     this.spec = {
-      ...detectedSpec,
       ...this.spec,
       capabilities: {
-        ...detectedSpec.capabilities,
-        ...this.spec.capabilities
-      },
-      chatRestrictions: {
-        ...detectedSpec.chatRestrictions,
-        ...this.spec.chatRestrictions
+        ...this.spec.capabilities,
+        ...detectedSpec.capabilities
       }
     };
-    
+
     this.initialized = true;
   }
   

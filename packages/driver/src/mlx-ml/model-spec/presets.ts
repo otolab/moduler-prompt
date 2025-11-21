@@ -107,32 +107,23 @@ export function findPreset(modelName: string): ModelSpecPreset | undefined {
 }
 
 /**
- * プリセットとカスタム設定をマージ
+ * モデル名からプリセット設定を取得
+ *
+ * マージは呼び出し側で明示的に行うため、ここではプリセットのみを返す
  */
 export function mergeWithPreset(
   modelName: string,
   customSpec?: Partial<import('./types.js').ModelSpec>
 ): Partial<import('./types.js').ModelSpec> {
   const preset = findPreset(modelName);
-  
+
   if (!preset) {
     return customSpec || {};
   }
-  
-  // プリセットとカスタム設定をマージ（カスタムが優先）
+
+  // プリセット設定をそのまま返す（マージは呼び出し側で明示的に制御）
   return {
     ...preset.spec,
-    ...customSpec,
-    modelName,
-    // chatRestrictionsは深いマージ
-    chatRestrictions: {
-      ...preset.spec.chatRestrictions,
-      ...customSpec?.chatRestrictions
-    },
-    // capabilitiesも深いマージ
-    capabilities: {
-      ...preset.spec.capabilities,
-      ...customSpec?.capabilities
-    }
+    modelName
   };
 }
