@@ -1,6 +1,6 @@
 {
   "name": "@moduler-prompt/core",
-  "version": "0.1.6",
+  "version": "0.1.7",
   "description": "Core module for modular prompt framework",
   "type": "module",
   "main": "./dist/index.js",
@@ -28,7 +28,7 @@
     "clean": "rm -rf dist",
     "lint": "eslint src",
     "typecheck": "tsc --noEmit",
-    "prepack": "npm run clean && npm run build && cp ../../docs/COMPLETE_GUIDE.md ./GUIDE.md"
+    "prepublishOnly": "npm run clean && npm run build && cp ../../docs/COMPLETE_GUIDE.md ./GUIDE.md"
   },
   "devDependencies": {
     "@eslint/js": "^9.34.0",

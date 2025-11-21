@@ -1,6 +1,6 @@
 {
   "name": "@moduler-prompt/process",
-  "version": "0.1.7",
+  "version": "0.1.8",
   "description": "Process module for modular prompt framework",
   "type": "module",
   "main": "./dist/index.js",
@@ -32,7 +32,7 @@
     "clean": "rm -rf dist tsconfig.tsbuildinfo",
     "lint": "eslint src",
     "typecheck": "tsc --noEmit",
-    "prepack": "npm run clean && npm run build:deps && npm run build",
+    "prepublishOnly": "npm run clean && npm run build:deps && npm run build",
     "build:deps": "npm run build -w @moduler-prompt/core -w @moduler-prompt/driver"
   },
   "dependencies": {
