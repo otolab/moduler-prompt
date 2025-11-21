@@ -1,6 +1,6 @@
 {
   "name": "@moduler-prompt/process",
-  "version": "0.1.6",
+  "version": "0.1.7",
   "description": "Process module for modular prompt framework",
   "type": "module",
   "main": "./dist/index.js",
