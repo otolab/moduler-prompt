@@ -107,32 +107,40 @@ export function findPreset(modelName: string): ModelSpecPreset | undefined {
 }
 
 /**
- * プリセットとカスタム設定をマージ
+ * モデル名からプリセット設定を取得
+ *
+ * マージは呼び出し側で明示的に行うため、ここではプリセットのみを返す
+ */
+export function getPresetSpec(
+  modelName: string
+): Partial<import('./types.js').ModelSpec> {
+  const preset = findPreset(modelName);
+
+  if (!preset) {
+    return {};
+  }
+
+  // プリセット設定をそのまま返す（マージは呼び出し側で明示的に制御）
+  return {
+    ...preset.spec,
+    modelName
+  };
+}
+
+/**
+ * @deprecated Use getPresetSpec() instead. This function name is misleading.
+ * 後方互換性のため残しているが、新しいコードでは getPresetSpec() を使用してください
  */
 export function mergeWithPreset(
   modelName: string,
   customSpec?: Partial<import('./types.js').ModelSpec>
 ): Partial<import('./types.js').ModelSpec> {
-  const preset = findPreset(modelName);
-  
-  if (!preset) {
-    return customSpec || {};
+  const presetSpec = getPresetSpec(modelName);
+
+  if (!customSpec) {
+    return presetSpec;
   }
-  
-  // プリセットとカスタム設定をマージ（カスタムが優先）
-  return {
-    ...preset.spec,
-    ...customSpec,
-    modelName,
-    // chatRestrictionsは深いマージ
-    chatRestrictions: {
-      ...preset.spec.chatRestrictions,
-      ...customSpec?.chatRestrictions
-    },
-    // capabilitiesも深いマージ
-    capabilities: {
-      ...preset.spec.capabilities,
-      ...customSpec?.capabilities
-    }
-  };
+
+  // 後方互換性: customSpecが渡された場合は単純に返す
+  return customSpec;
 }

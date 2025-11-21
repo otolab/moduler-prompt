@@ -6,7 +6,7 @@
 
 import type { MlxMessage } from '../process/types.js';
 import type { ModelSpec, ApiStrategy, ModelCustomProcessor } from './types.js';
-import { mergeWithPreset } from './presets.js';
+import { getPresetSpec } from './presets.js';
 import { ModelCapabilityDetector } from './detector.js';
 import { MessageValidator } from './validator.js';
 import type { MlxProcess } from '../process/index.js';
@@ -28,16 +28,42 @@ export class ModelSpecManager {
   ) {
     this.process = process;
     this.detector = new ModelCapabilityDetector(process, modelName);
-    
-    // プリセットとカスタム設定をマージ
-    const baseSpec = mergeWithPreset(modelName, customSpec);
-    
-    // デフォルト値を設定
+
+    // プリセット設定を取得（優先度を明示的に制御）
+    const presetSpec = getPresetSpec(modelName);
+
+    // マージ戦略（パラメータごとに異なるマージ深さを使用）:
+    //
+    // 1. apiStrategy: SHALLOW MERGE（値の完全置換）
+    //    - カスタム指定があればそれを使用、なければプリセット、なければ'auto'
+    const apiStrategy = customSpec?.apiStrategy ?? presetSpec.apiStrategy ?? 'auto';
+
+    // 2. capabilities: DEEP MERGE（プロパティごとにマージ）
+    //    - プリセットの全プロパティを保持しつつ、カスタムで上書き
+    //    - 例: プリセット{a:1, b:2} + カスタム{b:3, c:4} = {a:1, b:3, c:4}
+    const capabilities = {
+      ...presetSpec.capabilities,
+      ...customSpec?.capabilities
+    };
+
+    // 3. chatRestrictions: SHALLOW MERGE with undefined support（完全置換 or クリア）
+    //    - customSpecでundefined指定: プリセット制限をクリア
+    //    - customSpecで値指定: その値で完全置換（プリセット無視）
+    //    - customSpec未指定: プリセットを使用
+    const chatRestrictions = customSpec?.chatRestrictions !== undefined
+      ? customSpec.chatRestrictions
+      : presetSpec.chatRestrictions;
+
+    // 4. customProcessor: SHALLOW MERGE（優先度チェーン）
+    //    - 引数 > カスタムSpec > プリセット
+    const processor = customProcessor ?? customSpec?.customProcessor ?? presetSpec.customProcessor;
+
     this.spec = {
       modelName,
-      apiStrategy: 'auto',
-      ...baseSpec,
-      customProcessor: customProcessor || baseSpec.customProcessor,
+      apiStrategy,
+      capabilities,
+      chatRestrictions,
+      customProcessor: processor,
       validatedPatterns: new Map()
     };
   }
@@ -47,24 +73,20 @@ export class ModelSpecManager {
    */
   async initialize(): Promise<void> {
     if (this.initialized) return;
-    
+
     // 動的に能力を検出
     const detectedSpec = await this.detector.detectCapabilities();
-    
-    // 検出結果をマージ（既存の設定を優先）
+
+    // capabilitiesのみ検出結果とマージ
+    // apiStrategyとchatRestrictionsはconstructorで設定済みの値を保持
     this.spec = {
-      ...detectedSpec,
       ...this.spec,
       capabilities: {
-        ...detectedSpec.capabilities,
-        ...this.spec.capabilities
-      },
-      chatRestrictions: {
-        ...detectedSpec.chatRestrictions,
-        ...this.spec.chatRestrictions
+        ...this.spec.capabilities,
+        ...detectedSpec.capabilities
       }
     };
-    
+
     this.initialized = true;
   }
   

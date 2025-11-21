@@ -257,4 +257,102 @@ describe('ModelSpecManager', () => {
       expect(manager.canUseCompletion()).toBe(false);
     });
   });
+
+  describe('custom spec override (Issue #29)', () => {
+    const createMockProcess = () => ({
+      ensureInitialized: vi.fn(),
+      getCapabilities: vi.fn().mockResolvedValue({
+        features: {
+          apply_chat_template: true
+        },
+        special_tokens: {}
+      }),
+      formatTest: vi.fn().mockResolvedValue({
+        success: true
+      }),
+      chat: vi.fn(),
+      completion: vi.fn(),
+      exit: vi.fn()
+    }) as any;
+
+    it('force-completion should override preset prefer-chat', async () => {
+      const process = createMockProcess();
+      const manager = new ModelSpecManager(
+        'gemma-2-2b-it-4bit',
+        process,
+        { apiStrategy: 'force-completion' }
+      );
+
+      await manager.initialize();
+
+      const api = manager.determineApi([
+        { role: 'user', content: 'test' }
+      ]);
+
+      expect(api).toBe('completion');
+      expect(manager.getSpec().apiStrategy).toBe('force-completion');
+    });
+
+    it('chatRestrictions: undefined should clear preset restrictions', async () => {
+      const process = createMockProcess();
+      const manager = new ModelSpecManager(
+        'gemma-2-2b-it-4bit',
+        process,
+        { chatRestrictions: undefined }
+      );
+
+      await manager.initialize();
+
+      const spec = manager.getSpec();
+      expect(spec.chatRestrictions).toBeUndefined();
+    });
+
+    it('custom apiStrategy should not be overwritten by initialize()', async () => {
+      const process = createMockProcess();
+      const manager = new ModelSpecManager(
+        'gemma-2-2b-it-4bit',
+        process,
+        { apiStrategy: 'force-completion' }
+      );
+
+      // Before initialize
+      expect(manager.getSpec().apiStrategy).toBe('force-completion');
+
+      await manager.initialize();
+
+      // After initialize - should still be force-completion
+      const spec = manager.getSpec();
+      expect(spec.apiStrategy).toBe('force-completion');
+    });
+
+    it('custom chatRestrictions should override preset', () => {
+      const process = createMockProcess();
+      const customRestrictions = {
+        requiresUserLast: false
+      };
+      const manager = new ModelSpecManager(
+        'gemma-2-2b-it-4bit',
+        process,
+        { chatRestrictions: customRestrictions }
+      );
+
+      const spec = manager.getSpec();
+      expect(spec.chatRestrictions).toEqual(customRestrictions);
+    });
+
+    it('custom capabilities should be merged with preset', () => {
+      const process = createMockProcess();
+      const customCapabilities = {
+        hasApplyChatTemplate: false
+      };
+      const manager = new ModelSpecManager(
+        'test-model',
+        process,
+        { capabilities: customCapabilities }
+      );
+
+      const spec = manager.getSpec();
+      expect(spec.capabilities?.hasApplyChatTemplate).toBe(false);
+    });
+  });
 });
