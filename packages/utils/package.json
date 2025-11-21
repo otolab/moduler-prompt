@@ -1,6 +1,6 @@
 {
   "name": "@moduler-prompt/utils",
-  "version": "0.1.2",
+  "version": "0.1.3",
   "description": "Utility functions for moduler-prompt",
   "type": "module",
   "main": "./dist/index.js",
@@ -22,7 +22,7 @@
     "lint": "eslint src",
     "typecheck": "tsc --noEmit",
     "clean": "rm -rf dist",
-    "prepack": "npm run clean && npm run build"
+    "prepublishOnly": "npm run clean && npm run build"
   },
   "dependencies": {
     "@moduler-prompt/core": "^0.1.2",
