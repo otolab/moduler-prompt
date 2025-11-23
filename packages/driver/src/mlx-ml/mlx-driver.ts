@@ -6,7 +6,7 @@ import { formatCompletionPrompt } from '../formatter/completion-formatter.js';
 import { MlxProcess } from './process/index.js';
 import type { MlxMessage, MlxMlModelOptions } from './types.js';
 import type { MlxCapabilities } from './process/types.js';
-import type { ModelSpec, ModelCustomProcessor } from './model-spec/types.js';
+import type { MlxModelConfig, ModelCustomProcessor } from './model-spec/types.js';
 import { createModelSpecificProcessor } from './process/model-specific.js';
 import type { CompiledPrompt } from '@moduler-prompt/core';
 import { extractJSON } from '@moduler-prompt/utils';
@@ -81,7 +81,7 @@ export function determineApiSelection(
 export interface MlxDriverConfig {
   model: string;
   defaultOptions?: Partial<MlxMlModelOptions>;
-  modelSpec?: Partial<ModelSpec>;
+  modelConfig?: Partial<MlxModelConfig>;
   customProcessor?: ModelCustomProcessor;
   formatterOptions?: FormatterOptions;
 }
@@ -138,7 +138,7 @@ export class MlxDriver implements AIDriver {
     this.model = config.model;
     this.defaultOptions = config.defaultOptions || {};
     this.formatterOptions = config.formatterOptions || {};
-    this.process = new MlxProcess(config.model, config.modelSpec, config.customProcessor);
+    this.process = new MlxProcess(config.model, config.modelConfig, config.customProcessor);
     this.modelProcessor = createModelSpecificProcessor(config.model);
   }
 
@@ -173,8 +173,8 @@ export class MlxDriver implements AIDriver {
     mlxOptions: MlxMlModelOptions
   ): Promise<Readable> {
     // APIを選択
-    const specManager = this.process.getSpecManager();
-    const api = determineApiSelection(prompt, specManager, this.formatterOptions);
+    const configManager = this.process.getConfigManager();
+    const api = determineApiSelection(prompt, configManager, this.formatterOptions);
 
     let stream: Readable;
     if (api === 'completion') {
@@ -187,7 +187,7 @@ export class MlxDriver implements AIDriver {
       // chat APIを使用 - メッセージ変換して処理
       const messages = formatPromptAsMessages(prompt, this.formatterOptions);
       const mlxMessages = convertMessages(messages);
-      let processedMessages = specManager.preprocessMessages(mlxMessages);
+      let processedMessages = configManager.preprocessMessages(mlxMessages);
       // chat APIではチャット処理を適用
       processedMessages = this.modelProcessor.applyChatSpecificProcessing(processedMessages);
       stream = await this.process.chat(processedMessages, undefined, mlxOptions);

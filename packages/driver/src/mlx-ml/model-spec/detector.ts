@@ -5,7 +5,7 @@
  */
 
 import type { MlxMessage } from '../process/types.js';
-import type { ModelSpec, ChatRestrictions } from './types.js';
+import type { MlxModelConfig, ChatRestrictions } from './types.js';
 import { MessageValidator } from './validator.js';
 import type { MlxProcess } from '../process/index.js';
 
@@ -33,8 +33,8 @@ export class ModelCapabilityDetector {
   /**
    * モデルの特性を自動検出
    */
-  async detectCapabilities(): Promise<Partial<ModelSpec>> {
-    const spec: Partial<ModelSpec> = {
+  async detectCapabilities(): Promise<Partial<MlxModelConfig>> {
+    const config: Partial<MlxModelConfig> = {
       modelName: this.modelName
     };
     
@@ -42,28 +42,28 @@ export class ModelCapabilityDetector {
     try {
       const capabilities = await this.process.getCapabilities();
       
-      spec.capabilities = {
+      config.capabilities = {
         hasApplyChatTemplate: capabilities.features.apply_chat_template,
         supportsCompletion: true, // デフォルトでtrueと仮定
         specialTokens: capabilities.special_tokens
       };
-      
+
       // チャットテンプレートがある場合、制限を検出
       if (capabilities.features.apply_chat_template) {
-        spec.chatRestrictions = await this.detectChatRestrictions();
+        config.chatRestrictions = await this.detectChatRestrictions();
       }
-      
+
       // completionが使えるかテスト
-      spec.capabilities.supportsCompletion = await this.testCompletionSupport();
-      
+      config.capabilities.supportsCompletion = await this.testCompletionSupport();
+
       // API戦略の決定
-      spec.apiStrategy = this.determineApiStrategy(spec);
-      
+      config.apiStrategy = this.determineApiStrategy(config);
+
     } catch (error) {
       console.error('Failed to detect capabilities:', error);
     }
-    
-    return spec;
+
+    return config;
   }
   
   /**
@@ -108,10 +108,10 @@ export class ModelCapabilityDetector {
   /**
    * API戦略を決定
    */
-  private determineApiStrategy(spec: Partial<ModelSpec>): ModelSpec['apiStrategy'] {
-    const hasChat = spec.capabilities?.hasApplyChatTemplate;
-    const hasCompletion = spec.capabilities?.supportsCompletion;
-    const restrictions = spec.chatRestrictions;
+  private determineApiStrategy(config: Partial<MlxModelConfig>): MlxModelConfig['apiStrategy'] {
+    const hasChat = config.capabilities?.hasApplyChatTemplate;
+    const hasCompletion = config.capabilities?.supportsCompletion;
+    const restrictions = config.chatRestrictions;
     
     // 両方使える場合
     if (hasChat && hasCompletion) {

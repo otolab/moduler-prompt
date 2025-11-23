@@ -1,19 +1,19 @@
 /**
- * MLX Driver Model Presets
- * 
- * よく知られたモデルの事前定義済み仕様
+ * MLX Driver Model Config Presets
+ *
+ * よく知られたモデルの事前定義済み設定
  */
 
-import type { ModelSpecPreset } from './types.js';
+import type { MlxModelConfigPreset } from './types.js';
 
 /**
  * よく知られたモデルのプリセット定義
  */
-export const MODEL_PRESETS: ModelSpecPreset[] = [
+export const MODEL_CONFIG_PRESETS: MlxModelConfigPreset[] = [
   // Gemma-3シリーズ
   {
     pattern: /gemma-3/i,
-    spec: {
+    config: {
       apiStrategy: 'prefer-chat',
       chatRestrictions: {
         singleSystemAtStart: true,
@@ -23,11 +23,11 @@ export const MODEL_PRESETS: ModelSpecPreset[] = [
       }
     }
   },
-  
+
   // CodeLlamaシリーズ
   {
     pattern: /CodeLlama/i,
-    spec: {
+    config: {
       apiStrategy: 'auto',
       chatRestrictions: {
         singleSystemAtStart: true,
@@ -35,22 +35,22 @@ export const MODEL_PRESETS: ModelSpecPreset[] = [
       }
     }
   },
-  
+
   // Tanuki-8B
   {
     pattern: /Tanuki-8B-dpo-v1/i,
-    spec: {
+    config: {
       apiStrategy: 'prefer-chat',
       chatRestrictions: {
         singleSystemAtStart: true
       }
     }
   },
-  
+
   // LLM-JP (completion専用)
   {
     pattern: /llm-jp-3\.1/i,
-    spec: {
+    config: {
       apiStrategy: 'force-completion',
       capabilities: {
         hasApplyChatTemplate: false,
@@ -58,11 +58,11 @@ export const MODEL_PRESETS: ModelSpecPreset[] = [
       }
     }
   },
-  
+
   // Phi-3シリーズ
   {
     pattern: /phi-3/i,
-    spec: {
+    config: {
       apiStrategy: 'prefer-chat',
       chatRestrictions: {
         singleSystemAtStart: true,
@@ -71,11 +71,11 @@ export const MODEL_PRESETS: ModelSpecPreset[] = [
       }
     }
   },
-  
+
   // Mistralシリーズ
   {
     pattern: /mistral/i,
-    spec: {
+    config: {
       apiStrategy: 'auto',
       chatRestrictions: {
         singleSystemAtStart: false,  // 複数システムメッセージOK
@@ -84,11 +84,11 @@ export const MODEL_PRESETS: ModelSpecPreset[] = [
       }
     }
   },
-  
+
   // Qwen シリーズ
   {
     pattern: /qwen/i,
-    spec: {
+    config: {
       apiStrategy: 'prefer-chat',
       chatRestrictions: {
         singleSystemAtStart: true,
@@ -102,8 +102,8 @@ export const MODEL_PRESETS: ModelSpecPreset[] = [
 /**
  * モデル名からプリセットを検索
  */
-export function findPreset(modelName: string): ModelSpecPreset | undefined {
-  return MODEL_PRESETS.find(preset => preset.pattern.test(modelName));
+export function findPreset(modelName: string): MlxModelConfigPreset | undefined {
+  return MODEL_CONFIG_PRESETS.find(preset => preset.pattern.test(modelName));
 }
 
 /**
@@ -111,9 +111,9 @@ export function findPreset(modelName: string): ModelSpecPreset | undefined {
  *
  * マージは呼び出し側で明示的に行うため、ここではプリセットのみを返す
  */
-export function getPresetSpec(
+export function getPresetConfig(
   modelName: string
-): Partial<import('./types.js').ModelSpec> {
+): Partial<import('./types.js').MlxModelConfig> {
   const preset = findPreset(modelName);
 
   if (!preset) {
@@ -122,25 +122,7 @@ export function getPresetSpec(
 
   // プリセット設定をそのまま返す（マージは呼び出し側で明示的に制御）
   return {
-    ...preset.spec,
+    ...preset.config,
     modelName
   };
-}
-
-/**
- * @deprecated Use getPresetSpec() instead. This function name is misleading.
- * 後方互換性のため残しているが、新しいコードでは getPresetSpec() を使用してください
- */
-export function mergeWithPreset(
-  modelName: string,
-  customSpec?: Partial<import('./types.js').ModelSpec>
-): Partial<import('./types.js').ModelSpec> {
-  const presetSpec = getPresetSpec(modelName);
-
-  if (!customSpec) {
-    return presetSpec;
-  }
-
-  // 後方互換性: customSpecが渡された場合は単純に返す
-  return customSpec;
 }

@@ -1,6 +1,6 @@
 /**
  * MLX Driver Model Spec Module
- * 
+ *
  * モデル仕様管理システムのエクスポート
  */
 

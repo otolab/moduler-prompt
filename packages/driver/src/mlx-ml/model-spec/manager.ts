@@ -1,21 +1,21 @@
 /**
- * MLX Driver Model Spec Manager
- * 
- * モデル仕様の管理と適用
+ * MLX Driver Model Config Manager
+ *
+ * MLXモデル設定の管理と適用
  */
 
 import type { MlxMessage } from '../process/types.js';
-import type { ModelSpec, ApiStrategy, ModelCustomProcessor } from './types.js';
-import { getPresetSpec } from './presets.js';
+import type { MlxModelConfig, ApiStrategy, ModelCustomProcessor, ApiSelectionContext } from './types.js';
+import { getPresetConfig } from './presets.js';
 import { ModelCapabilityDetector } from './detector.js';
 import { MessageValidator } from './validator.js';
 import type { MlxProcess } from '../process/index.js';
 
 /**
- * ModelSpec管理クラス
+ * MLXモデル設定管理クラス
  */
-export class ModelSpecManager {
-  private spec: ModelSpec;
+export class MlxModelConfigManager {
+  private config: MlxModelConfig;
   private detector: ModelCapabilityDetector;
   private process: MlxProcess;
   private initialized = false;
@@ -23,42 +23,42 @@ export class ModelSpecManager {
   constructor(
     modelName: string,
     process: MlxProcess,
-    customSpec?: Partial<ModelSpec>,
+    customConfig?: Partial<MlxModelConfig>,
     customProcessor?: ModelCustomProcessor
   ) {
     this.process = process;
     this.detector = new ModelCapabilityDetector(process, modelName);
 
     // プリセット設定を取得（優先度を明示的に制御）
-    const presetSpec = getPresetSpec(modelName);
+    const presetConfig = getPresetConfig(modelName);
 
     // マージ戦略（パラメータごとに異なるマージ深さを使用）:
     //
     // 1. apiStrategy: SHALLOW MERGE（値の完全置換）
     //    - カスタム指定があればそれを使用、なければプリセット、なければ'auto'
-    const apiStrategy = customSpec?.apiStrategy ?? presetSpec.apiStrategy ?? 'auto';
+    const apiStrategy = customConfig?.apiStrategy ?? presetConfig.apiStrategy ?? 'auto';
 
     // 2. capabilities: DEEP MERGE（プロパティごとにマージ）
     //    - プリセットの全プロパティを保持しつつ、カスタムで上書き
     //    - 例: プリセット{a:1, b:2} + カスタム{b:3, c:4} = {a:1, b:3, c:4}
     const capabilities = {
-      ...presetSpec.capabilities,
-      ...customSpec?.capabilities
+      ...presetConfig.capabilities,
+      ...customConfig?.capabilities
     };
 
     // 3. chatRestrictions: SHALLOW MERGE with undefined support（完全置換 or クリア）
-    //    - customSpecでundefined指定: プリセット制限をクリア
-    //    - customSpecで値指定: その値で完全置換（プリセット無視）
-    //    - customSpec未指定: プリセットを使用
-    const chatRestrictions = customSpec?.chatRestrictions !== undefined
-      ? customSpec.chatRestrictions
-      : presetSpec.chatRestrictions;
+    //    - customConfigでundefined指定: プリセット制限をクリア
+    //    - customConfigで値指定: その値で完全置換（プリセット無視）
+    //    - customConfig未指定: プリセットを使用
+    const chatRestrictions = customConfig?.chatRestrictions !== undefined
+      ? customConfig.chatRestrictions
+      : presetConfig.chatRestrictions;
 
     // 4. customProcessor: SHALLOW MERGE（優先度チェーン）
-    //    - 引数 > カスタムSpec > プリセット
-    const processor = customProcessor ?? customSpec?.customProcessor ?? presetSpec.customProcessor;
+    //    - 引数 > カスタムConfig > プリセット
+    const processor = customProcessor ?? customConfig?.customProcessor ?? presetConfig.customProcessor;
 
-    this.spec = {
+    this.config = {
       modelName,
       apiStrategy,
       capabilities,
@@ -75,15 +75,15 @@ export class ModelSpecManager {
     if (this.initialized) return;
 
     // 動的に能力を検出
-    const detectedSpec = await this.detector.detectCapabilities();
+    const detectedConfig = await this.detector.detectCapabilities();
 
     // capabilitiesのみ検出結果とマージ
     // apiStrategyとchatRestrictionsはconstructorで設定済みの値を保持
-    this.spec = {
-      ...this.spec,
+    this.config = {
+      ...this.config,
       capabilities: {
-        ...this.spec.capabilities,
-        ...detectedSpec.capabilities
+        ...this.config.capabilities,
+        ...detectedConfig.capabilities
       }
     };
 
@@ -92,24 +92,49 @@ export class ModelSpecManager {
   
   /**
    * 使用するAPIを決定
+   *
+   * デフォルトのAPI選択ロジック:
+   * 1. カスタムロジック (customProcessor.determineApi) が優先
+   * 2. 強制モード (force-chat/force-completion)
+   * 3. 機能チェック (hasApplyChatTemplate, supportsCompletion)
+   * 4. 優先モード (prefer-chat/prefer-completion)
+   * 5. auto: メッセージ検証と制限から判断
    */
   determineApi(messages: MlxMessage[]): 'chat' | 'completion' {
-    const strategy = this.spec.apiStrategy || 'auto';
-    
+    const strategy = this.config.apiStrategy || 'auto';
+
+    // カスタムAPI選択ロジックが提供されている場合は優先
+    if (this.config.customProcessor?.determineApi) {
+      const validation = this.validateMessages(messages);
+      const context: ApiSelectionContext = {
+        messages,
+        validation,
+        capabilities: this.config.capabilities || {},
+        chatRestrictions: this.config.chatRestrictions,
+        apiStrategy: strategy
+      };
+
+      const customResult = this.config.customProcessor.determineApi(context);
+      if (customResult !== undefined) {
+        return customResult;
+      }
+      // undefined の場合はデフォルトロジックに続行
+    }
+
     // 強制モード
     if (strategy === 'force-chat') return 'chat';
     if (strategy === 'force-completion') return 'completion';
-    
+
     // チャットテンプレートがない場合
-    if (!this.spec.capabilities?.hasApplyChatTemplate) {
+    if (!this.config.capabilities?.hasApplyChatTemplate) {
       return 'completion';
     }
-    
+
     // completionが使えない場合
-    if (!this.spec.capabilities?.supportsCompletion) {
+    if (!this.config.capabilities?.supportsCompletion) {
       return 'chat';
     }
-    
+
     // 優先モード
     if (strategy === 'prefer-chat') {
       // メッセージが有効かチェック
@@ -120,25 +145,25 @@ export class ModelSpecManager {
       // 無効な場合はcompletionにフォールバック
       return 'completion';
     }
-    
+
     if (strategy === 'prefer-completion') {
       return 'completion';
     }
-    
+
     // auto: メッセージパターンと制限から判断
     const validation = this.validateMessages(messages);
-    
+
     // チャット制限に違反している場合はcompletion
-    if (!validation.valid && this.spec.capabilities.supportsCompletion) {
+    if (!validation.valid && this.config.capabilities.supportsCompletion) {
       return 'completion';
     }
-    
+
     // 制限が多い場合はcompletion優先
-    const restrictionCount = Object.keys(this.spec.chatRestrictions || {}).length;
-    if (restrictionCount >= 3 && this.spec.capabilities.supportsCompletion) {
+    const restrictionCount = Object.keys(this.config.chatRestrictions || {}).length;
+    if (restrictionCount >= 3 && this.config.capabilities.supportsCompletion) {
       return 'completion';
     }
-    
+
     return 'chat';
   }
   
@@ -147,97 +172,97 @@ export class ModelSpecManager {
    */
   validateMessages(messages: MlxMessage[]) {
     // カスタムバリデーターがあれば使用
-    if (this.spec.customProcessor?.validateMessages) {
-      return this.spec.customProcessor.validateMessages(messages);
+    if (this.config.customProcessor?.validateMessages) {
+      return this.config.customProcessor.validateMessages(messages);
     }
-    
+
     // キャッシュチェック
     const key = JSON.stringify(messages);
-    const cached = this.spec.validatedPatterns?.get(key);
+    const cached = this.config.validatedPatterns?.get(key);
     if (cached) return cached;
-    
+
     // 標準バリデーション
     const result = MessageValidator.validateMessages(
       messages,
-      this.spec.chatRestrictions || {}
+      this.config.chatRestrictions || {}
     );
-    
+
     // キャッシュに保存
-    this.spec.validatedPatterns?.set(key, result);
-    
+    this.config.validatedPatterns?.set(key, result);
+
     return result;
   }
-  
+
   /**
    * メッセージの前処理
    */
   preprocessMessages(messages: MlxMessage[]): MlxMessage[] {
     // カスタムプロセッサーがあれば使用
-    if (this.spec.customProcessor?.preprocessMessages) {
-      return this.spec.customProcessor.preprocessMessages(messages);
+    if (this.config.customProcessor?.preprocessMessages) {
+      return this.config.customProcessor.preprocessMessages(messages);
     }
-    
+
     // バリデーション結果に基づいて修正
     const validation = this.validateMessages(messages);
     if (!validation.valid && validation.suggestedFixes) {
       // 自動修正を適用したことを警告
       console.warn('[MLX Driver] メッセージを自動修正しました:');
-      
+
       // エラーを表示
       if (validation.errors) {
         validation.errors.forEach(error => {
           console.warn(`  エラー: ${error}`);
         });
       }
-      
+
       // 適用された修正を表示
       if (validation.appliedFixes) {
         validation.appliedFixes.forEach(fix => {
           console.warn(`  修正: ${fix}`);
         });
       }
-      
+
       return validation.suggestedFixes;
     }
-    
+
     // 警告のみの場合も表示
     if (validation.warnings) {
       validation.warnings.forEach(warning => {
         console.warn(`[MLX Driver] 警告: ${warning}`);
       });
     }
-    
+
     return messages;
   }
-  
+
   /**
    * completionプロンプトの前処理
    */
   preprocessCompletion(prompt: string): string {
-    if (this.spec.customProcessor?.preprocessCompletion) {
-      return this.spec.customProcessor.preprocessCompletion(prompt);
+    if (this.config.customProcessor?.preprocessCompletion) {
+      return this.config.customProcessor.preprocessCompletion(prompt);
     }
     return prompt;
   }
 
   /**
-   * スペック情報の取得
+   * 設定情報の取得
    */
-  getSpec(): Readonly<ModelSpec> {
-    return this.spec;
+  getConfig(): Readonly<MlxModelConfig> {
+    return this.config;
   }
-  
+
   /**
    * chat APIが使用可能か
    */
   canUseChat(): boolean {
-    return this.spec.capabilities?.hasApplyChatTemplate || false;
+    return this.config.capabilities?.hasApplyChatTemplate || false;
   }
-  
+
   /**
-   * completion APIが使用可能か  
+   * completion APIが使用可能か
    */
   canUseCompletion(): boolean {
-    return this.spec.capabilities?.supportsCompletion !== false;
+    return this.config.capabilities?.supportsCompletion !== false;
   }
 }

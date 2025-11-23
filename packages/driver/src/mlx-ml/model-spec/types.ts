@@ -38,17 +38,82 @@ export interface ValidationResult {
 }
 
 /**
+ * MLXモデルの機能情報
+ */
+export interface MlxCapabilities {
+  /** chat template機能が利用可能か */
+  hasApplyChatTemplate?: boolean;
+
+  /** completion API対応か */
+  supportsCompletion?: boolean;
+
+  /** 特殊トークン情報 */
+  specialTokens?: Record<string, any>;
+}
+
+/**
+ * API選択のコンテキスト情報
+ *
+ * customProcessor.determineApi()に渡されるコンテキスト
+ */
+export interface ApiSelectionContext {
+  /** 処理対象のメッセージ */
+  messages: MlxMessage[];
+
+  /** メッセージの検証結果 */
+  validation: ValidationResult;
+
+  /** モデルの機能情報 */
+  capabilities: MlxCapabilities;
+
+  /** チャット制限 */
+  chatRestrictions?: ChatRestrictions;
+
+  /** 設定されたapiStrategy */
+  apiStrategy: ApiStrategy;
+}
+
+/**
  * モデル固有の処理カスタマイザー
  */
 export interface ModelCustomProcessor {
   /** メッセージの前処理 */
   preprocessMessages?: (messages: MlxMessage[]) => MlxMessage[];
-  
+
   /** completionプロンプトの前処理 */
   preprocessCompletion?: (prompt: string) => string;
 
   /** メッセージの検証 */
   validateMessages?: (messages: MlxMessage[]) => ValidationResult;
+
+  /**
+   * カスタムAPI選択ロジック
+   *
+   * @param context - API選択に必要なコンテキスト情報
+   * @returns 'chat' | 'completion' | undefined
+   *          - 'chat' または 'completion' を返すと、その値が優先される
+   *          - undefined を返すと、デフォルトのAPI選択ロジックが実行される
+   *
+   * @example
+   * ```typescript
+   * determineApi: (context) => {
+   *   // system → user → system(cue) パターンを検出
+   *   const hasCuePattern =
+   *     context.messages.length >= 3 &&
+   *     context.messages[0].role === 'system' &&
+   *     context.messages[context.messages.length - 1].role === 'system';
+   *
+   *   // このパターンがあり、singleSystemAtStart制限がある場合
+   *   if (hasCuePattern && context.chatRestrictions?.singleSystemAtStart) {
+   *     return 'completion';  // completionを強制
+   *   }
+   *
+   *   // それ以外はデフォルトロジックに委譲
+   *   return undefined;
+   * }
+   * ```
+   */
+  determineApi?: (context: ApiSelectionContext) => 'chat' | 'completion' | undefined;
 }
 
 /**
@@ -62,36 +127,35 @@ export type ApiStrategy =
   | 'force-completion'; // 常にcompletion
 
 /**
- * モデル仕様
+ * MLXモデルの設定と動作仕様
  */
-export interface ModelSpec {
+export interface MlxModelConfig {
   /** モデル名/ID */
   modelName: string;
-  
+
   /** 動的に取得される機能情報 */
-  capabilities?: {
-    hasApplyChatTemplate?: boolean;
-    supportsCompletion?: boolean;
-    specialTokens?: Record<string, any>;
-  };
-  
+  capabilities?: MlxCapabilities;
+
   /** API選択戦略 */
   apiStrategy?: ApiStrategy;
-  
+
   /** チャットテンプレートの制限 */
   chatRestrictions?: ChatRestrictions;
-  
+
   /** カスタム処理（外部から注入可能） */
   customProcessor?: ModelCustomProcessor;
-  
+
   /** 検証済みパターンのキャッシュ */
   validatedPatterns?: Map<string, ValidationResult>;
 }
 
 /**
- * モデル仕様のプリセット（よく知られたモデル用）
+ * MLXモデル設定のプリセット（よく知られたモデル用）
  */
-export interface ModelSpecPreset {
-  pattern: RegExp;  // モデル名にマッチするパターン
-  spec: Partial<ModelSpec>;
+export interface MlxModelConfigPreset {
+  /** モデル名にマッチするパターン */
+  pattern: RegExp;
+
+  /** プリセット設定 */
+  config: Partial<MlxModelConfig>;
 }
