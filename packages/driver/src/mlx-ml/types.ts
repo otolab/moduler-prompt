@@ -5,6 +5,7 @@
  */
 
 import type { SpecialToken, SpecialTokenPair } from '../formatter/types.js';
+import type { ChatRestrictions, ApiStrategy } from './model-spec/index.js';
 
 /**
  * MLX message format
@@ -29,25 +30,8 @@ export interface MlxMlModelOptions {
   [key: string]: number | undefined;
 }
 
-/**
- * チャットテンプレートの制限事項
- */
-export interface ChatRestrictions {
-  /** systemメッセージは先頭に1つだけ */
-  singleSystemAtStart?: boolean;
-
-  /** user/assistantメッセージが交互に出現する必要がある */
-  alternatingTurns?: boolean;
-
-  /** 最後のメッセージはuserでなければならない */
-  requiresUserLast?: boolean;
-
-  /** システムメッセージの最大数 */
-  maxSystemMessages?: number;
-
-  /** 空のメッセージを許可するか */
-  allowEmptyMessages?: boolean;
-}
+// Re-export from model-spec
+export type { ChatRestrictions, ApiStrategy };
 
 /**
  * チャットテンプレート情報
@@ -94,11 +78,3 @@ export interface MlxModelCapabilities {
   /** チャットの制約（Pythonから取得 + 静的知識） */
   chatRestrictions?: ChatRestrictions;
 }
-
-/**
- * API選択戦略
- */
-export type ApiStrategy =
-  | 'auto'              // 自動判定
-  | 'force-chat'        // 常にchat API
-  | 'force-completion'; // 常にcompletion API
