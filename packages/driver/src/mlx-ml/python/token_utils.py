@@ -2,6 +2,7 @@
 トークン関連のユーティリティ関数
 """
 import sys
+from chat_template_constraints import detect_chat_restrictions
 
 
 def is_eod_token(response, tokenizer):
@@ -236,21 +237,26 @@ def get_tokenizer_features(tokenizer):
 def get_capabilities(tokenizer):
     """
     tokenizerの全機能情報を取得する（capabilities API用）
-    
+
     Returns:
         dict: capabilities情報
     """
     # 基本メソッド
     methods = ["capabilities", "completion", "format_test"]
-    
+
     # apply_chat_templateがある場合はchatメソッドを追加
     if hasattr(tokenizer, 'apply_chat_template'):
         methods.append("chat")
-    
+
     capabilities = {
         "methods": methods,
         "special_tokens": get_special_tokens(tokenizer),
         "features": get_tokenizer_features(tokenizer)
     }
-    
+
+    # チャット制約を検出して追加
+    chat_restrictions = detect_chat_restrictions(tokenizer)
+    if chat_restrictions:
+        capabilities["chat_restrictions"] = chat_restrictions
+
     return capabilities
