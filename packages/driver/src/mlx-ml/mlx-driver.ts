@@ -6,7 +6,6 @@ import { formatCompletionPrompt } from '../formatter/completion-formatter.js';
 import { MlxProcess } from './process/index.js';
 import type { MlxMessage, MlxMlModelOptions, MlxModelCapabilities } from './types.js';
 import type { MlxRuntimeInfo } from './process/types.js';
-import type { MlxModelConfig, ModelCustomProcessor } from './model-spec/types.js';
 import { createModelSpecificProcessor } from './process/model-specific.js';
 import type { CompiledPrompt } from '@moduler-prompt/core';
 import { extractJSON } from '@moduler-prompt/utils';
@@ -42,35 +41,6 @@ export function convertMessages(messages: ChatMessage[]): MlxMessage[] {
   }));
 }
 
-/**
- * Determine which API to use based on prompt and model capabilities
- * Exported for testing purposes
- */
-export function determineApiSelection(
-  prompt: CompiledPrompt,
-  specManager: {
-    canUseChat: () => boolean;
-    canUseCompletion: () => boolean;
-    preprocessMessages: (messages: MlxMessage[]) => MlxMessage[];
-    determineApi: (messages: MlxMessage[]) => 'chat' | 'completion';
-  },
-  formatterOptions: FormatterOptions
-): 'chat' | 'completion' {
-  const canUseChat = specManager.canUseChat();
-  const canUseCompletion = specManager.canUseCompletion();
-
-  if (!canUseChat && !canUseCompletion) {
-    throw new Error('Model supports neither chat nor completion API');
-  }
-
-  // apiStrategyを常に考慮するため、specManager.determineApi()に判定を委譲
-  // MessageElementの有無に関わらず、モデルの設定を尊重する
-  const messages = formatPromptAsMessages(prompt, formatterOptions);
-  const mlxMessages = convertMessages(messages);
-  const preprocessedMessages = specManager.preprocessMessages(mlxMessages);
-  return specManager.determineApi(preprocessedMessages);
-}
-
 // ========================================================================
 // Main Class
 // ========================================================================
@@ -81,8 +51,6 @@ export function determineApiSelection(
 export interface MlxDriverConfig {
   model: string;
   defaultOptions?: Partial<MlxMlModelOptions>;
-  modelConfig?: Partial<MlxModelConfig>;
-  customProcessor?: ModelCustomProcessor;
   formatterOptions?: FormatterOptions;
 }
 
@@ -138,7 +106,7 @@ export class MlxDriver implements AIDriver {
     this.model = config.model;
     this.defaultOptions = config.defaultOptions || {};
     this.formatterOptions = config.formatterOptions || {};
-    this.process = new MlxProcess(config.model, config.modelConfig, config.customProcessor);
+    this.process = new MlxProcess(config.model);
     this.modelProcessor = createModelSpecificProcessor(config.model);
   }
 
@@ -163,6 +131,20 @@ export class MlxDriver implements AIDriver {
       }
     }
   }
+
+  /**
+   * Determine which API to use (chat or completion)
+   * Simple logic based on runtime info only
+   */
+  private determineApi(options?: QueryOptions): 'chat' | 'completion' {
+    const strategy = options?.apiStrategy || 'auto';
+
+    if (strategy === 'force-completion') return 'completion';
+    if (strategy === 'force-chat') return 'chat';
+
+    // auto: use chat if chat template is available
+    return this.runtimeInfo?.features.apply_chat_template ? 'chat' : 'completion';
+  }
   
   /**
    * Execute query and return stream
@@ -170,11 +152,11 @@ export class MlxDriver implements AIDriver {
    */
   private async executeQuery(
     prompt: CompiledPrompt,
-    mlxOptions: MlxMlModelOptions
+    mlxOptions: MlxMlModelOptions,
+    options?: QueryOptions
   ): Promise<Readable> {
     // APIを選択
-    const configManager = this.process.getConfigManager();
-    const api = determineApiSelection(prompt, configManager, this.formatterOptions);
+    const api = this.determineApi(options);
 
     let stream: Readable;
     if (api === 'completion') {
@@ -186,11 +168,10 @@ export class MlxDriver implements AIDriver {
     } else {
       // chat APIを使用 - メッセージ変換して処理
       const messages = formatPromptAsMessages(prompt, this.formatterOptions);
-      const mlxMessages = convertMessages(messages);
-      let processedMessages = configManager.preprocessMessages(mlxMessages);
+      let mlxMessages = convertMessages(messages);
       // chat APIではチャット処理を適用
-      processedMessages = this.modelProcessor.applyChatSpecificProcessing(processedMessages);
-      stream = await this.process.chat(processedMessages, undefined, mlxOptions);
+      mlxMessages = this.modelProcessor.applyChatSpecificProcessing(mlxMessages);
+      stream = await this.process.chat(mlxMessages, undefined, mlxOptions);
     }
 
     return stream;
@@ -230,7 +211,7 @@ export class MlxDriver implements AIDriver {
     };
 
     // Use executeQuery for the actual stream generation
-    const stream = await this.executeQuery(prompt, mlxOptions);
+    const stream = await this.executeQuery(prompt, mlxOptions, options);
 
     // Convert stream to async iterable with collection
     const { iterable, completion } = createStreamIterable(stream);

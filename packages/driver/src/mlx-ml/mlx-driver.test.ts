@@ -90,7 +90,7 @@ describe('MlxDriver', () => {
       const ensureInitialized = driver.ensureInitialized.bind(driver);
       await ensureInitialized();
 
-      expect(consoleSpy).toHaveBeenCalledWith('Failed to get MLX capabilities:', expect.any(Error));
+      expect(consoleSpy).toHaveBeenCalledWith('Failed to get MLX runtime info:', expect.any(Error));
 
       consoleSpy.mockRestore();
     });

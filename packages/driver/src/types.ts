@@ -49,6 +49,13 @@ export interface QueryOptions {
   maxTokens?: number;
   topP?: number;
   stream?: boolean;
+  /**
+   * API selection strategy (MLX driver only)
+   * - 'auto': Automatically select based on model capabilities
+   * - 'force-chat': Force chat API
+   * - 'force-completion': Force completion API
+   */
+  apiStrategy?: 'auto' | 'force-chat' | 'force-completion';
 }
 
 /**

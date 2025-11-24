@@ -12,8 +12,6 @@ import type {
   MlxRuntimeInfo,
   MlxFormatTestResult
 } from './types.js';
-import type { MlxModelConfig, ModelCustomProcessor } from '../model-spec/types.js';
-import { MlxModelConfigManager } from '../model-spec/manager.js';
 import { QueueManager, QueueManagerCallbacks } from './queue.js';
 import { ProcessCommunication, ProcessCommunicationCallbacks } from './process-communication.js';
 
@@ -30,14 +28,8 @@ export class MlxProcess {
 
   private queueManager: QueueManager;
   private processComm: ProcessCommunication;
-  private configManager: MlxModelConfigManager;
-  private initialized = false;
 
-  constructor(
-    modelName: string,
-    customConfig?: Partial<MlxModelConfig>,
-    customProcessor?: ModelCustomProcessor
-  ) {
+  constructor(modelName: string) {
     this.modelName = modelName;
 
     // コールバック設定
@@ -54,19 +46,13 @@ export class MlxProcess {
     // 各コンポーネント初期化
     this.processComm = new ProcessCommunication(modelName, processCallbacks);
     this.queueManager = new QueueManager(queueCallbacks);
-
-    // MlxModelConfigManager初期化（thisを渡すため後で初期化）
-    this.configManager = new MlxModelConfigManager(modelName, this, customConfig, customProcessor);
   }
 
   /**
-   * 初期化（動的検出）
+   * 初期化（何もしない - 互換性のために残す）
    */
   async ensureInitialized(): Promise<void> {
-    if (!this.initialized) {
-      await this.configManager.initialize();
-      this.initialized = true;
-    }
+    // No-op for compatibility
   }
 
   // API v2.0 Capabilities
@@ -102,15 +88,7 @@ export class MlxProcess {
       modelName: this.modelName,
       queueLength: this.queueManager.length,
       isStreamingActive: this.processComm.isStreamingActive(),
-      isJsonBuffering: this.processComm.isJsonBuffering(),
-      modelConfig: this.initialized ? this.configManager.getConfig() : null
+      isJsonBuffering: this.processComm.isJsonBuffering()
     };
-  }
-
-  /**
-   * MlxModelConfigManagerの取得（外部からカスタマイズする場合）
-   */
-  getConfigManager(): MlxModelConfigManager {
-    return this.configManager;
   }
 }
