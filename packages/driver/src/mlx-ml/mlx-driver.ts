@@ -272,8 +272,13 @@ export class MlxDriver implements AIDriver {
           constraints: this.runtimeInfo.features.chat_template.constraints
         } : undefined
       },
-      // chatRestrictions will be populated when Python adds chat_restrictions to the response
-      chatRestrictions: undefined
+      chatRestrictions: this.runtimeInfo.chat_restrictions ? {
+        singleSystemAtStart: this.runtimeInfo.chat_restrictions.single_system_at_start,
+        maxSystemMessages: this.runtimeInfo.chat_restrictions.max_system_messages,
+        alternatingTurns: this.runtimeInfo.chat_restrictions.alternating_turns,
+        requiresUserLast: this.runtimeInfo.chat_restrictions.requires_user_last,
+        allowEmptyMessages: this.runtimeInfo.chat_restrictions.allow_empty_messages,
+      } : undefined
     };
   }
 

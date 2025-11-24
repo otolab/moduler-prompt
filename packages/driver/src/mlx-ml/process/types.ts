@@ -64,6 +64,13 @@ export interface MlxRuntimeInfo {
     model_max_length?: number;
     chat_template?: ChatTemplateInfo;
   };
+  chat_restrictions?: {
+    single_system_at_start?: boolean;
+    max_system_messages?: number;
+    alternating_turns?: boolean;
+    requires_user_last?: boolean;
+    allow_empty_messages?: boolean;
+  };
 }
 
 export interface MlxFormatTestResult {
