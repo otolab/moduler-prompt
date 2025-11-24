@@ -75,19 +75,40 @@ export class MlxModelConfigManager {
     if (this.initialized) return;
 
     // 動的に能力を検出
-    const detectedConfig = await this.detector.detectCapabilities();
+    const detected = await this.detector.detectCapabilities();
 
-    // capabilitiesのみ検出結果とマージ
-    // apiStrategyとchatRestrictionsはconstructorで設定済みの値を保持
-    this.config = {
-      ...this.config,
-      capabilities: {
-        ...this.config.capabilities,
-        ...detectedConfig.capabilities
-      }
-    };
+    // 検出結果とマージ（カスタム設定を優先）
+    this.config = this.mergeConfigs(detected, this.config);
 
     this.initialized = true;
+  }
+
+  /**
+   * 設定のマージ（baseに対してoverrideを優先的にマージ）
+   */
+  private mergeConfigs(
+    base: Partial<MlxModelConfig>,
+    override: MlxModelConfig
+  ): MlxModelConfig {
+    // chatRestrictions: undefinedの場合は保持、それ以外はDEEP MERGE
+    const chatRestrictions = override.chatRestrictions === undefined
+      ? undefined
+      : {
+          ...base.chatRestrictions,
+          ...override.chatRestrictions
+        };
+
+    return {
+      ...override,
+      // capabilities: DEEP MERGE（プロパティごとにマージ）
+      capabilities: {
+        ...base.capabilities,
+        ...override.capabilities
+      },
+      chatRestrictions,
+      // apiStrategy: カスタム設定があればそれを優先、なければ検出結果
+      apiStrategy: override.apiStrategy ?? base.apiStrategy ?? 'auto'
+    };
   }
   
   /**

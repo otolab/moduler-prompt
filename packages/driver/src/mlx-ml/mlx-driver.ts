@@ -265,6 +265,13 @@ export class MlxDriver implements AIDriver {
   }
   
   /**
+   * Get current model configuration
+   */
+  getModelConfig(): Readonly<MlxModelConfig> {
+    return this.process.getConfigManager().getConfig();
+  }
+
+  /**
    * Close the process
    */
   async close(): Promise<void> {
