@@ -9,7 +9,7 @@ import { Readable } from 'stream';
 import type {
   MlxMlModelOptions,
   MlxMessage,
-  MlxCapabilities,
+  MlxRuntimeInfo,
   MlxFormatTestResult
 } from './types.js';
 import type { MlxModelConfig, ModelCustomProcessor } from '../model-spec/types.js';
@@ -21,7 +21,7 @@ import { ProcessCommunication, ProcessCommunicationCallbacks } from './process-c
 export type {
   MlxMlModelOptions,
   MlxMessage,
-  MlxCapabilities,
+  MlxRuntimeInfo,
   MlxFormatTestResult
 };
 
@@ -70,7 +70,7 @@ export class MlxProcess {
   }
 
   // API v2.0 Capabilities
-  async getCapabilities(): Promise<MlxCapabilities> {
+  async getCapabilities(): Promise<MlxRuntimeInfo> {
     return this.queueManager.addCapabilitiesRequest();
   }
 

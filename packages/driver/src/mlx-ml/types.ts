@@ -1,6 +1,10 @@
 /**
- * MLX ML specific types
+ * MLX Driver Public Types
+ *
+ * 外部に公開する型定義
  */
+
+import type { SpecialToken, SpecialTokenPair } from '../formatter/types.js';
 
 /**
  * MLX message format
@@ -26,19 +30,75 @@ export interface MlxMlModelOptions {
 }
 
 /**
- * MLX capabilities response
+ * チャットテンプレートの制限事項
  */
-export interface MlxCapabilities {
-  version: string;
-  models: string[];
-  features: string[];
+export interface ChatRestrictions {
+  /** systemメッセージは先頭に1つだけ */
+  singleSystemAtStart?: boolean;
+
+  /** user/assistantメッセージが交互に出現する必要がある */
+  alternatingTurns?: boolean;
+
+  /** 最後のメッセージはuserでなければならない */
+  requiresUserLast?: boolean;
+
+  /** システムメッセージの最大数 */
+  maxSystemMessages?: number;
+
+  /** 空のメッセージを許可するか */
+  allowEmptyMessages?: boolean;
 }
 
 /**
- * MLX format test result
+ * チャットテンプレート情報
  */
-export interface MlxFormatTestResult {
-  success: boolean;
-  formattedText?: string;
-  error?: string;
+export interface ChatTemplateInfo {
+  templateString?: string;
+  supportedRoles: string[];
+  preview?: string;
+  constraints: Record<string, unknown>;
 }
+
+/**
+ * モデルの機能情報
+ */
+export interface ModelFeatures {
+  /** チャットテンプレートを持っているか */
+  hasChatTemplate: boolean;
+
+  /** 語彙サイズ */
+  vocabSize?: number;
+
+  /** モデルの最大長 */
+  modelMaxLength?: number;
+
+  /** チャットテンプレート情報 */
+  chatTemplate?: ChatTemplateInfo;
+}
+
+/**
+ * MLXモデルの能力情報（公開API用）
+ *
+ * Pythonプロセスから取得した情報をcamelCaseに変換したもの
+ */
+export interface MlxModelCapabilities {
+  /** 利用可能なメソッド一覧 */
+  methods: string[];
+
+  /** 特殊トークン */
+  specialTokens: Record<string, SpecialToken | SpecialTokenPair>;
+
+  /** モデルの機能 */
+  features: ModelFeatures;
+
+  /** チャットの制約（Pythonから取得 + 静的知識） */
+  chatRestrictions?: ChatRestrictions;
+}
+
+/**
+ * API選択戦略
+ */
+export type ApiStrategy =
+  | 'auto'              // 自動判定
+  | 'force-chat'        // 常にchat API
+  | 'force-completion'; // 常にcompletion API

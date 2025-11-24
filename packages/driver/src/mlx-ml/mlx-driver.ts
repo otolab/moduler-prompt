@@ -4,8 +4,8 @@ import type { FormatterOptions, ChatMessage } from '../formatter/types.js';
 import { formatPromptAsMessages } from '../formatter/converter.js';
 import { formatCompletionPrompt } from '../formatter/completion-formatter.js';
 import { MlxProcess } from './process/index.js';
-import type { MlxMessage, MlxMlModelOptions } from './types.js';
-import type { MlxCapabilities } from './process/types.js';
+import type { MlxMessage, MlxMlModelOptions, MlxModelCapabilities } from './types.js';
+import type { MlxRuntimeInfo } from './process/types.js';
 import type { MlxModelConfig, ModelCustomProcessor } from './model-spec/types.js';
 import { createModelSpecificProcessor } from './process/model-specific.js';
 import type { CompiledPrompt } from '@moduler-prompt/core';
@@ -129,7 +129,7 @@ export class MlxDriver implements AIDriver {
   private process: MlxProcess;
   private model: string;
   private defaultOptions: Partial<MlxMlModelOptions>;
-  private capabilities: MlxCapabilities | null = null;
+  private runtimeInfo: MlxRuntimeInfo | null = null;
   private modelProcessor;
   private formatterOptions: FormatterOptions;
   
@@ -143,23 +143,23 @@ export class MlxDriver implements AIDriver {
   }
 
   /**
-   * Initialize process and cache capabilities
+   * Initialize process and cache runtime info
    */
   private async ensureInitialized(): Promise<void> {
     // Ensure process is initialized
     await this.process.ensureInitialized();
 
-    // Cache capabilities if not already cached
-    if (!this.capabilities) {
+    // Cache runtime info if not already cached
+    if (!this.runtimeInfo) {
       try {
-        this.capabilities = await this.process.getCapabilities();
+        this.runtimeInfo = await this.process.getCapabilities();
 
-        // Update formatterOptions with special tokens from capabilities
-        if (this.capabilities.special_tokens) {
-          this.formatterOptions.specialTokens = this.capabilities.special_tokens;
+        // Update formatterOptions with special tokens from runtime info
+        if (this.runtimeInfo.special_tokens) {
+          this.formatterOptions.specialTokens = this.runtimeInfo.special_tokens;
         }
       } catch (error) {
-        console.error('Failed to get MLX capabilities:', error);
+        console.error('Failed to get MLX runtime info:', error);
       }
     }
   }
@@ -265,10 +265,35 @@ export class MlxDriver implements AIDriver {
   }
   
   /**
-   * Get current model configuration
+   * Get model capabilities (public API)
+   *
+   * Returns runtime information converted to camelCase
    */
-  getModelConfig(): Readonly<MlxModelConfig> {
-    return this.process.getConfigManager().getConfig();
+  async getCapabilities(): Promise<MlxModelCapabilities> {
+    await this.ensureInitialized();
+
+    if (!this.runtimeInfo) {
+      throw new Error('Failed to retrieve model capabilities');
+    }
+
+    // Convert snake_case to camelCase
+    return {
+      methods: this.runtimeInfo.methods,
+      specialTokens: this.runtimeInfo.special_tokens,
+      features: {
+        hasChatTemplate: this.runtimeInfo.features.apply_chat_template,
+        vocabSize: this.runtimeInfo.features.vocab_size,
+        modelMaxLength: this.runtimeInfo.features.model_max_length,
+        chatTemplate: this.runtimeInfo.features.chat_template ? {
+          templateString: this.runtimeInfo.features.chat_template.template_string,
+          supportedRoles: this.runtimeInfo.features.chat_template.supported_roles,
+          preview: this.runtimeInfo.features.chat_template.preview,
+          constraints: this.runtimeInfo.features.chat_template.constraints
+        } : undefined
+      },
+      // chatRestrictions will be populated when Python adds chat_restrictions to the response
+      chatRestrictions: undefined
+    };
   }
 
   /**

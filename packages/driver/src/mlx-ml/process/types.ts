@@ -50,7 +50,12 @@ export interface ChatTemplateInfo {
   constraints: Record<string, unknown>;
 }
 
-export interface MlxCapabilities {
+/**
+ * MLX Runtime Information (from Python process)
+ *
+ * Pythonプロセスから取得する生の情報（snake_case）
+ */
+export interface MlxRuntimeInfo {
   methods: string[];
   special_tokens: Record<string, SpecialToken | SpecialTokenPair>;
   features: {
@@ -84,7 +89,7 @@ export interface BaseQueueItem {
 
 export interface CapabilitiesQueueItem extends BaseQueueItem {
   request: MlxCapabilitiesRequest;
-  resolve: (value: MlxCapabilities) => void;
+  resolve: (value: MlxRuntimeInfo) => void;
   expectJsonResponse: true;
 }
 

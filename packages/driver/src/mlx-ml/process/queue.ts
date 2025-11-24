@@ -17,7 +17,7 @@ import type {
   MlxCompletionRequest,
   MlxMessage,
   MlxMlModelOptions,
-  MlxCapabilities,
+  MlxRuntimeInfo,
   MlxFormatTestResult
 } from './types.js';
 
@@ -35,7 +35,7 @@ export class QueueManager {
     this.callbacks = callbacks;
   }
 
-  addCapabilitiesRequest(): Promise<MlxCapabilities> {
+  addCapabilitiesRequest(): Promise<MlxRuntimeInfo> {
     return new Promise((resolve) => {
       const request: MlxCapabilitiesRequest = { method: 'capabilities' };
       this.queue.push({ 
