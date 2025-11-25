@@ -133,11 +133,18 @@ def _infer_restrictions_from_results(test_results: dict) -> dict:
     """
     restrictions = {}
 
-    # 複数システムメッセージのテスト
+    # システムメッセージの制約を検出
+    with_system = test_results.get('with-system')
     multi_system = test_results.get('multi-system')
-    if multi_system and 'error' in multi_system:
+
+    if with_system and 'error' in with_system:
+        # 単独のsystemメッセージもエラー → systemロール自体がサポートされていない
+        restrictions['max_system_messages'] = 0
+    elif multi_system and 'error' in multi_system:
+        # 複数はエラーだが単独は成功 → 最大1つまで
         restrictions['single_system_at_start'] = True
         restrictions['max_system_messages'] = 1
+    # それ以外（両方成功）→ max_system_messagesキーを設定しない（無制限）
 
     # 連続ユーザーメッセージのテスト
     consecutive_user = test_results.get('consecutive-user')
