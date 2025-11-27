@@ -52,20 +52,9 @@ export {
   MlxProcess
 } from './mlx-ml/process/index.js';
 
-// MLX ML types
 export type {
-  MlxMessage,
-  MlxMlModelOptions,
-  MlxModelCapabilities,
-  ChatRestrictions,
-  ApiStrategy
+  MlxMessage
 } from './mlx-ml/types.js';
-
-// MLX ML process types
-export type {
-  MlxRuntimeInfo,
-  MlxFormatTestResult
-} from './mlx-ml/process/types.js';
 
 // VertexAI driver
 export {

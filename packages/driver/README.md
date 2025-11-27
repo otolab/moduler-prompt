@@ -231,7 +231,11 @@ console.log('Formatted prompt:', formatTest.result);
 process.exit();
 ```
 
-**MlxProcess API:**
+**公開API:**
+- `MlxProcess` クラス
+- `MlxMessage` 型
+
+**MlxProcess メソッド:**
 - `chat(messages, primer?, options?)`: Chat APIを使用してストリーム生成
 - `completion(prompt, options?)`: Completion APIを使用してストリーム生成
 - `getCapabilities()`: モデルの機能情報を取得
@@ -243,6 +247,7 @@ process.exit();
 - モデル固有の前処理（メッセージマージ、プロンプトフォーマットなど）は**ユーザーの責任**となります
 - `MlxDriver`は内部的に`MlxProcess`を使用し、適切な前処理を自動的に行います
 - 通常の用途では`MlxDriver`の使用を推奨します
+- その他の型（`MlxMlModelOptions`など）が必要な場合は型推論を利用してください
 
 ### テストドライバー
 
