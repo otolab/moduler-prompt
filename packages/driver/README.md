@@ -194,6 +194,56 @@ npm run download-model
 - 使用後は必ず`close()`を呼び出してプロセスを終了
 - 初回実行時にモデルのダウンロードが発生する場合があります
 
+#### 低レベルAPI（MlxProcess）
+
+`MlxDriver`を経由せず、直接MLXプロセスとやり取りする低レベルAPIも公開されています。これは以下のような場合に便利です：
+
+- `CompiledPrompt`を経由せずに、生のメッセージやプロンプトを直接送信したい
+- モデル固有の処理を完全にコントロールしたい
+- デバッグや検証のために低レベルAPIを使用したい
+
+```typescript
+import { MlxProcess, type MlxMessage } from '@moduler-prompt/driver';
+
+// 低レベルプロセスを直接使用
+const process = new MlxProcess('mlx-community/gemma-3-27b-it-qat-4bit');
+
+// Chat API - 生のメッセージを送信
+const messages: MlxMessage[] = [
+  { role: 'system', content: 'You are a helpful assistant.' },
+  { role: 'user', content: 'Hello!' }
+];
+const chatStream = await process.chat(messages);
+
+// Completion API - 生のプロンプトを送信
+const completionStream = await process.completion('Write a story about...');
+
+// モデル情報取得
+const capabilities = await process.getCapabilities();
+console.log('Available methods:', capabilities.methods);
+console.log('Has chat template:', capabilities.features.apply_chat_template);
+
+// フォーマットテスト（チャットテンプレートの動作確認）
+const formatTest = await process.formatTest(messages);
+console.log('Formatted prompt:', formatTest.result);
+
+// 終了
+process.exit();
+```
+
+**MlxProcess API:**
+- `chat(messages, primer?, options?)`: Chat APIを使用してストリーム生成
+- `completion(prompt, options?)`: Completion APIを使用してストリーム生成
+- `getCapabilities()`: モデルの機能情報を取得
+- `formatTest(messages, options?)`: チャットテンプレートのフォーマット結果をテスト
+- `exit()`: プロセスを終了
+
+**注意:**
+- `MlxProcess`は`MlxDriver`よりも低レベルなAPIです
+- モデル固有の前処理（メッセージマージ、プロンプトフォーマットなど）は**ユーザーの責任**となります
+- `MlxDriver`は内部的に`MlxProcess`を使用し、適切な前処理を自動的に行います
+- 通常の用途では`MlxDriver`の使用を推奨します
+
 ### テストドライバー
 
 開発とテスト用のモックドライバー。

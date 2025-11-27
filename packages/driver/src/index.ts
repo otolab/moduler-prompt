@@ -47,6 +47,26 @@ export {
   type MlxDriverConfig
 } from './mlx-ml/mlx-driver.js';
 
+// MLX ML low-level process API
+export {
+  MlxProcess
+} from './mlx-ml/process/index.js';
+
+// MLX ML types
+export type {
+  MlxMessage,
+  MlxMlModelOptions,
+  MlxModelCapabilities,
+  ChatRestrictions,
+  ApiStrategy
+} from './mlx-ml/types.js';
+
+// MLX ML process types
+export type {
+  MlxRuntimeInfo,
+  MlxFormatTestResult
+} from './mlx-ml/process/types.js';
+
 // VertexAI driver
 export {
   VertexAIDriver,
