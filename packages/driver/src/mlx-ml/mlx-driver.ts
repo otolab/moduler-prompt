@@ -4,9 +4,8 @@ import type { FormatterOptions, ChatMessage } from '../formatter/types.js';
 import { formatPromptAsMessages } from '../formatter/converter.js';
 import { formatCompletionPrompt } from '../formatter/completion-formatter.js';
 import { MlxProcess } from './process/index.js';
-import type { MlxMessage, MlxMlModelOptions } from './types.js';
-import type { MlxCapabilities } from './process/types.js';
-import type { ModelSpec, ModelCustomProcessor } from './model-spec/types.js';
+import type { MlxMessage, MlxMlModelOptions, MlxModelCapabilities } from './types.js';
+import type { MlxRuntimeInfo } from './process/types.js';
 import { createModelSpecificProcessor } from './process/model-specific.js';
 import type { CompiledPrompt } from '@moduler-prompt/core';
 import { extractJSON } from '@moduler-prompt/utils';
@@ -42,35 +41,6 @@ export function convertMessages(messages: ChatMessage[]): MlxMessage[] {
   }));
 }
 
-/**
- * Determine which API to use based on prompt and model capabilities
- * Exported for testing purposes
- */
-export function determineApiSelection(
-  prompt: CompiledPrompt,
-  specManager: {
-    canUseChat: () => boolean;
-    canUseCompletion: () => boolean;
-    preprocessMessages: (messages: MlxMessage[]) => MlxMessage[];
-    determineApi: (messages: MlxMessage[]) => 'chat' | 'completion';
-  },
-  formatterOptions: FormatterOptions
-): 'chat' | 'completion' {
-  const canUseChat = specManager.canUseChat();
-  const canUseCompletion = specManager.canUseCompletion();
-
-  if (!canUseChat && !canUseCompletion) {
-    throw new Error('Model supports neither chat nor completion API');
-  }
-
-  // apiStrategyを常に考慮するため、specManager.determineApi()に判定を委譲
-  // MessageElementの有無に関わらず、モデルの設定を尊重する
-  const messages = formatPromptAsMessages(prompt, formatterOptions);
-  const mlxMessages = convertMessages(messages);
-  const preprocessedMessages = specManager.preprocessMessages(mlxMessages);
-  return specManager.determineApi(preprocessedMessages);
-}
-
 // ========================================================================
 // Main Class
 // ========================================================================
@@ -81,8 +51,6 @@ export function determineApiSelection(
 export interface MlxDriverConfig {
   model: string;
   defaultOptions?: Partial<MlxMlModelOptions>;
-  modelSpec?: Partial<ModelSpec>;
-  customProcessor?: ModelCustomProcessor;
   formatterOptions?: FormatterOptions;
 }
 
@@ -129,7 +97,7 @@ export class MlxDriver implements AIDriver {
   private process: MlxProcess;
   private model: string;
   private defaultOptions: Partial<MlxMlModelOptions>;
-  private capabilities: MlxCapabilities | null = null;
+  private runtimeInfo: MlxRuntimeInfo | null = null;
   private modelProcessor;
   private formatterOptions: FormatterOptions;
   
@@ -138,30 +106,44 @@ export class MlxDriver implements AIDriver {
     this.model = config.model;
     this.defaultOptions = config.defaultOptions || {};
     this.formatterOptions = config.formatterOptions || {};
-    this.process = new MlxProcess(config.model, config.modelSpec, config.customProcessor);
+    this.process = new MlxProcess(config.model);
     this.modelProcessor = createModelSpecificProcessor(config.model);
   }
 
   /**
-   * Initialize process and cache capabilities
+   * Initialize process and cache runtime info
    */
   private async ensureInitialized(): Promise<void> {
     // Ensure process is initialized
     await this.process.ensureInitialized();
 
-    // Cache capabilities if not already cached
-    if (!this.capabilities) {
+    // Cache runtime info if not already cached
+    if (!this.runtimeInfo) {
       try {
-        this.capabilities = await this.process.getCapabilities();
+        this.runtimeInfo = await this.process.getCapabilities();
 
-        // Update formatterOptions with special tokens from capabilities
-        if (this.capabilities.special_tokens) {
-          this.formatterOptions.specialTokens = this.capabilities.special_tokens;
+        // Update formatterOptions with special tokens from runtime info
+        if (this.runtimeInfo.special_tokens) {
+          this.formatterOptions.specialTokens = this.runtimeInfo.special_tokens;
         }
       } catch (error) {
-        console.error('Failed to get MLX capabilities:', error);
+        console.error('Failed to get MLX runtime info:', error);
       }
     }
+  }
+
+  /**
+   * Determine which API to use (chat or completion)
+   * Simple logic based on runtime info only
+   */
+  private determineApi(options?: QueryOptions): 'chat' | 'completion' {
+    const strategy = options?.apiStrategy || 'auto';
+
+    if (strategy === 'force-completion') return 'completion';
+    if (strategy === 'force-chat') return 'chat';
+
+    // auto: use chat if chat template is available
+    return this.runtimeInfo?.features.apply_chat_template ? 'chat' : 'completion';
   }
   
   /**
@@ -170,11 +152,11 @@ export class MlxDriver implements AIDriver {
    */
   private async executeQuery(
     prompt: CompiledPrompt,
-    mlxOptions: MlxMlModelOptions
+    mlxOptions: MlxMlModelOptions,
+    options?: QueryOptions
   ): Promise<Readable> {
     // APIを選択
-    const specManager = this.process.getSpecManager();
-    const api = determineApiSelection(prompt, specManager, this.formatterOptions);
+    const api = this.determineApi(options);
 
     let stream: Readable;
     if (api === 'completion') {
@@ -186,11 +168,10 @@ export class MlxDriver implements AIDriver {
     } else {
       // chat APIを使用 - メッセージ変換して処理
       const messages = formatPromptAsMessages(prompt, this.formatterOptions);
-      const mlxMessages = convertMessages(messages);
-      let processedMessages = specManager.preprocessMessages(mlxMessages);
+      let mlxMessages = convertMessages(messages);
       // chat APIではチャット処理を適用
-      processedMessages = this.modelProcessor.applyChatSpecificProcessing(processedMessages);
-      stream = await this.process.chat(processedMessages, undefined, mlxOptions);
+      mlxMessages = this.modelProcessor.applyChatSpecificProcessing(mlxMessages);
+      stream = await this.process.chat(mlxMessages, undefined, mlxOptions);
     }
 
     return stream;
@@ -230,7 +211,7 @@ export class MlxDriver implements AIDriver {
     };
 
     // Use executeQuery for the actual stream generation
-    const stream = await this.executeQuery(prompt, mlxOptions);
+    const stream = await this.executeQuery(prompt, mlxOptions, options);
 
     // Convert stream to async iterable with collection
     const { iterable, completion } = createStreamIterable(stream);
@@ -264,6 +245,43 @@ export class MlxDriver implements AIDriver {
     };
   }
   
+  /**
+   * Get model capabilities (public API)
+   *
+   * Returns runtime information converted to camelCase
+   */
+  async getCapabilities(): Promise<MlxModelCapabilities> {
+    await this.ensureInitialized();
+
+    if (!this.runtimeInfo) {
+      throw new Error('Failed to retrieve model capabilities');
+    }
+
+    // Convert snake_case to camelCase
+    return {
+      methods: this.runtimeInfo.methods,
+      specialTokens: this.runtimeInfo.special_tokens,
+      features: {
+        hasChatTemplate: this.runtimeInfo.features.apply_chat_template,
+        vocabSize: this.runtimeInfo.features.vocab_size,
+        modelMaxLength: this.runtimeInfo.features.model_max_length,
+        chatTemplate: this.runtimeInfo.features.chat_template ? {
+          templateString: this.runtimeInfo.features.chat_template.template_string,
+          supportedRoles: this.runtimeInfo.features.chat_template.supported_roles,
+          preview: this.runtimeInfo.features.chat_template.preview,
+          constraints: this.runtimeInfo.features.chat_template.constraints
+        } : undefined
+      },
+      chatRestrictions: this.runtimeInfo.chat_restrictions ? {
+        singleSystemAtStart: this.runtimeInfo.chat_restrictions.single_system_at_start,
+        maxSystemMessages: this.runtimeInfo.chat_restrictions.max_system_messages,
+        alternatingTurns: this.runtimeInfo.chat_restrictions.alternating_turns,
+        requiresUserLast: this.runtimeInfo.chat_restrictions.requires_user_last,
+        allowEmptyMessages: this.runtimeInfo.chat_restrictions.allow_empty_messages,
+      } : undefined
+    };
+  }
+
   /**
    * Close the process
    */

@@ -1,6 +1,11 @@
 /**
- * MLX ML specific types
+ * MLX Driver Public Types
+ *
+ * 外部に公開する型定義
  */
+
+import type { SpecialToken, SpecialTokenPair } from '../formatter/types.js';
+import type { ChatRestrictions, ApiStrategy } from './model-spec/index.js';
 
 /**
  * MLX message format
@@ -25,20 +30,51 @@ export interface MlxMlModelOptions {
   [key: string]: number | undefined;
 }
 
+// Re-export from model-spec
+export type { ChatRestrictions, ApiStrategy };
+
 /**
- * MLX capabilities response
+ * チャットテンプレート情報
  */
-export interface MlxCapabilities {
-  version: string;
-  models: string[];
-  features: string[];
+export interface ChatTemplateInfo {
+  templateString?: string;
+  supportedRoles: string[];
+  preview?: string;
+  constraints: Record<string, unknown>;
 }
 
 /**
- * MLX format test result
+ * モデルの機能情報
  */
-export interface MlxFormatTestResult {
-  success: boolean;
-  formattedText?: string;
-  error?: string;
+export interface ModelFeatures {
+  /** チャットテンプレートを持っているか */
+  hasChatTemplate: boolean;
+
+  /** 語彙サイズ */
+  vocabSize?: number;
+
+  /** モデルの最大長 */
+  modelMaxLength?: number;
+
+  /** チャットテンプレート情報 */
+  chatTemplate?: ChatTemplateInfo;
+}
+
+/**
+ * MLXモデルの能力情報（公開API用）
+ *
+ * Pythonプロセスから取得した情報をcamelCaseに変換したもの
+ */
+export interface MlxModelCapabilities {
+  /** 利用可能なメソッド一覧 */
+  methods: string[];
+
+  /** 特殊トークン */
+  specialTokens: Record<string, SpecialToken | SpecialTokenPair>;
+
+  /** モデルの機能 */
+  features: ModelFeatures;
+
+  /** チャットの制約（Pythonから取得 + 静的知識） */
+  chatRestrictions?: ChatRestrictions;
 }

@@ -9,35 +9,27 @@ import { Readable } from 'stream';
 import type {
   MlxMlModelOptions,
   MlxMessage,
-  MlxCapabilities,
+  MlxRuntimeInfo,
   MlxFormatTestResult
 } from './types.js';
-import type { ModelSpec, ModelCustomProcessor } from '../model-spec/types.js';
-import { ModelSpecManager } from '../model-spec/manager.js';
 import { QueueManager, QueueManagerCallbacks } from './queue.js';
 import { ProcessCommunication, ProcessCommunicationCallbacks } from './process-communication.js';
 
 // API v2.0 型をエクスポート
-export type { 
+export type {
   MlxMlModelOptions,
   MlxMessage,
-  MlxCapabilities, 
-  MlxFormatTestResult 
+  MlxRuntimeInfo,
+  MlxFormatTestResult
 };
 
 export class MlxProcess {
   modelName: string;
-  
+
   private queueManager: QueueManager;
   private processComm: ProcessCommunication;
-  private specManager: ModelSpecManager;
-  private initialized = false;
 
-  constructor(
-    modelName: string,
-    customSpec?: Partial<ModelSpec>,
-    customProcessor?: ModelCustomProcessor
-  ) {
+  constructor(modelName: string) {
     this.modelName = modelName;
 
     // コールバック設定
@@ -54,23 +46,17 @@ export class MlxProcess {
     // 各コンポーネント初期化
     this.processComm = new ProcessCommunication(modelName, processCallbacks);
     this.queueManager = new QueueManager(queueCallbacks);
-    
-    // ModelSpecManager初期化（thisを渡すため後で初期化）
-    this.specManager = new ModelSpecManager(modelName, this, customSpec, customProcessor);
   }
-  
+
   /**
-   * 初期化（動的検出）
+   * 初期化（何もしない - 互換性のために残す）
    */
   async ensureInitialized(): Promise<void> {
-    if (!this.initialized) {
-      await this.specManager.initialize();
-      this.initialized = true;
-    }
+    // No-op for compatibility
   }
 
   // API v2.0 Capabilities
-  async getCapabilities(): Promise<MlxCapabilities> {
+  async getCapabilities(): Promise<MlxRuntimeInfo> {
     return this.queueManager.addCapabilitiesRequest();
   }
 
@@ -102,15 +88,7 @@ export class MlxProcess {
       modelName: this.modelName,
       queueLength: this.queueManager.length,
       isStreamingActive: this.processComm.isStreamingActive(),
-      isJsonBuffering: this.processComm.isJsonBuffering(),
-      modelSpec: this.initialized ? this.specManager.getSpec() : null
+      isJsonBuffering: this.processComm.isJsonBuffering()
     };
-  }
-  
-  /**
-   * ModelSpecManagerの取得（外部からカスタマイズする場合）
-   */
-  getSpecManager(): ModelSpecManager {
-    return this.specManager;
   }
 }

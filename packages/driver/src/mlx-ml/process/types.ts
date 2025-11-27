@@ -50,7 +50,12 @@ export interface ChatTemplateInfo {
   constraints: Record<string, unknown>;
 }
 
-export interface MlxCapabilities {
+/**
+ * MLX Runtime Information (from Python process)
+ *
+ * Pythonプロセスから取得する生の情報（snake_case）
+ */
+export interface MlxRuntimeInfo {
   methods: string[];
   special_tokens: Record<string, SpecialToken | SpecialTokenPair>;
   features: {
@@ -58,6 +63,13 @@ export interface MlxCapabilities {
     vocab_size?: number;
     model_max_length?: number;
     chat_template?: ChatTemplateInfo;
+  };
+  chat_restrictions?: {
+    single_system_at_start?: boolean;
+    max_system_messages?: number;
+    alternating_turns?: boolean;
+    requires_user_last?: boolean;
+    allow_empty_messages?: boolean;
   };
 }
 
@@ -84,7 +96,7 @@ export interface BaseQueueItem {
 
 export interface CapabilitiesQueueItem extends BaseQueueItem {
   request: MlxCapabilitiesRequest;
-  resolve: (value: MlxCapabilities) => void;
+  resolve: (value: MlxRuntimeInfo) => void;
   expectJsonResponse: true;
 }
 

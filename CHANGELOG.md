@@ -14,6 +14,17 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - 箇条書きが必要な場合は、items内で明示的に`- `を付ける必要があります
   - 例: `items: ['- item1', '- item2']`
 
+## [0.2.8] - 2025-11-25
+
+### Fixed
+- **Driver Package (@moduler-prompt/driver@0.2.8)**
+  - chat_template_constraints.pyのmax_system_messages検出ロジックを修正
+  - systemロールが完全にサポートされていないモデル（gemma-2-2b-it-4bitなど）で誤って `max_system_messages = 1` を返していた問題を修正
+  - 単独systemメッセージのテスト結果も考慮するように変更
+    - 単独systemでエラー → `max_system_messages = 0`（systemロール禁止）
+    - 複数でエラー、単独で成功 → `max_system_messages = 1`（最大1つ）
+    - 両方成功 → キーを設定しない（無制限）
+
 ## [0.2.6] - 2025-01-21
 
 ### Fixed

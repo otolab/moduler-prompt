@@ -1,11 +1,7 @@
 /**
- * MLX Driver Model Spec Module
- * 
- * モデル仕様管理システムのエクスポート
+ * MLX Driver Model Specification Module
+ *
+ * 簡素化後のエクスポート
  */
 
-export * from './types.js';
-export * from './manager.js';
-export * from './detector.js';
-export * from './validator.js';
-export * from './presets.js';
+export type { ChatRestrictions, ApiStrategy } from './types.js';
