@@ -151,6 +151,30 @@ export function processGemmaCompletion(prompt: string): string {
 }
 
 /**
+ * ELYZA (Llama 2ベース) 用のCompletion処理
+ *
+ * ELYZAはLlama 2のinstruction formatを使用:
+ * <s>[INST] <<SYS>>
+ * システムプロンプト
+ * <</SYS>>
+ *
+ * ユーザープロンプト [/INST]
+ *
+ * Note: <<SYS>>, [INST]などはspecial tokensではなく、複数トークンに分割される
+ */
+export function processElyzaCompletion(prompt: string): string {
+  const B_INST = '[INST]';
+  const E_INST = '[/INST]';
+  const B_SYS = '<<SYS>>\n';
+  const E_SYS = '\n<</SYS>>\n\n';
+  const DEFAULT_SYSTEM = 'あなたは誠実で優秀な日本人のアシスタントです。';
+
+  // Llama 2 instruction format
+  // <s>は自動的に追加されるため含めない（add_bos_token: true）
+  return `${B_INST} ${B_SYS}${DEFAULT_SYSTEM}${E_SYS}${prompt} ${E_INST} `;
+}
+
+/**
  * モデル名に基づいてChat処理を選択
  */
 export function selectChatProcessor(modelName: string): ((messages: MlxMessage[]) => MlxMessage[]) | null {
@@ -183,6 +207,10 @@ export function selectCompletionProcessor(modelName: string): ((prompt: string) 
   }
   if (modelName.includes('gemma-3')) {
     return processGemmaCompletion;
+  }
+  // ELYZA models (elyza/ELYZA-japanese-Llama-2-*)
+  if (modelName.toLowerCase().includes('elyza')) {
+    return processElyzaCompletion;
   }
   return null;
 }
