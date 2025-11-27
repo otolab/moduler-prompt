@@ -124,7 +124,21 @@ export class ProcessCommunication {
     return this.jsonBuffer.length > 0;
   }
 
-  exit(): void {
-    this.process.stdin.end();
+  async exit(): Promise<void> {
+    return new Promise((resolve) => {
+      const timeout = setTimeout(() => {
+        // タイムアウト後は強制終了
+        this.process.kill('SIGTERM');
+        resolve();
+      }, 5000); // 5秒でタイムアウト
+
+      this.process.once('exit', () => {
+        clearTimeout(timeout);
+        resolve();
+      });
+
+      // stdinを閉じてプロセスに終了を通知
+      this.process.stdin.end();
+    });
   }
 }

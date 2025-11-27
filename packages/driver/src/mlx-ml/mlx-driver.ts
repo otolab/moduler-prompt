@@ -286,6 +286,6 @@ export class MlxDriver implements AIDriver {
    * Close the process
    */
   async close(): Promise<void> {
-    this.process.exit();
+    await this.process.exit();
   }
 }

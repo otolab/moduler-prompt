@@ -78,8 +78,8 @@ export class MlxProcess {
   }
 
 
-  exit() {
-    this.processComm.exit();
+  async exit(): Promise<void> {
+    await this.processComm.exit();
   }
 
   // デバッグ・ステータス情報
