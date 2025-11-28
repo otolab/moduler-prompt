@@ -61,7 +61,7 @@ export function formatPromptAsMessages(
       const schemaContent = JSON.stringify(prompt.metadata.outputSchema, null, 2);
       messages.push({
         role: 'system',
-        content: `Output ONLY a valid JSON object that conforms to the following schema. Do not include any explanation, commentary, or text before or after the JSON.\n\nJSON Output Schema:\n${schemaContent}`
+        content: `Output ONLY a valid JSON object that conforms to the following schema. Do not include any explanation, commentary, or text before or after the JSON.\n\n### Output Schema\n\n\`\`\`json\n${schemaContent}\n\`\`\``
       });
     }
   }

@@ -61,7 +61,11 @@ export function formatCompletionPrompt(
       const schemaContent = JSON.stringify(prompt.metadata.outputSchema, null, 2);
       sections.push('Output ONLY a valid JSON object that conforms to the following schema. Do not include any explanation, commentary, or text before or after the JSON.');
       sections.push('');
-      sections.push(`JSON Output Schema:\n${schemaContent}`);
+      sections.push('### Output Schema');
+      sections.push('');
+      sections.push('```json');
+      sections.push(schemaContent);
+      sections.push('```');
     }
   }
 
