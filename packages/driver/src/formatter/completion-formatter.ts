@@ -54,6 +54,15 @@ export function formatCompletionPrompt(
     }
     sections.push('');
     sections.push(formatter.formatAll(prompt.instructions));
+
+    // Add output schema to Instructions section if metadata.outputSchema exists
+    if (prompt.metadata?.outputSchema) {
+      sections.push('');
+      const schemaContent = JSON.stringify(prompt.metadata.outputSchema, null, 2);
+      sections.push('Output ONLY a valid JSON object that conforms to the following schema. Do not include any explanation, commentary, or text before or after the JSON.');
+      sections.push('');
+      sections.push(`JSON Output Schema:\n${schemaContent}`);
+    }
   }
 
   // Format data section with header
@@ -71,22 +80,17 @@ export function formatCompletionPrompt(
   // Format output section with header - always show the section
   if (sections.length > 0) sections.push('');
   sections.push('# Output');
-  if (sectionDescriptions?.output) {
+  // Use different description if outputSchema exists
+  if (prompt.metadata?.outputSchema) {
+    sections.push('');
+    sections.push('Output a JSON string based on the schema defined in the Instructions section above.');
+  } else if (sectionDescriptions?.output) {
     sections.push('');
     sections.push(sectionDescriptions.output);
   }
   if (prompt.output && prompt.output.length > 0) {
     sections.push('');
     sections.push(formatter.formatAll(prompt.output));
-  }
-
-  // Add output schema if metadata.outputSchema exists (within Output section)
-  if (prompt.metadata?.outputSchema) {
-    sections.push('');
-    const schemaContent = JSON.stringify(prompt.metadata.outputSchema, null, 2);
-    sections.push('IMPORTANT: Output ONLY a valid JSON object. Do not include any explanation, commentary, or text before or after the JSON.');
-    sections.push('');
-    sections.push(`JSON Output Format:\n${schemaContent}`);
   }
 
   return sections.join(lineBreak);
