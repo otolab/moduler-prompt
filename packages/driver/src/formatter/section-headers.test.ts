@@ -218,7 +218,7 @@ describe('Section Headers in Prompts', () => {
       expect(allContent).toContain('Phase: planning');
       expect(allContent).toContain('Prepared Materials');
       expect(allContent).toContain('"test": "data"');
-      expect(allContent).toContain('JSON Output Format');
+      expect(allContent).toContain('### Output Schema');
     });
 
     it('should handle merged modules with section headers', () => {

@@ -72,8 +72,9 @@ describe('MLX Special Tokens Formatting', () => {
       const result = await formatCompletionPrompt(prompt);
 
       // JSON出力形式が含まれることを確認
-      // schemaセクションのJSONElementがJSON Output Formatとしてフォーマットされる
-      expect(result).toContain('JSON Output Format:');
+      // schemaセクションのJSONElementが### Output Schemaとしてフォーマットされる（Instructionsセクション内）
+      expect(result).toContain('### Output Schema');
+      expect(result).toContain('```json');
       expect(result).toContain('"type": "object"');
       expect(result).toContain('"properties"');
     });

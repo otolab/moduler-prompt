@@ -43,17 +43,26 @@ export function formatPromptAsMessages(
   // Process instructions section
   if (prompt.instructions && prompt.instructions.length > 0) {
     // Add section header with description
-    const instructionsHeader = sectionDescriptions?.instructions 
+    const instructionsHeader = sectionDescriptions?.instructions
       ? `# Instructions\n\n${sectionDescriptions.instructions}`
       : '# Instructions';
     messages.push({
       role: 'system',
       content: instructionsHeader
     });
-    
+
     // Convert each element to a message
     for (const element of prompt.instructions) {
       messages.push(...elementToMessages(element, formatter));
+    }
+
+    // Add output schema to Instructions section if metadata.outputSchema exists
+    if (prompt.metadata?.outputSchema) {
+      const schemaContent = JSON.stringify(prompt.metadata.outputSchema, null, 2);
+      messages.push({
+        role: 'system',
+        content: `Output ONLY a valid JSON object that conforms to the following schema. Do not include any explanation, commentary, or text before or after the JSON.\n\n### Output Schema\n\n\`\`\`json\n${schemaContent}\n\`\`\``
+      });
     }
   }
   
@@ -76,10 +85,15 @@ export function formatPromptAsMessages(
   
   // Process output section
   if (prompt.output && prompt.output.length > 0) {
-    // Add section header with description
-    const outputHeader = sectionDescriptions?.output
-      ? `# Output\n\n${sectionDescriptions.output}`
-      : '# Output';
+    // Use different description if outputSchema exists
+    let outputHeader: string;
+    if (prompt.metadata?.outputSchema) {
+      outputHeader = '# Output\n\nOutput a JSON string based on the schema defined in the Instructions section above.';
+    } else {
+      outputHeader = sectionDescriptions?.output
+        ? `# Output\n\n${sectionDescriptions.output}`
+        : '# Output';
+    }
     messages.push({
       role: 'system',
       content: outputHeader
@@ -89,15 +103,6 @@ export function formatPromptAsMessages(
     for (const element of prompt.output) {
       messages.push(...elementToMessages(element, formatter));
     }
-  }
-
-  // Add output schema if metadata.outputSchema exists
-  if (prompt.metadata?.outputSchema) {
-    const schemaContent = JSON.stringify(prompt.metadata.outputSchema, null, 2);
-    messages.push({
-      role: 'system',
-      content: `IMPORTANT: Output ONLY a valid JSON object. Do not include any explanation, commentary, or text before or after the JSON.\n\nJSON Output Format:\n${schemaContent}`
-    });
   }
 
   return messages;
