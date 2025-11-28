@@ -68,8 +68,8 @@ describe('MLX Processor Integration', () => {
 
     console.log('Schema result:', result);
 
-    // JSONElementが直接処理される
-    expect(result).toContain('JSON Output Format:');
+    // JSONElementが直接処理される（schemaはInstructionsセクションに配置される）
+    expect(result).toContain('JSON Output Schema:');
     expect(result).toContain('"type": "object"');
     expect(result).toContain('"properties"');
   });
