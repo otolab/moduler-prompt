@@ -122,24 +122,59 @@ export class EchoDriver implements AIDriver {
 
       case 'both': {
         // Both text and messages in a single object
-        const text = formatCompletionPrompt(prompt, this.formatterOptions);
-        const messages = formatPromptAsMessages(prompt, this.formatterOptions);
+        // outputSchemaの二重出力を防ぐため、一時的に削除してフォーマット
+        const outputSchema = prompt.metadata?.outputSchema;
+        const promptWithoutSchema = outputSchema ? {
+          ...prompt,
+          metadata: { ...prompt.metadata, outputSchema: undefined }
+        } : prompt;
+
+        const text = formatCompletionPrompt(promptWithoutSchema, this.formatterOptions);
+        const messages = formatPromptAsMessages(promptWithoutSchema, this.formatterOptions);
+
+        // outputSchemaがある場合は一度だけ追加
+        let finalText = text;
+        let finalMessages = messages;
+        if (outputSchema) {
+          const schemaContent = JSON.stringify(outputSchema, null, 2);
+          const schemaMessage = `IMPORTANT: Output ONLY a valid JSON object. Do not include any explanation, commentary, or text before or after the JSON.\n\nJSON Output Format:\n${schemaContent}`;
+          finalText = `${text}\n\n${schemaMessage}`;
+          finalMessages = [...messages, { role: 'system', content: schemaMessage }];
+        }
+
         content = JSON.stringify({
-          text,
-          messages
+          text: finalText,
+          messages: finalMessages
         }, null, 2);
         break;
       }
 
       case 'debug': {
-        const text = formatCompletionPrompt(prompt, this.formatterOptions);
-        const messages = formatPromptAsMessages(prompt, this.formatterOptions);
+        // outputSchemaの二重出力を防ぐため、一時的に削除してフォーマット
+        const outputSchema = prompt.metadata?.outputSchema;
+        const promptWithoutSchema = outputSchema ? {
+          ...prompt,
+          metadata: { ...prompt.metadata, outputSchema: undefined }
+        } : prompt;
+
+        const text = formatCompletionPrompt(promptWithoutSchema, this.formatterOptions);
+        const messages = formatPromptAsMessages(promptWithoutSchema, this.formatterOptions);
+
+        // outputSchemaがある場合は一度だけ追加
+        let finalText = text;
+        let finalMessages = messages;
+        if (outputSchema) {
+          const schemaContent = JSON.stringify(outputSchema, null, 2);
+          const schemaMessage = `IMPORTANT: Output ONLY a valid JSON object. Do not include any explanation, commentary, or text before or after the JSON.\n\nJSON Output Format:\n${schemaContent}`;
+          finalText = `${text}\n\n${schemaMessage}`;
+          finalMessages = [...messages, { role: 'system', content: schemaMessage }];
+        }
 
         const debug = {
           raw: prompt,
           formatted: {
-            text,
-            messages
+            text: finalText,
+            messages: finalMessages
           },
           metadata: {
             instructionsCount: prompt.instructions?.length || 0,

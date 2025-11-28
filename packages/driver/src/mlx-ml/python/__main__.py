@@ -150,17 +150,55 @@ def generate_merged_prompt(messages):
     """apply_chat_templateがない場合のプロンプト生成"""
     # messagesはTypeScript側で既にmergeSystemMessages処理済み
     # TypeScript側のformatterと同じフォーマットを維持
-    
+
     prompt_parts = []
+    special_tokens = capabilities.get('special_tokens', {})
+
     for msg in messages:
-        role = msg['role'].upper()
-        prompt_parts.extend([
-            f'<!-- begin of {role} -->',
-            msg['content'].strip(),
-            f'<!-- end of {role} -->',
-            ''  # 空行で区切る
-        ])
-    
+        role = msg['role']  # 小文字のまま
+        role_upper = role.upper()
+
+        # 1. 専用のspecial_tokenを探す
+        role_token = special_tokens.get(role)
+
+        if role_token and isinstance(role_token, dict) and 'start' in role_token:
+            # 専用トークンがある場合
+            start_token = role_token['start']['text']
+            end_token = role_token['end']['text']
+            prompt_parts.extend([
+                start_token,
+                msg['content'].strip(),
+                end_token,
+                ''  # 空行で区切る
+            ])
+        else:
+            # 2. 専用トークンがない場合、汎用blockトークンを探す
+            # blockやcontextなどの汎用的なペアトークンを探す
+            block_token = None
+            for candidate in ['block', 'context', 'quote', 'section']:
+                token = special_tokens.get(candidate)
+                if token and isinstance(token, dict) and 'start' in token:
+                    block_token = token
+                    break
+
+            if block_token:
+                # 汎用blockトークンがある場合: {block_begin}{role}:\n...{block_end}
+                start_token = block_token['start']['text']
+                end_token = block_token['end']['text']
+                prompt_parts.extend([
+                    f'{start_token}{role_upper}:\n{msg["content"].strip()}',
+                    end_token,
+                    ''  # 空行で区切る
+                ])
+            else:
+                # 3. どちらもない場合は、HTMLコメント形式（フォールバック）
+                prompt_parts.extend([
+                    f'<!-- begin of {role_upper} -->',
+                    msg['content'].strip(),
+                    f'<!-- end of {role_upper} -->',
+                    ''  # 空行で区切る
+                ])
+
     # 最後の空行を削除して、ダブル改行で結合
     return '\n'.join(prompt_parts[:-1])
 
