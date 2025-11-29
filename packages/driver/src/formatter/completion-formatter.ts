@@ -84,11 +84,7 @@ export function formatCompletionPrompt(
   // Format output section with header - always show the section
   if (sections.length > 0) sections.push('');
   sections.push('# Output');
-  // Use different description if outputSchema exists
-  if (prompt.metadata?.outputSchema) {
-    sections.push('');
-    sections.push('Output a JSON string based on the schema defined in the Instructions section above.');
-  } else if (sectionDescriptions?.output) {
+  if (sectionDescriptions?.output) {
     sections.push('');
     sections.push(sectionDescriptions.output);
   }

@@ -85,15 +85,9 @@ export function formatPromptAsMessages(
   
   // Process output section
   if (prompt.output && prompt.output.length > 0) {
-    // Use different description if outputSchema exists
-    let outputHeader: string;
-    if (prompt.metadata?.outputSchema) {
-      outputHeader = '# Output\n\nOutput a JSON string based on the schema defined in the Instructions section above.';
-    } else {
-      outputHeader = sectionDescriptions?.output
-        ? `# Output\n\n${sectionDescriptions.output}`
-        : '# Output';
-    }
+    const outputHeader = sectionDescriptions?.output
+      ? `# Output\n\n${sectionDescriptions.output}`
+      : '# Output';
     messages.push({
       role: 'system',
       content: outputHeader
