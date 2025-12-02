@@ -1,7 +1,7 @@
 import type { CompiledPrompt } from '@moduler-prompt/core';
 import type { AIDriver, QueryOptions, QueryResult, StreamResult } from './types.js';
 import type { FormatterOptions } from './formatter/types.js';
-import { formatCompletionPrompt, formatPromptAsMessages, ECHO_SPECIAL_TOKENS } from './formatter/converter.js';
+import { formatCompletionPrompt, formatPromptAsMessages, ECHO_SPECIAL_TOKENS, defaultFormatterTexts } from './formatter/converter.js';
 import { extractJSON } from '@moduler-prompt/utils';
 
 /**
@@ -137,7 +137,7 @@ export class EchoDriver implements AIDriver {
         let finalMessages = messages;
         if (outputSchema) {
           const schemaContent = JSON.stringify(outputSchema, null, 2);
-          const schemaMessage = `IMPORTANT: Output ONLY a valid JSON object. Do not include any explanation, commentary, or text before or after the JSON.\n\nJSON Output Format:\n${schemaContent}`;
+          const schemaMessage = `### Output Schema\n\n${defaultFormatterTexts.schemaInstruction}\n\nJSONSchema:\n\`\`\`json\n${schemaContent}\n\`\`\``;
           finalText = `${text}\n\n${schemaMessage}`;
           finalMessages = [...messages, { role: 'system', content: schemaMessage }];
         }
@@ -165,7 +165,7 @@ export class EchoDriver implements AIDriver {
         let finalMessages = messages;
         if (outputSchema) {
           const schemaContent = JSON.stringify(outputSchema, null, 2);
-          const schemaMessage = `IMPORTANT: Output ONLY a valid JSON object. Do not include any explanation, commentary, or text before or after the JSON.\n\nJSON Output Format:\n${schemaContent}`;
+          const schemaMessage = `### Output Schema\n\n${defaultFormatterTexts.schemaInstruction}\n\nJSONSchema:\n\`\`\`json\n${schemaContent}\n\`\`\``;
           finalText = `${text}\n\n${schemaMessage}`;
           finalMessages = [...messages, { role: 'system', content: schemaMessage }];
         }
