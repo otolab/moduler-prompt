@@ -61,7 +61,7 @@ export function formatCompletionPrompt(
       const schemaContent = JSON.stringify(prompt.metadata.outputSchema, null, 2);
       sections.push('### Output Schema');
       sections.push('');
-      sections.push('Include a JSON object in a ```json code block that conforms to the schema below.');
+      sections.push(defaultFormatterTexts.schemaInstruction);
       sections.push('');
       sections.push('JSONSchema:');
       sections.push('```json');
