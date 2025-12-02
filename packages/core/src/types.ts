@@ -46,7 +46,7 @@ export interface SectionElement<TContext = any> {
   type: 'section';
   category: SectionType;  // 配置先の大セクション（instructions/data/output）
   title: string;
-  items: (string | SubSectionElement | DynamicContent<TContext>)[];
+  items: (string | SubSectionElement<TContext> | DynamicContent<TContext>)[];
 }
 
 // サブセクション要素（第2階層）
@@ -64,13 +64,13 @@ export interface JSONElement {
 }
 
 // 統合型
-export type Element =
+export type Element<TContext = any> =
   | TextElement
   | MessageElement
   | MaterialElement
   | ChunkElement
-  | SectionElement
-  | SubSectionElement
+  | SectionElement<TContext>
+  | SubSectionElement<TContext>
   | JSONElement;
 
 // 動的に生成できる要素（構造要素は除外）
