@@ -2,6 +2,120 @@
 
 このドキュメントは、`@moduler-prompt`パッケージ群のリリース手順とバージョン管理方法を定義する。
 
+## CI/CDによる自動リリース
+
+### 概要
+
+プロジェクトにはGitHub Actionsによる自動リリースワークフローが導入されています。
+
+- **ワークフローファイル**: `.github/workflows/release.yml`
+- **トリガー**: `v*`形式のタグがpushされた時
+
+### 自動実行される処理
+
+1. **テスト・ビルド**
+   - 依存関係のインストール
+   - 全パッケージのビルド
+   - テストの実行
+   - 型チェック
+   - Lint実行
+
+2. **GitHubリリース作成**
+   - タグに基づいてリリースを作成
+   - CHANGELOG.mdから該当バージョンのリリースノートを抽出
+   - プレリリース判定（alpha/betaタグを含む場合）
+
+3. **npm公開**
+   - 全ワークスペースパッケージをnpmに公開
+   - provenance付きで公開（パッケージの出所を証明）
+
+### リリース手順（CI利用時）
+
+```bash
+# 1. 準備フェーズ
+npm test && npm run build && npm run typecheck && npm run lint
+
+# 2. バージョン更新とCHANGELOG更新
+npm version <patch|minor|major> --no-git-tag-version
+# CHANGELOG.mdを編集
+
+# 3. リリースブランチ作成とPR
+git checkout -b release/v0.x.x
+git add .
+git commit -m "chore: バージョンを0.x.xに更新"
+git push -u origin release/v0.x.x
+gh pr create --title "chore: v0.x.xリリース" --body "..."
+
+# 4. PRマージ後、タグを作成してpush
+git checkout main
+git pull origin main
+git tag v0.x.x
+git push origin v0.x.x
+# → CIが自動的にGitHubリリース作成とnpm公開を実行
+```
+
+### 必要な設定
+
+#### npm Trusted Publisher設定（推奨）
+
+**Trusted Publisher (OIDC)** を使用することで、npmトークンなしで安全に公開できます。
+
+**各パッケージでの設定手順**:
+
+1. [npmjs.com](https://www.npmjs.com/)にログイン
+2. 公開するパッケージのページに移動（初回公開の場合は後述）
+3. Settings > Publishing access > Trusted publishers
+4. "Add trusted publisher"をクリック
+5. 以下の情報を入力：
+   - **Provider**: GitHub Actions
+   - **Organization/User**: `otolab`
+   - **Repository**: `moduler-prompt`
+   - **Workflow**: `release.yml`
+   - **Environment**: （空欄でOK）
+
+**初回公開時の注意**:
+- パッケージが未公開の場合、npmjs.comで先にパッケージを作成する必要があります
+- または、初回のみ従来のNPM_TOKEN方式で公開し、その後Trusted Publisherを設定
+
+**対象パッケージ**:
+- `@moduler-prompt/core`
+- `@moduler-prompt/driver`
+- `@moduler-prompt/utils`
+- `@moduler-prompt/process`
+- `@moduler-prompt/simple-chat`
+
+#### 従来の方法（NPM_TOKEN）
+
+Trusted Publisherを使用しない場合のみ必要：
+
+```bash
+# npm tokenの作成（自動化用のトークン）
+npm token create --type automation
+# GitHubリポジトリのSettings > Secrets > Actions > New repository secretで登録
+```
+
+**ワークフロー修正**:
+`.github/workflows/release.yml`のPublish stepに環境変数を追加：
+```yaml
+- name: Publish to npm
+  run: npm publish --workspaces --access public --provenance
+  env:
+    NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+```
+
+#### パッケージ設定確認
+
+各パッケージの`package.json`に以下が設定されていることを確認：
+
+```json
+{
+  "publishConfig": {
+    "access": "public",
+    "registry": "https://registry.npmjs.org/"
+  }
+}
+```
+
 ## バージョン管理方針
 
 ### セマンティックバージョニング
