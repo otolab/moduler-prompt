@@ -1,0 +1,75 @@
+name: Release
+
+on:
+  push:
+    tags:
+      - 'v*'
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+      id-token: write
+
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+
+    - name: Setup Node.js
+      uses: actions/setup-node@v4
+      with:
+        node-version: '20.x'
+        cache: 'npm'
+        registry-url: 'https://registry.npmjs.org'
+
+    - name: Install dependencies
+      run: npm ci
+
+    - name: Build all packages
+      run: npm run build
+
+    - name: Run tests
+      run: npm run test:run
+
+    - name: Run type check
+      run: npm run typecheck
+
+    - name: Run linter
+      run: npm run lint
+
+    - name: Extract version from tag
+      id: version
+      run: echo "VERSION=${GITHUB_REF#refs/tags/v}" >> $GITHUB_OUTPUT
+
+    - name: Extract release notes
+      id: release_notes
+      run: |
+        VERSION=${{ steps.version.outputs.VERSION }}
+        if [ -f CHANGELOG.md ]; then
+          # Extract the section for this version from CHANGELOG.md
+          NOTES=$(awk "/## \[${VERSION}\]/,/## \[/" CHANGELOG.md | sed '$d' | tail -n +2)
+          if [ -z "$NOTES" ]; then
+            NOTES="リリース v${VERSION}"
+          fi
+        else
+          NOTES="リリース v${VERSION}"
+        fi
+        echo "NOTES<<EOF" >> $GITHUB_OUTPUT
+        echo "$NOTES" >> $GITHUB_OUTPUT
+        echo "EOF" >> $GITHUB_OUTPUT
+
+    - name: Create GitHub Release
+      uses: softprops/action-gh-release@v2
+      with:
+        tag_name: ${{ github.ref }}
+        name: v${{ steps.version.outputs.VERSION }}
+        body: ${{ steps.release_notes.outputs.NOTES }}
+        draft: false
+        prerelease: ${{ contains(github.ref, 'alpha') || contains(github.ref, 'beta') }}
+
+    - name: Publish to npm (with Trusted Publisher)
+      run: npm publish --workspaces --access public --provenance
+      # Note: Using npm Trusted Publisher (OIDC)
+      # No NPM_TOKEN needed - authentication via id-token: write permission
+      # Configure Trusted Publisher on npmjs.com for each package before first release
