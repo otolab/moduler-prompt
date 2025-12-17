@@ -112,6 +112,36 @@ const driver = new VertexAIDriver({
 - Google Cloud プロジェクトID（環境変数: `GOOGLE_CLOUD_PROJECT`）
 - Google Cloud 認証（ADCまたはサービスアカウント）
 
+### Google Gen AI (Gemini)
+
+GoogleGenAI SDKを使用してGeminiモデルに直接アクセス。APIキーのみで簡単に利用可能。
+
+```typescript
+import { GoogleGenAIDriver } from '@moduler-prompt/driver';
+
+const driver = new GoogleGenAIDriver({
+  apiKey: process.env.GOOGLE_GENAI_API_KEY,
+  model: 'gemini-2.0-flash-exp',  // デフォルト
+  temperature: 0.7,                 // デフォルト
+  defaultOptions: {
+    maxTokens: 2048,
+    topP: 0.95,
+    topK: 40
+  }
+});
+```
+
+**主なオプション:**
+- `maxTokens`: 最大出力トークン数
+- `temperature`: 生成のランダム性
+- `topP`: トップPサンプリング
+- `topK`: トップKサンプリング
+- `thinkingConfig`: 思考レベル設定（HIGH/MEDIUM/LOW）
+
+**必要な設定:**
+- Google Gen AI APIキー（環境変数: `GOOGLE_GENAI_API_KEY`）
+- APIキーは[Google AI Studio](https://aistudio.google.com/apikey)で取得可能
+
 ### Ollama
 
 ローカルで実行されるOllamaサービス用のドライバー。

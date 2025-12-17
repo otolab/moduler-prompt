@@ -63,6 +63,13 @@ export {
   type VertexAIQueryOptions
 } from './vertexai/vertexai-driver.js';
 
+// GoogleGenAI driver
+export {
+  GoogleGenAIDriver,
+  type GoogleGenAIDriverConfig,
+  type GoogleGenAIQueryOptions
+} from './google-genai/google-genai-driver.js';
+
 // Formatter exports (moved from utils to avoid circular dependency)
 export type {
   FormatterOptions,
