@@ -61,39 +61,48 @@ jobs:
         # 3. package-lock.jsonを更新
         npm install --package-lock-only
 
-        # 4. 変更をコミット
-        git add .
-        if git diff --cached --quiet; then
-          echo "No changes to commit"
-        else
+        # 4. 変更をコミット・push
+        if [ -n "$(git status --porcelain)" ]; then
+          git add -A
           git commit -m "chore: version update via changeset"
-          git push origin "$BRANCH_NAME"
+          git push
         fi
 
-    - name: Create Pull Request
+    - name: Create or update PR
       if: steps.changesets.outputs.has_changesets == 'true'
-      uses: peter-evans/create-pull-request@v5
-      with:
-        token: ${{ secrets.GITHUB_TOKEN }}
-        branch: ${{ github.ref_name }}
-        base: main
-        title: "Release ${{ github.ref_name }}"
-        body: |
-          ## Release準備
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      run: |
+        VERSION=$(node -p "require('./package.json').version")
+        BRANCH_NAME="${GITHUB_REF#refs/heads/}"
 
-          このPRは`${{ github.ref_name }}`ブランチからの自動生成です。
+        # PRが既に存在するか確認
+        PR_NUMBER=$(gh pr list --head "$BRANCH_NAME" --json number -q '.[0].number')
 
-          ### 変更内容
-          - パッケージバージョンの更新
-          - CHANGELOGの自動生成
+        if [ -z "$PR_NUMBER" ]; then
+          # 新規PR作成
+          gh pr create \
+            --base main \
+            --head "$BRANCH_NAME" \
+            --title "Release v$VERSION" \
+            --body "## 🚀 Release v$VERSION
 
-          ### マージ後の動作
-          - mainブランチへのマージ時に自動的にnpmへ公開されます
+        このPRはrelease/$VERSIONブランチからの自動生成です。
 
-          ### 確認事項
-          - [ ] CHANGELOGの内容が正しいか
-          - [ ] バージョン番号が正しいか
-          - [ ] すべてのテストがパスしているか
+        ### 変更内容
+        - パッケージバージョンの更新
+        - CHANGELOGの自動生成
+
+        ### マージ後の動作
+        - mainブランチへのマージ時に自動的にnpmへ公開されます
+
+        ### 確認事項
+        - [ ] CHANGELOGの内容が正しいか
+        - [ ] バージョン番号が正しいか
+        - [ ] すべてのテストがパスしているか"
+        else
+          echo "PR #$PR_NUMBER already exists for $BRANCH_NAME"
+        fi
 
     - name: No changesets found
       if: steps.changesets.outputs.has_changesets == 'false'
