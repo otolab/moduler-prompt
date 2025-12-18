@@ -9,8 +9,8 @@ vi.mock('@google/genai', () => {
       return {
         models: {
           generateContent: vi.fn().mockResolvedValue({
+            text: 'Test response',  // convenience property
             candidates: [{
-              text: 'Test response',
               finishReason: 'STOP'
             }],
             usageMetadata: {
@@ -194,8 +194,8 @@ describe('GoogleGenAIDriver', () => {
 
       for (const { apiReason, expected } of testCases) {
         vi.spyOn(driver['client'].models, 'generateContent').mockResolvedValue({
+          text: 'Test',  // convenience property
           candidates: [{
-            text: 'Test',
             finishReason: apiReason
           }],
           usageMetadata: {
