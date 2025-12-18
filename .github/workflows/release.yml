@@ -26,6 +26,10 @@ jobs:
         cache: 'npm'
         registry-url: 'https://registry.npmjs.org'
 
+    - name: Upgrade npm for Trusted Publisher
+      run: npm install -g npm@latest
+      # Trusted Publisher requires npm CLI v11.5.1+
+
     - name: Install dependencies
       run: npm ci
 
