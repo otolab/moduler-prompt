@@ -32,12 +32,11 @@
     "clean": "rm -rf dist tsconfig.tsbuildinfo",
     "lint": "eslint src",
     "typecheck": "tsc --noEmit",
-    "prepublishOnly": "npm run clean && npm run build:deps && npm run build",
-    "build:deps": "npm run build -w @moduler-prompt/core -w @moduler-prompt/driver"
+    "prepublishOnly": "pnpm run clean && pnpm build"
   },
   "dependencies": {
-    "@moduler-prompt/core": "^0.1.2",
-    "@moduler-prompt/driver": "^0.2.1"
+    "@moduler-prompt/core": "workspace:*",
+    "@moduler-prompt/driver": "workspace:*"
   },
   "devDependencies": {
     "@eslint/js": "^9.34.0",

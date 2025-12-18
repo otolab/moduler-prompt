@@ -23,7 +23,7 @@
 
 ## プロジェクト構造
 
-このプロジェクトはnpm workspacesを使用したモノレポ構造です：
+このプロジェクトはpnpm workspacesを使用したモノレポ構造です：
 
 ```
 @moduler-prompt/
@@ -207,27 +207,28 @@ console.log(JSON.parse(result.content)); // プロンプト構造を確認
 
 ```bash
 # 依存関係のインストール
-npm install
+pnpm install
 
 # ビルド
-npm run build
+pnpm build
 
 # テスト
-npm run test
+pnpm test
 
 # 開発モード
-npm run dev
+pnpm dev
 ```
 
 ### ワークスペースコマンド
 
 ```bash
 # 特定のワークスペースでコマンドを実行
-npm run build --workspace=@moduler-prompt/core
-npm run test --workspace=@moduler-prompt/driver
+pnpm --filter @moduler-prompt/core build
+pnpm --filter @moduler-prompt/driver test
 
 # すべてのワークスペースでコマンドを実行
-npm run build --workspaces
+pnpm run -r build
+pnpm run -r test
 ```
 
 ## コントリビューション
