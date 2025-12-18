@@ -65,6 +65,9 @@ importers:
       '@moduler-prompt/core':
         specifier: workspace:*
         version: link:../core
+      '@moduler-prompt/utils':
+        specifier: workspace:*
+        version: link:../utils
       '@types/js-yaml':
         specifier: ^4.0.9
         version: 4.0.9
