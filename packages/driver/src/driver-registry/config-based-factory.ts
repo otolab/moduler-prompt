@@ -14,6 +14,7 @@ import { MlxDriver } from '../mlx-ml/mlx-driver.js';
 import { OpenAIDriver } from '../openai/openai-driver.js';
 import { AnthropicDriver } from '../anthropic/anthropic-driver.js';
 import { VertexAIDriver } from '../vertexai/vertexai-driver.js';
+import { GoogleGenAIDriver } from '../google-genai/google-genai-driver.js';
 import { OllamaDriver } from '../ollama/ollama-driver.js';
 import { EchoDriver } from '../echo-driver.js';
 import { TestDriver } from '../test-driver.js';
@@ -41,6 +42,10 @@ export interface ApplicationConfig {
       project?: string;
       location?: string;
       region?: string;
+    };
+    /** GoogleGenAI設定 */
+    googlegenai?: {
+      apiKey?: string;
     };
     /** MLX設定 */
     mlx?: {
@@ -111,6 +116,16 @@ export function registerFactories(
     return new VertexAIDriver({
       project: vertexConfig?.project || process.env.VERTEX_AI_PROJECT,
       location: vertexConfig?.location || vertexConfig?.region || 'us-central1',
+      model: spec.model,
+      defaultOptions: config.defaultOptions
+    });
+  });
+
+  // GoogleGenAI Driver Factory
+  registry.registerFactory('googlegenai', (spec) => {
+    const googlegenaiConfig = config.drivers?.googlegenai;
+    return new GoogleGenAIDriver({
+      apiKey: googlegenaiConfig?.apiKey || process.env.GOOGLE_GENAI_API_KEY,
       model: spec.model,
       defaultOptions: config.defaultOptions
     });

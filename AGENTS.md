@@ -15,7 +15,7 @@ AIアシスタントがコードベースを効率的に理解・操作するた
 
 ### ドライバー
 - `packages/driver/src/types.ts` - ドライバーインターフェース定義
-- `packages/driver/src/*/` - 各AIサービス実装（openai、anthropic、vertexai、mlx等）
+- `packages/driver/src/*/` - 各AIサービス実装（openai、anthropic、vertexai、googlegenai、mlx等）
 
 ### ユーティリティ
 - `packages/utils/src/driver-registry/` - ドライバーレジストリ実装
@@ -161,7 +161,7 @@ npm run lint
 
 ### ドライバーパッケージ
 - `@moduler-prompt/driver` - AIモデルドライバー
-  - OpenAI、Anthropic、VertexAI、Ollama、MLX
+  - OpenAI、Anthropic、VertexAI、GoogleGenAI、Ollama、MLX
   - 統一インターフェースとストリーミングサポート
   - StreamResult型: stream（AsyncIterable<string>）+ result（Promise<QueryResult>）
 
@@ -188,6 +188,10 @@ npm run lint
   - ストリーミングサポート
 - **VertexAIDriver** (`packages/driver/src/vertexai/`)
   - Google Cloud Vertex AI（Gemini）
+  - ストリーミングサポート
+- **GoogleGenAIDriver** (`packages/driver/src/google-genai/`)
+  - GoogleGenAI SDK経由でGemini直接アクセス
+  - APIキーのみで利用可能
   - ストリーミングサポート
 
 #### ローカル実行
