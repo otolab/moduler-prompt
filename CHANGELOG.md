@@ -14,6 +14,17 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - 箇条書きが必要な場合は、items内で明示的に`- `を付ける必要があります
   - 例: `items: ['- item1', '- item2']`
 
+## [0.4.0] - 2025-01-18
+
+### Added
+- **Driver Package (@moduler-prompt/driver@0.4.0)**
+  - GoogleGenAI driver for Gemini API support via @google/genai SDK
+  - Direct access to Gemini models using API key authentication
+  - Native structured output support with JSON schema
+  - Streaming response support with AsyncIterable pattern
+  - Support for gemini-2.0-flash-exp and gemini-2.5-flash-lite models
+  - Config file and environment variable (GOOGLE_GENAI_API_KEY) authentication
+
 ## [0.2.8] - 2025-11-25
 
 ### Fixed

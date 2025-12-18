@@ -12,6 +12,7 @@ export type DriverProvider =
   | 'openai'
   | 'anthropic'
   | 'vertexai'
+  | 'googlegenai'
   | 'mlx'
   | 'ollama'
   | 'echo'  // テスト用

@@ -313,7 +313,12 @@ export class VertexAIDriver implements AIDriver {
           totalTokens: response.usageMetadata.totalTokenCount || 0
         } : undefined
       };
-    } catch {
+    } catch (error) {
+      console.error('[VertexAIDriver] Query error:', error);
+      if (error instanceof Error) {
+        console.error('[VertexAIDriver] Error message:', error.message);
+        console.error('[VertexAIDriver] Error stack:', error.stack);
+      }
       return {
         content: '',
         finishReason: 'error'
