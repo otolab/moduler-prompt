@@ -1,0 +1,103 @@
+name: Version Update
+
+on:
+  push:
+    branches:
+      - 'release/**'
+
+jobs:
+  version:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+      pull-requests: write
+
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+      with:
+        fetch-depth: 0
+
+    - name: Setup Node.js
+      uses: actions/setup-node@v4
+      with:
+        node-version: '20.x'
+        cache: 'npm'
+
+    - name: Install dependencies
+      run: npm ci
+
+    - name: Check for changesets
+      id: changesets
+      run: |
+        if [ -n "$(ls -A .changeset/*.md 2>/dev/null | grep -v README.md)" ]; then
+          echo "has_changesets=true" >> $GITHUB_OUTPUT
+        else
+          echo "has_changesets=false" >> $GITHUB_OUTPUT
+        fi
+
+    - name: Apply version updates
+      if: steps.changesets.outputs.has_changesets == 'true'
+      run: |
+        git config --global user.email "github-actions[bot]@users.noreply.github.com"
+        git config --global user.name "github-actions[bot]"
+
+        # 1. changesetでパッケージのバージョンとCHANGELOGを更新
+        npx changeset version
+
+        # 2. ブランチ名からバージョンを抽出してrootを更新
+        BRANCH_NAME="${GITHUB_REF#refs/heads/}"
+        if [[ "$BRANCH_NAME" =~ ^release/([0-9]+\.[0-9]+\.[0-9]+)$ ]]; then
+          VERSION="${BASH_REMATCH[1]}"
+          node -e "
+            const fs = require('fs');
+            const pkg = JSON.parse(fs.readFileSync('package.json', 'utf8'));
+            pkg.version = '$VERSION';
+            fs.writeFileSync('package.json', JSON.stringify(pkg, null, 2) + '\n');
+          "
+          echo "Updated root package.json to version $VERSION"
+        fi
+
+        # 3. package-lock.jsonを更新
+        npm install --package-lock-only
+
+        # 4. 変更をコミット
+        git add .
+        if git diff --cached --quiet; then
+          echo "No changes to commit"
+        else
+          git commit -m "chore: version update via changeset"
+          git push origin "$BRANCH_NAME"
+        fi
+
+    - name: Create Pull Request
+      if: steps.changesets.outputs.has_changesets == 'true'
+      uses: peter-evans/create-pull-request@v5
+      with:
+        token: ${{ secrets.GITHUB_TOKEN }}
+        branch: ${{ github.ref_name }}
+        base: main
+        title: "Release ${{ github.ref_name }}"
+        body: |
+          ## Release準備
+
+          このPRは`${{ github.ref_name }}`ブランチからの自動生成です。
+
+          ### 変更内容
+          - パッケージバージョンの更新
+          - CHANGELOGの自動生成
+
+          ### マージ後の動作
+          - mainブランチへのマージ時に自動的にnpmへ公開されます
+
+          ### 確認事項
+          - [ ] CHANGELOGの内容が正しいか
+          - [ ] バージョン番号が正しいか
+          - [ ] すべてのテストがパスしているか
+
+    - name: No changesets found
+      if: steps.changesets.outputs.has_changesets == 'false'
+      run: |
+        echo "⚠️ .changesetディレクトリにchangesetファイルが見つかりません"
+        echo "リリース前に 'npx changeset' で変更内容を記録してください"
+        exit 1

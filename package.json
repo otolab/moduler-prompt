@@ -24,6 +24,7 @@
     "postinstall": "npm run mlx:setup || echo 'MLX setup failed, you can run it manually with: npm run mlx:setup'"
   },
   "devDependencies": {
+    "@changesets/cli": "^2.29.8",
     "@types/node": "^20.0.0",
     "@vitest/ui": "^3.2.4",
     "typescript": "^5.0.0",

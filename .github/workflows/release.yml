@@ -1,12 +1,15 @@
 name: Release
 
 on:
-  push:
-    tags:
-      - 'v*'
+  pull_request:
+    types: [closed]
+    branches:
+      - main
 
 jobs:
   release:
+    # release/*ブランチからのマージ時のみ実行
+    if: github.event.pull_request.merged == true && startsWith(github.event.pull_request.head.ref, 'release/')
     runs-on: ubuntu-latest
     permissions:
       contents: write
@@ -38,9 +41,9 @@ jobs:
     - name: Run linter
       run: npm run lint
 
-    - name: Extract version from tag
+    - name: Extract version from package.json
       id: version
-      run: echo "VERSION=${GITHUB_REF#refs/tags/v}" >> $GITHUB_OUTPUT
+      run: echo "VERSION=$(node -p "require('./package.json').version")" >> $GITHUB_OUTPUT
 
     - name: Extract release notes
       id: release_notes
@@ -48,7 +51,7 @@ jobs:
         VERSION=${{ steps.version.outputs.VERSION }}
         if [ -f CHANGELOG.md ]; then
           # Extract the section for this version from CHANGELOG.md
-          NOTES=$(awk "/## \[${VERSION}\]/,/## \[/" CHANGELOG.md | sed '$d' | tail -n +2)
+          NOTES=$(awk "/## \\[${VERSION}\\]/,/## \\[/" CHANGELOG.md | sed '$d' | tail -n +2)
           if [ -z "$NOTES" ]; then
             NOTES="リリース v${VERSION}"
           fi
@@ -59,17 +62,54 @@ jobs:
         echo "$NOTES" >> $GITHUB_OUTPUT
         echo "EOF" >> $GITHUB_OUTPUT
 
+    - name: Create git tag
+      run: |
+        git config --global user.email "github-actions[bot]@users.noreply.github.com"
+        git config --global user.name "github-actions[bot]"
+        git tag -a "v${{ steps.version.outputs.VERSION }}" -m "Release v${{ steps.version.outputs.VERSION }}"
+        git push origin "v${{ steps.version.outputs.VERSION }}"
+
     - name: Create GitHub Release
       uses: softprops/action-gh-release@v2
       with:
-        tag_name: ${{ github.ref }}
+        tag_name: v${{ steps.version.outputs.VERSION }}
         name: v${{ steps.version.outputs.VERSION }}
         body: ${{ steps.release_notes.outputs.NOTES }}
         draft: false
-        prerelease: ${{ contains(github.ref, 'alpha') || contains(github.ref, 'beta') }}
+        prerelease: ${{ contains(steps.version.outputs.VERSION, 'alpha') || contains(steps.version.outputs.VERSION, 'beta') }}
 
-    - name: Publish to npm (with Trusted Publisher)
-      run: npm publish --workspaces --access public --provenance
+    - name: Publish changed packages to npm
+      run: |
+        # changesetで変更されたパッケージを取得し、個別に公開
+        # バージョンとCHANGELOGは既にversion-updateワークフローで更新済み
+
+        # 各パッケージディレクトリで公開
+        for dir in packages/*; do
+          if [ -d "$dir" ]; then
+            cd "$dir"
+            PACKAGE_NAME=$(node -p "require('./package.json').name")
+            PACKAGE_VERSION=$(node -p "require('./package.json').version")
+            IS_PRIVATE=$(node -p "require('./package.json').private || false")
+
+            if [ "$IS_PRIVATE" = "false" ]; then
+              # npmに既に公開されているバージョンを確認
+              PUBLISHED_VERSION=$(npm view "$PACKAGE_NAME" version 2>/dev/null || echo "0.0.0")
+
+              if [ "$PACKAGE_VERSION" != "$PUBLISHED_VERSION" ]; then
+                echo "Publishing $PACKAGE_NAME@$PACKAGE_VERSION (previous: $PUBLISHED_VERSION)"
+                npm publish --access public --provenance
+              else
+                echo "Skipping $PACKAGE_NAME@$PACKAGE_VERSION (already published)"
+              fi
+            else
+              echo "Skipping $PACKAGE_NAME (private package)"
+            fi
+
+            cd ../..
+          fi
+        done
+      env:
+        NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
       # Note: Using npm Trusted Publisher (OIDC)
-      # No NPM_TOKEN needed - authentication via id-token: write permission
+      # Authentication via id-token: write permission
       # Configure Trusted Publisher on npmjs.com for each package before first release
