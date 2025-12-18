@@ -1,10 +1,8 @@
 ---
-"@moduler-prompt/driver": minor
+"@moduler-prompt/driver": patch
 ---
 
-GoogleGenAI（Gemini）ドライバーを追加
+v0.4.0のnpm公開
 
-- Google AI Studio APIをサポート
-- `gemini-2.0-flash-exp`などの最新モデルに対応
-- ストリーミング対応
-- 構造化出力サポート
+- GoogleGenAI（Gemini）ドライバー機能を含むv0.4.0をnpmに公開
+- changesetベースの自動リリースシステムを使用した最初のリリース
