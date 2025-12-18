@@ -108,8 +108,6 @@ jobs:
             cd ../..
           fi
         done
-      env:
-        NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
       # Note: Using npm Trusted Publisher (OIDC)
-      # Authentication via id-token: write permission
+      # Authentication via id-token: write permission (no NODE_AUTH_TOKEN needed)
       # Configure Trusted Publisher on npmjs.com for each package before first release
