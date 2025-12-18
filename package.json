@@ -3,19 +3,16 @@
   "version": "0.4.1",
   "private": true,
   "description": "Modular prompt framework for generative AI",
-  "workspaces": [
-    "packages/*"
-  ],
   "scripts": {
-    "build": "npm run build -w @moduler-prompt/core && npm run build -w @moduler-prompt/utils && npm run build -w @moduler-prompt/driver && npm run build -w @moduler-prompt/process && npm run build -w @moduler-prompt/simple-chat",
-    "test": "npm test -w @moduler-prompt/core && npm test -w @moduler-prompt/utils && npm test -w @moduler-prompt/driver && npm test -w @moduler-prompt/process && npm test -w @moduler-prompt/simple-chat",
-    "test:run": "npm run test:run --workspaces --if-present",
-    "clean": "npm run clean --workspaces",
-    "clean:all": "npm run clean --workspaces && rm -rf node_modules packages/*/node_modules",
-    "dev": "npm run dev --workspace=@moduler-prompt/core",
-    "lint": "npm run lint -w @moduler-prompt/core && npm run lint -w @moduler-prompt/utils && npm run lint -w @moduler-prompt/driver && npm run lint -w @moduler-prompt/process && npm run lint -w @moduler-prompt/simple-chat",
-    "typecheck": "npm run typecheck --workspaces",
-    "prepack:all": "npm run prepack --workspaces --if-present",
+    "build": "pnpm run -r build",
+    "test": "pnpm run -r test",
+    "test:run": "pnpm run -r test:run --if-present",
+    "clean": "pnpm run -r clean",
+    "clean:all": "pnpm run -r clean && rm -rf node_modules packages/*/node_modules",
+    "dev": "pnpm --filter @moduler-prompt/core run dev",
+    "lint": "pnpm run -r lint",
+    "typecheck": "pnpm run -r typecheck",
+    "prepack:all": "pnpm run -r prepack --if-present",
     "chat": "node packages/simple-chat/dist/cli.js",
     "chat:help": "node packages/simple-chat/dist/cli.js --help",
     "chat:template": "node packages/simple-chat/dist/cli.js --generate-template",
@@ -32,8 +29,9 @@
   },
   "engines": {
     "node": ">=18.0.0",
-    "npm": ">=9.0.0"
+    "pnpm": ">=9.0.0"
   },
+  "packageManager": "pnpm@9.14.4",
   "repository": {
     "type": "git",
     "url": "https://github.com/otolab/moduler-prompt.git"

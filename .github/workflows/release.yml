@@ -19,11 +19,13 @@ jobs:
     - name: Checkout code
       uses: actions/checkout@v4
 
+    - uses: pnpm/action-setup@v4
+
     - name: Setup Node.js
       uses: actions/setup-node@v4
       with:
         node-version: '20.x'
-        cache: 'npm'
+        cache: 'pnpm'
         registry-url: 'https://registry.npmjs.org'
 
     - name: Upgrade npm for Trusted Publisher
@@ -31,19 +33,19 @@ jobs:
       # Trusted Publisher requires npm CLI v11.5.1+
 
     - name: Install dependencies
-      run: npm ci
+      run: pnpm install --frozen-lockfile
 
     - name: Build all packages
-      run: npm run build
+      run: pnpm build
 
     - name: Run tests
-      run: npm run test:run
+      run: pnpm run test:run
 
     - name: Run type check
-      run: npm run typecheck
+      run: pnpm typecheck
 
     - name: Run linter
-      run: npm run lint
+      run: pnpm lint
 
     - name: Extract version from package.json
       id: version
@@ -97,11 +99,11 @@ jobs:
 
             if [ "$IS_PRIVATE" = "false" ]; then
               # npmに既に公開されているバージョンを確認
-              PUBLISHED_VERSION=$(npm view "$PACKAGE_NAME" version 2>/dev/null || echo "0.0.0")
+              PUBLISHED_VERSION=$(pnpm view "$PACKAGE_NAME" version 2>/dev/null || echo "0.0.0")
 
               if [ "$PACKAGE_VERSION" != "$PUBLISHED_VERSION" ]; then
                 echo "Publishing $PACKAGE_NAME@$PACKAGE_VERSION (previous: $PUBLISHED_VERSION)"
-                npm publish --access public --provenance
+                pnpm publish --no-git-checks --provenance --access public
               else
                 echo "Skipping $PACKAGE_NAME@$PACKAGE_VERSION (already published)"
               fi
