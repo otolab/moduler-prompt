@@ -58,7 +58,8 @@ close(): Promise<void>
 |----------|------------|-------------------|------|
 | OpenAIDriver | OpenAI | ✅ ネイティブ | GPT-4, GPT-3.5 |
 | AnthropicDriver | Anthropic | ✅ JSON抽出 | Claude |
-| VertexAIDriver | Google | ✅ ネイティブ | Gemini |
+| VertexAIDriver | Google Cloud | ✅ ネイティブ | Gemini (Vertex AI) |
+| GoogleGenAIDriver | Google AI | ✅ ネイティブ | Gemini (API Key) |
 
 ### ローカル実行
 
