@@ -22,15 +22,16 @@
     "lint": "eslint src",
     "typecheck": "tsc --noEmit",
     "clean": "rm -rf dist",
-    "prepublishOnly": "npm run clean && npm run build"
+    "prepublishOnly": "pnpm run clean && pnpm build"
   },
   "dependencies": {
-    "@moduler-prompt/core": "^0.1.2",
+    "@moduler-prompt/core": "workspace:*",
     "js-yaml": "^4.1.0",
     "jsonrepair": "^3.8.1",
     "merge-stream": "^2.0.0"
   },
   "devDependencies": {
+    "@eslint/js": "^9.35.0",
     "@types/js-yaml": "^4.0.9",
     "@types/node": "^20.0.0",
     "@typescript-eslint/eslint-plugin": "^8.43.0",
