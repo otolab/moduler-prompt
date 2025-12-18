@@ -81,9 +81,24 @@ importers:
         specifier: ^5.19.1
         version: 5.23.2(ws@8.18.3)
     devDependencies:
+      '@eslint/js':
+        specifier: ^9.35.0
+        version: 9.39.2
       '@types/node':
         specifier: ^20.10.5
         version: 20.19.27
+      '@typescript-eslint/eslint-plugin':
+        specifier: ^8.43.0
+        version: 8.50.0(@typescript-eslint/parser@8.50.0(eslint@9.39.2)(typescript@5.9.3))(eslint@9.39.2)(typescript@5.9.3)
+      '@typescript-eslint/parser':
+        specifier: ^8.43.0
+        version: 8.50.0(eslint@9.39.2)(typescript@5.9.3)
+      eslint:
+        specifier: ^9.35.0
+        version: 9.39.2
+      globals:
+        specifier: ^15.0.0
+        version: 15.15.0
       typescript:
         specifier: ^5.3.3
         version: 5.9.3
@@ -149,6 +164,9 @@ importers:
         specifier: ^4.1.0
         version: 4.1.1
     devDependencies:
+      '@eslint/js':
+        specifier: ^9.35.0
+        version: 9.39.2
       '@types/js-yaml':
         specifier: ^4.0.9
         version: 4.0.9
@@ -186,6 +204,9 @@ importers:
         specifier: ^2.0.0
         version: 2.0.0
     devDependencies:
+      '@eslint/js':
+        specifier: ^9.35.0
+        version: 9.39.2
       '@types/js-yaml':
         specifier: ^4.0.9
         version: 4.0.9
@@ -1109,6 +1130,10 @@ packages:
 
   globals@14.0.0:
     resolution: {integrity: sha512-oahGvuMGQlPw/ivIYBjVSrWAfWLBeku5tpPE2fOPLi+WHffIWbuh2tCjhyQhTBPMf5E9jDEH4FOmTYgYwbKwtQ==}
+    engines: {node: '>=18'}
+
+  globals@15.15.0:
+    resolution: {integrity: sha512-7ACyT3wmyp3I61S4fG682L0VA2RGD9otkqGJIwNUMF1SWUombIIk+af1unuDYgMm082aHYwD+mzJvv9Iu8dsgg==}
     engines: {node: '>=18'}
 
   globby@11.1.0:
@@ -2706,6 +2731,8 @@ snapshots:
       path-scurry: 1.11.1
 
   globals@14.0.0: {}
+
+  globals@15.15.0: {}
 
   globby@11.1.0:
     dependencies:
