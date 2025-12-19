@@ -52,7 +52,7 @@ describe('MLX Processor Integration', () => {
     const prompt = compile({
       instructions: ['Generate response'],
       schema: [
-        () => ({
+        {
           type: 'json' as const,
           content: {
             type: 'object',
@@ -60,7 +60,7 @@ describe('MLX Processor Integration', () => {
               result: { type: 'string' }
             }
           }
-        })
+        }
       ]
     });
 
@@ -68,7 +68,7 @@ describe('MLX Processor Integration', () => {
 
     console.log('Schema result:', result);
 
-    // JSONElementが直接処理される（schemaはInstructionsセクションに配置される）
+    // 静的なJSONElementはmetadata.outputSchemaに抽出される
     expect(result).toContain('### Output Schema');
     expect(result).toContain('```json');
     expect(result).toContain('"type": "object"');
