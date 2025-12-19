@@ -150,29 +150,47 @@ describe('Core Integration Tests', () => {
         expect(rulesSubsection).toBeDefined();
       }
       
-      // Check data - should have 3 elements (Material, Message, Message)
-      expect(compiled.data).toHaveLength(3);
+      // Check data - should have 4 elements (SectionElement, Material, Message, Message)
+      expect(compiled.data).toHaveLength(4);
+
+      // 最初はSectionElement
       expect(compiled.data[0]).toEqual({
+        type: 'section',
+        category: 'data',
+        title: 'Current State',
+        items: []
+      });
+
+      expect(compiled.data[1]).toEqual({
         type: 'material',
         id: 'doc-1',
         title: 'Documentation',
         content: 'API documentation content',
         usage: 100
       });
-      expect(compiled.data[1]).toEqual({
+      expect(compiled.data[2]).toEqual({
         type: 'message',
         role: 'user',
         content: 'What is the weather?'
       });
-      expect(compiled.data[2]).toEqual({
+      expect(compiled.data[3]).toEqual({
         type: 'message',
         role: 'assistant',
         content: 'I can help with weather information.'
       });
       
-      // Check output - should have 1 chunk element
-      expect(compiled.output).toHaveLength(1);
+      // Check output - should have 2 elements (SectionElement, ChunkElement)
+      expect(compiled.output).toHaveLength(2);
+
+      // 最初はSectionElement
       expect(compiled.output[0]).toEqual({
+        type: 'section',
+        category: 'output',
+        title: 'Output',
+        items: []
+      });
+
+      expect(compiled.output[1]).toEqual({
         type: 'chunk',
         partOf: 'response.txt',
         index: 1,
@@ -566,8 +584,17 @@ function processData(data: any[]) {
       }
       
       // Check data section
-      expect(compiled.data).toHaveLength(1);
-      const dataElement = compiled.data[0];
+      expect(compiled.data).toHaveLength(2);
+
+      // 最初はSectionElement
+      expect(compiled.data[0]).toEqual({
+        type: 'section',
+        category: 'data',
+        title: 'Current State',
+        items: []
+      });
+
+      const dataElement = compiled.data[1];
       if (dataElement.type === 'material') {
         expect(dataElement.id).toBe('code-snippet');
         expect(dataElement.title).toBe('TypeScript Code');
