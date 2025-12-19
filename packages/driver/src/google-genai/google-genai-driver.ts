@@ -63,7 +63,7 @@ export class GoogleGenAIDriver implements AIDriver {
     }
 
     this.client = new GoogleGenAI({ apiKey });
-    this.defaultModel = config.model || 'gemini-2.0-flash-exp';
+    this.defaultModel = config.model || 'gemma-3-27b';
     this.defaultTemperature = config.temperature ?? 0.7;
     this.defaultOptions = config.defaultOptions || {};
   }
