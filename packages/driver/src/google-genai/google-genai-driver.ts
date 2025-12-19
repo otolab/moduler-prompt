@@ -177,10 +177,18 @@ export class GoogleGenAIDriver implements AIDriver {
   }
 
   /**
+   * Convert Element[] to Content[]
+   */
+  private elementsToContents(elements: Element[] | undefined): Content[] {
+    if (!elements || elements.length === 0) return [];
+    return elements.map(el => this.elementToContent(el));
+  }
+
+  /**
    * Convert CompiledPrompt to GoogleGenAI's format
    */
   private compiledPromptToGoogleGenAI(prompt: CompiledPrompt): {
-    contentParts: Part[];
+    contents: Part[] | Content[];
     systemInstructionParts?: Part[];
   } {
     // Instructions → systemInstruction (as Part[])
@@ -199,25 +207,23 @@ export class GoogleGenAIDriver implements AIDriver {
       typeof el !== 'string' && el.type === 'message'
     );
 
-    let contentParts: Part[];
+    let contents: Part[] | Content[];
 
     if (hasMessages) {
-      // If there are messages, we need to handle them specially
-      // For now, convert all to Part[] (simple approach)
-      // TODO: In the future, we might want to separate messages into Content[]
-      contentParts = this.elementsToParts(allDataElements);
+      // Messages present: convert to Content[] to preserve role structure
+      contents = this.elementsToContents(allDataElements);
     } else {
-      // No messages: simple Part[] conversion
-      contentParts = this.elementsToParts(allDataElements);
+      // No messages: simple Part[] conversion (flat structure)
+      contents = this.elementsToParts(allDataElements);
     }
 
     // Ensure we have at least some content
-    if (contentParts.length === 0) {
-      contentParts = [{ text: 'Please process according to the instructions.' }];
+    if (contents.length === 0) {
+      contents = [{ text: 'Please process according to the instructions.' }];
     }
 
     return {
-      contentParts,
+      contents,
       systemInstructionParts
     };
   }
@@ -245,7 +251,7 @@ export class GoogleGenAIDriver implements AIDriver {
       const mergedOptions = { ...this.defaultOptions, ...options };
 
       // Convert prompt to GoogleGenAI format
-      const { contentParts, systemInstructionParts } = this.compiledPromptToGoogleGenAI(prompt);
+      const { contents, systemInstructionParts } = this.compiledPromptToGoogleGenAI(prompt);
 
       // Create generation config
       const config: Record<string, unknown> = {
@@ -282,7 +288,7 @@ export class GoogleGenAIDriver implements AIDriver {
       // Generate content
       const response = await this.client.models.generateContent({
         model,
-        contents: contentParts,
+        contents,
         config
       });
 
@@ -338,7 +344,7 @@ export class GoogleGenAIDriver implements AIDriver {
     const mergedOptions = { ...this.defaultOptions, ...options };
 
     // Convert prompt to GoogleGenAI format
-    const { contentParts, systemInstructionParts } = this.compiledPromptToGoogleGenAI(prompt);
+    const { contents, systemInstructionParts } = this.compiledPromptToGoogleGenAI(prompt);
 
     // Create generation config
     const config: Record<string, unknown> = {
@@ -375,7 +381,7 @@ export class GoogleGenAIDriver implements AIDriver {
     // Generate content stream
     const streamResponse = await this.client.models.generateContentStream({
       model,
-      contents: contentParts,
+      contents,
       config
     });
 
