@@ -71,15 +71,18 @@ export class GoogleGenAIDriver implements AIDriver {
   /**
    * Convert content (string or Attachment[]) to string
    */
-  private contentToString(content: string | any[]): string {
+  private contentToString(content: string | unknown[]): string {
     if (typeof content === 'string') {
       return content;
     }
     // For Attachment[], extract text content
     // TODO: In the future, handle image_url and file attachments for multimodal support
     return content
-      .filter(att => att.type === 'text' && att.text)
-      .map(att => att.text)
+      .filter((att: unknown) => {
+        const a = att as { type?: string; text?: string };
+        return a.type === 'text' && a.text;
+      })
+      .map((att: unknown) => (att as { text: string }).text)
       .join('\n');
   }
 
@@ -96,27 +99,30 @@ export class GoogleGenAIDriver implements AIDriver {
       case 'text':
         return { text: element.content };
 
-      case 'message':
+      case 'message': {
         // Flatten message as text
         const messageContent = this.contentToString(element.content);
         return { text: `${element.role}: ${messageContent}` };
+      }
 
-      case 'material':
+      case 'material': {
         const materialContent = this.contentToString(element.content);
         return { text: `# ${element.title}\n${materialContent}` };
+      }
 
-      case 'chunk':
+      case 'chunk': {
         const chunkContent = this.contentToString(element.content);
         const chunkHeader = element.index !== undefined && element.total !== undefined
           ? `[Chunk ${element.index + 1}/${element.total} of ${element.partOf}]`
           : `[Chunk of ${element.partOf}]`;
         return { text: `${chunkHeader}\n${chunkContent}` };
+      }
 
       case 'section':
-      case 'subsection':
+      case 'subsection': {
         // Section/SubSection elements should be compiled before reaching here
         // If they do reach here, flatten their items recursively
-        const flattenItems = (items: any[]): string => {
+        const flattenItems = (items: unknown[]): string => {
           return items.map(item => {
             if (typeof item === 'string') return item;
             if (typeof item === 'function') return ''; // DynamicContent should be resolved before this point
@@ -124,6 +130,7 @@ export class GoogleGenAIDriver implements AIDriver {
           }).filter(Boolean).join('\n');
         };
         return { text: flattenItems(element.items) };
+      }
 
       case 'json':
         return { text: typeof element.content === 'string' ? element.content : JSON.stringify(element.content, null, 2) };
