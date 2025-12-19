@@ -1,4 +1,5 @@
 import { GoogleGenAI } from '@google/genai';
+import type { Part, Content } from '@google/genai';
 import type { CompiledPrompt, Element } from '@moduler-prompt/core';
 import type { AIDriver, QueryOptions, QueryResult, StreamResult } from '../types.js';
 
@@ -62,52 +63,111 @@ export class GoogleGenAIDriver implements AIDriver {
     }
 
     this.client = new GoogleGenAI({ apiKey });
-    this.defaultModel = config.model || 'gemini-2.0-flash-exp';
+    this.defaultModel = config.model || 'gemma-3-27b';
     this.defaultTemperature = config.temperature ?? 0.7;
     this.defaultOptions = config.defaultOptions || {};
   }
 
   /**
-   * Convert CompiledPrompt to GoogleGenAI's format
+   * Convert content (string or Attachment[]) to string
    */
-  private compiledPromptToGoogleGenAI(prompt: CompiledPrompt): {
-    contents: string;
-    systemInstruction?: string;
-  } {
-    // Convert Element[] to string
-    const formatElements = (elements: Element[]): string => {
-      return elements.map(el => {
-        if (typeof el === 'string') return el;
-        if ('content' in el) return el.content;
-        return JSON.stringify(el);
-      }).join('\n');
-    };
+  private contentToString(content: string | unknown[]): string {
+    if (typeof content === 'string') {
+      return content;
+    }
+    // For Attachment[], extract text content
+    // TODO: In the future, handle image_url and file attachments for multimodal support
+    return content
+      .filter((att: unknown) => {
+        const a = att as { type?: string; text?: string };
+        return a.type === 'text' && a.text;
+      })
+      .map((att: unknown) => (att as { text: string }).text)
+      .join('\n');
+  }
 
-    // Format instructions as system instruction
-    const systemInstruction = prompt.instructions && prompt.instructions.length > 0
-      ? formatElements(prompt.instructions)
-      : undefined;
-
-    // Combine data and output as contents
-    const contentParts: string[] = [];
-
-    if (prompt.data && prompt.data.length > 0) {
-      contentParts.push(formatElements(prompt.data));
+  /**
+   * Convert Element to Part (flat text conversion)
+   * Used for systemInstruction and simple data
+   */
+  private elementToPart(element: Element | string): Part {
+    if (typeof element === 'string') {
+      return { text: element };
     }
 
-    if (prompt.output && prompt.output.length > 0) {
-      contentParts.push(formatElements(prompt.output));
+    switch (element.type) {
+      case 'text':
+        return { text: element.content };
+
+      case 'message': {
+        // Flatten message as text
+        const messageContent = this.contentToString(element.content);
+        return { text: `${element.role}: ${messageContent}` };
+      }
+
+      case 'material': {
+        const materialContent = this.contentToString(element.content);
+        return { text: `# ${element.title}\n${materialContent}` };
+      }
+
+      case 'chunk': {
+        const chunkContent = this.contentToString(element.content);
+        const chunkHeader = element.index !== undefined && element.total !== undefined
+          ? `[Chunk ${element.index + 1}/${element.total} of ${element.partOf}]`
+          : `[Chunk of ${element.partOf}]`;
+        return { text: `${chunkHeader}\n${chunkContent}` };
+      }
+
+      case 'section':
+      case 'subsection': {
+        // Section/SubSection elements should be compiled before reaching here
+        // If they do reach here, flatten their items recursively
+        const flattenItems = (items: unknown[]): string => {
+          return items.map(item => {
+            if (typeof item === 'string') return item;
+            if (typeof item === 'function') return ''; // DynamicContent should be resolved before this point
+            return this.elementToPart(item as Element).text || '';
+          }).filter(Boolean).join('\n');
+        };
+        return { text: flattenItems(element.items) };
+      }
+
+      case 'json':
+        return { text: typeof element.content === 'string' ? element.content : JSON.stringify(element.content, null, 2) };
+
+      default:
+        return { text: JSON.stringify(element) };
+    }
+  }
+
+  /**
+   * Convert Element to Content (structure-preserving conversion)
+   * Used for conversation history where role matters
+   */
+  private elementToContent(element: Element | string): Content {
+    if (typeof element === 'string') {
+      return { parts: [{ text: element }] };
     }
 
-    const contents = contentParts.length > 0
-      ? contentParts.join('\n\n')
-      : 'Please process according to the instructions.';
+    if (element.type === 'message') {
+      // Role conversion:
+      // - assistant → model
+      // - system → user (Gemini API doesn't support system role in contents)
+      // - user → user
+      const role = element.role === 'assistant' ? 'model' : 'user';
+      const messageContent = this.contentToString(element.content);
+      return {
+        role,
+        parts: [{ text: messageContent }]
+      };
+    }
 
+    // Non-message elements: convert to Part and wrap in Content without role
     return {
-      contents,
-      systemInstruction
+      parts: [this.elementToPart(element)]
     };
   }
+
 
   /**
    * Convert JSON Schema to GoogleGenAI Schema format
@@ -132,7 +192,14 @@ export class GoogleGenAIDriver implements AIDriver {
       const mergedOptions = { ...this.defaultOptions, ...options };
 
       // Convert prompt to GoogleGenAI format
-      const { contents, systemInstruction } = this.compiledPromptToGoogleGenAI(prompt);
+      // Instructions → systemInstruction (Part[])
+      const systemInstructionParts = prompt.instructions?.map(el => this.elementToPart(el));
+
+      // Data + Output → contents (Content[])
+      const allDataElements = [...(prompt.data || []), ...(prompt.output || [])];
+      const contents = allDataElements.length > 0
+        ? allDataElements.map(el => this.elementToContent(el))
+        : [{ parts: [{ text: 'Please process according to the instructions.' }] }];
 
       // Create generation config
       const config: Record<string, unknown> = {
@@ -146,8 +213,8 @@ export class GoogleGenAIDriver implements AIDriver {
       };
 
       // Add system instruction if present
-      if (systemInstruction) {
-        config.systemInstruction = { parts: [{ text: systemInstruction }] };
+      if (systemInstructionParts && systemInstructionParts.length > 0) {
+        config.systemInstruction = systemInstructionParts;
       }
 
       // Handle structured outputs
@@ -225,7 +292,14 @@ export class GoogleGenAIDriver implements AIDriver {
     const mergedOptions = { ...this.defaultOptions, ...options };
 
     // Convert prompt to GoogleGenAI format
-    const { contents, systemInstruction } = this.compiledPromptToGoogleGenAI(prompt);
+    // Instructions → systemInstruction (Part[])
+    const systemInstructionParts = prompt.instructions?.map(el => this.elementToPart(el));
+
+    // Data + Output → contents (Content[])
+    const allDataElements = [...(prompt.data || []), ...(prompt.output || [])];
+    const contents = allDataElements.length > 0
+      ? allDataElements.map(el => this.elementToContent(el))
+      : [{ parts: [{ text: 'Please process according to the instructions.' }] }];
 
     // Create generation config
     const config: Record<string, unknown> = {
@@ -239,8 +313,8 @@ export class GoogleGenAIDriver implements AIDriver {
     };
 
     // Add system instruction if present
-    if (systemInstruction) {
-      config.systemInstruction = { parts: [{ text: systemInstruction }] };
+    if (systemInstructionParts && systemInstructionParts.length > 0) {
+      config.systemInstruction = systemInstructionParts;
     }
 
     // Handle structured outputs

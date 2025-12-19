@@ -43,7 +43,7 @@ describe('GoogleGenAIDriver', () => {
   beforeEach(() => {
     driver = new GoogleGenAIDriver({
       apiKey: 'test-api-key',
-      model: 'gemini-2.0-flash-exp'
+      model: 'gemma-3-27b'
     });
   });
 
