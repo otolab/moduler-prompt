@@ -94,19 +94,24 @@ describe('stream-processing modules', () => {
           end: 4
         }
       };
-      
+
       const result = compile(streamProcessing, context);
-      const materialsSection = result.data.find(e => e.type === 'section' && e.title === 'Prepared Materials');
-      
-      if (materialsSection?.type === 'section') {
-        const chunkTexts = materialsSection.items.filter(item => 
-          typeof item === 'string' && item.includes('[Chunk from')
-        );
-        
-        expect(chunkTexts).toHaveLength(3); // インデックス1, 2, 3
-        expect(chunkTexts[0]).toContain('Chunk 1');
-        expect(chunkTexts[2]).toContain('Chunk 3');
-      }
+
+      // ChunkElementを直接チェック（SectionElement.itemsではなく）
+      const chunkElements = result.data.filter(e => e.type === 'chunk' && e.partOf === 'input');
+      expect(chunkElements).toHaveLength(3); // インデックス1, 2, 3
+      expect(chunkElements[0]).toMatchObject({
+        type: 'chunk',
+        content: 'Chunk 1',
+        partOf: 'input',
+        index: 0
+      });
+      expect(chunkElements[2]).toMatchObject({
+        type: 'chunk',
+        content: 'Chunk 3',
+        partOf: 'input',
+        index: 2
+      });
     });
   });
 

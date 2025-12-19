@@ -51,17 +51,22 @@ describe('dialogue modules', () => {
         ],
         range: { start: 1, end: 3 }
       };
-      
+
       const result = compile(dialogueBase, context);
-      const messagesSection = result.data.find(
-        e => e.type === 'section' && e.title === 'Messages'
-      );
-      
-      if (messagesSection?.type === 'section') {
-        expect(messagesSection.items).toHaveLength(2);
-        expect(messagesSection.items[0]).toContain('Response 1');
-        expect(messagesSection.items[1]).toContain('Message 2');
-      }
+
+      // MessageElementを直接チェック（SectionElement.itemsではなく）
+      const messageElements = result.data.filter(e => e.type === 'message');
+      expect(messageElements).toHaveLength(2);
+      expect(messageElements[0]).toEqual({
+        type: 'message',
+        role: 'assistant',
+        content: 'Response 1'
+      });
+      expect(messageElements[1]).toEqual({
+        type: 'message',
+        role: 'user',
+        content: 'Message 2'
+      });
     });
   });
 
