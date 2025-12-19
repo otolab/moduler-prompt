@@ -168,65 +168,6 @@ export class GoogleGenAIDriver implements AIDriver {
     };
   }
 
-  /**
-   * Convert Element[] to Part[]
-   */
-  private elementsToParts(elements: Element[] | undefined): Part[] {
-    if (!elements || elements.length === 0) return [];
-    return elements.map(el => this.elementToPart(el));
-  }
-
-  /**
-   * Convert Element[] to Content[]
-   */
-  private elementsToContents(elements: Element[] | undefined): Content[] {
-    if (!elements || elements.length === 0) return [];
-    return elements.map(el => this.elementToContent(el));
-  }
-
-  /**
-   * Convert CompiledPrompt to GoogleGenAI's format
-   */
-  private compiledPromptToGoogleGenAI(prompt: CompiledPrompt): {
-    contents: Part[] | Content[];
-    systemInstructionParts?: Part[];
-  } {
-    // Instructions → systemInstruction (as Part[])
-    const systemInstructionParts = prompt.instructions && prompt.instructions.length > 0
-      ? this.elementsToParts(prompt.instructions)
-      : undefined;
-
-    // Data + Output → contents
-    const allDataElements: Element[] = [
-      ...(prompt.data || []),
-      ...(prompt.output || [])
-    ];
-
-    // Check if there are any message elements
-    const hasMessages = allDataElements.some(el =>
-      typeof el !== 'string' && el.type === 'message'
-    );
-
-    let contents: Part[] | Content[];
-
-    if (hasMessages) {
-      // Messages present: convert to Content[] to preserve role structure
-      contents = this.elementsToContents(allDataElements);
-    } else {
-      // No messages: simple Part[] conversion (flat structure)
-      contents = this.elementsToParts(allDataElements);
-    }
-
-    // Ensure we have at least some content
-    if (contents.length === 0) {
-      contents = [{ text: 'Please process according to the instructions.' }];
-    }
-
-    return {
-      contents,
-      systemInstructionParts
-    };
-  }
 
   /**
    * Convert JSON Schema to GoogleGenAI Schema format
@@ -251,7 +192,14 @@ export class GoogleGenAIDriver implements AIDriver {
       const mergedOptions = { ...this.defaultOptions, ...options };
 
       // Convert prompt to GoogleGenAI format
-      const { contents, systemInstructionParts } = this.compiledPromptToGoogleGenAI(prompt);
+      // Instructions → systemInstruction (Part[])
+      const systemInstructionParts = prompt.instructions?.map(el => this.elementToPart(el));
+
+      // Data + Output → contents (Content[])
+      const allDataElements = [...(prompt.data || []), ...(prompt.output || [])];
+      const contents = allDataElements.length > 0
+        ? allDataElements.map(el => this.elementToContent(el))
+        : [{ parts: [{ text: 'Please process according to the instructions.' }] }];
 
       // Create generation config
       const config: Record<string, unknown> = {
@@ -344,7 +292,14 @@ export class GoogleGenAIDriver implements AIDriver {
     const mergedOptions = { ...this.defaultOptions, ...options };
 
     // Convert prompt to GoogleGenAI format
-    const { contents, systemInstructionParts } = this.compiledPromptToGoogleGenAI(prompt);
+    // Instructions → systemInstruction (Part[])
+    const systemInstructionParts = prompt.instructions?.map(el => this.elementToPart(el));
+
+    // Data + Output → contents (Content[])
+    const allDataElements = [...(prompt.data || []), ...(prompt.output || [])];
+    const contents = allDataElements.length > 0
+      ? allDataElements.map(el => this.elementToContent(el))
+      : [{ parts: [{ text: 'Please process according to the instructions.' }] }];
 
     // Create generation config
     const config: Record<string, unknown> = {
