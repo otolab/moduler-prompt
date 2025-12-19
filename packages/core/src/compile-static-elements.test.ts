@@ -70,10 +70,18 @@ describe('compile with static Elements', () => {
 
       const result = compile(module);
 
-      expect(result.data).toHaveLength(1);
+      expect(result.data).toHaveLength(2);
 
-      // MaterialElementが直接追加される
+      // 最初はSectionElement
       expect(result.data[0]).toEqual({
+        type: 'section',
+        category: 'data',
+        title: 'Prepared Materials',
+        items: []
+      });
+
+      // 次にMaterialElementが追加される
+      expect(result.data[1]).toEqual({
         type: 'material',
         id: 'api-doc',
         title: 'API Documentation',
@@ -101,9 +109,16 @@ describe('compile with static Elements', () => {
 
       const result = compile(module);
 
-      expect(result.data).toHaveLength(2);
-      expect(result.data[0].type).toBe('material');
+      expect(result.data).toHaveLength(3);
+      // 最初はSectionElement
+      expect(result.data[0]).toEqual({
+        type: 'section',
+        category: 'data',
+        title: 'Prepared Materials',
+        items: []
+      });
       expect(result.data[1].type).toBe('material');
+      expect(result.data[2].type).toBe('material');
     });
   });
 
@@ -123,8 +138,15 @@ describe('compile with static Elements', () => {
 
       const result = compile(module);
 
-      expect(result.data).toHaveLength(1);
+      expect(result.data).toHaveLength(2);
+      // 最初はSectionElement
       expect(result.data[0]).toEqual({
+        type: 'section',
+        category: 'data',
+        title: 'Input Chunks',
+        items: []
+      });
+      expect(result.data[1]).toEqual({
         type: 'chunk',
         content: 'Chunk content',
         partOf: 'document',
@@ -153,13 +175,20 @@ describe('compile with static Elements', () => {
 
       const result = compile(module);
 
-      expect(result.data).toHaveLength(2);
+      expect(result.data).toHaveLength(3);
+      // 最初はSectionElement
       expect(result.data[0]).toEqual({
+        type: 'section',
+        category: 'data',
+        title: 'Messages',
+        items: []
+      });
+      expect(result.data[1]).toEqual({
         type: 'message',
         role: 'user',
         content: 'What is the weather?'
       });
-      expect(result.data[1]).toEqual({
+      expect(result.data[2]).toEqual({
         type: 'message',
         role: 'assistant',
         content: 'I can help you check the weather.'
@@ -180,8 +209,18 @@ describe('compile with static Elements', () => {
 
       const result = compile(module);
 
-      expect(result.instructions).toHaveLength(1);
+      expect(result.instructions).toHaveLength(2);
+
+      // 最初はSectionElement
       expect(result.instructions[0]).toEqual({
+        type: 'section',
+        category: 'instructions',
+        title: 'Instructions',
+        items: []
+      });
+
+      // 次にTextElement
+      expect(result.instructions[1]).toEqual({
         type: 'text',
         content: 'This is a text element'
       });
@@ -298,17 +337,25 @@ describe('compile with static Elements', () => {
 
       const result = compile(module);
 
-      expect(result.data).toHaveLength(2);
+      expect(result.data).toHaveLength(3);
+
+      // 最初はSectionElement
+      expect(result.data[0]).toEqual({
+        type: 'section',
+        category: 'data',
+        title: 'Prepared Materials',
+        items: []
+      });
 
       // Both static and dynamic MaterialElements should be present
-      expect(result.data[0]).toEqual({
+      expect(result.data[1]).toEqual({
         type: 'material',
         id: 'static-doc',
         title: 'Static Document',
         content: 'Static content'
       });
 
-      expect(result.data[1]).toEqual({
+      expect(result.data[2]).toEqual({
         type: 'material',
         id: 'dynamic-doc',
         title: 'Dynamic Document',

@@ -31,10 +31,41 @@ export function compile<TContext = any>(
 
   // 標準セクションを処理
   for (const sectionName of Object.keys(STANDARD_SECTIONS) as StandardSectionName[]) {
-    const sectionContent = module[sectionName];
+    let sectionContent = module[sectionName];
     if (!sectionContent) continue;
 
     const sectionDef = STANDARD_SECTIONS[sectionName];
+
+    // schemaセクションの場合、先にJSONElementを抽出してmetadataに設定
+    if (sectionName === 'schema') {
+      const contentArray = Array.isArray(sectionContent) ? sectionContent : [sectionContent];
+
+      // JSONElementを探してmetadataに抽出
+      for (const item of contentArray) {
+        if (item && typeof item === 'object' && 'type' in item && item.type === 'json') {
+          const jsonElement = item as JSONElement;
+          const schema = typeof jsonElement.content === 'string'
+            ? JSON.parse(jsonElement.content)
+            : jsonElement.content;
+          compiled.metadata = {
+            outputSchema: schema
+          };
+
+          // JSONElementを除外した残りのcontentで処理を続ける
+          const filteredContent = contentArray.filter(el =>
+            !(el && typeof el === 'object' && 'type' in el && el.type === 'json')
+          );
+          sectionContent = filteredContent.length > 0 ? filteredContent : [];
+          break;
+        }
+      }
+
+      // JSONElementを除外した後、contentが空なら何も追加しない
+      if (Array.isArray(sectionContent) && sectionContent.length === 0) {
+        continue;
+      }
+    }
+
     const elements = compileSectionToElements(
       sectionContent,
       sectionDef.title,
@@ -43,33 +74,7 @@ export function compile<TContext = any>(
       actualContext
     );
 
-    // schemaセクションの場合、JSONElementを探してmetadataに抽出し、プロンプトから除外
-    if (sectionName === 'schema') {
-      let schemaExtracted = false;
-      for (const element of elements) {
-        if (element.type === 'json') {
-          const jsonElement = element as JSONElement;
-          const schema = typeof jsonElement.content === 'string'
-            ? JSON.parse(jsonElement.content)
-            : jsonElement.content;
-          compiled.metadata = {
-            outputSchema: schema
-          };
-          schemaExtracted = true;
-          break;
-        }
-      }
-      // schemaセクションのJSONElementのみを除外
-      if (schemaExtracted) {
-        const elementsWithoutJson = elements.filter(el => el.type !== 'json');
-        compiled[sectionDef.type].push(...elementsWithoutJson);
-      } else {
-        compiled[sectionDef.type].push(...elements);
-      }
-    } else {
-      // schema以外のセクションはJSONElementも含めて全て追加
-      compiled[sectionDef.type].push(...elements);
-    }
+    compiled[sectionDef.type].push(...elements);
   }
 
   return compiled;
@@ -137,9 +142,12 @@ function compileSectionToElements<TContext>(
     }
   }
 
-  // 文字列やサブセクションがある場合は、SectionElementを作成
+  // 何らかの内容がある場合は、SectionElementを作成
   // （標準セクションは空でなければSectionElementとして表現される）
-  if (plainItems.length > 0 || subsections.length > 0) {
+  // elements配列に内容がある場合も考慮（MessageElement、MaterialElement等）
+  const hasContent = elements.length > 0 || plainItems.length > 0 || subsections.length > 0;
+
+  if (hasContent) {
     const sectionElement: SectionElement = {
       type: 'section',
       category,

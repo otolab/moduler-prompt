@@ -91,9 +91,17 @@ describe('compile', () => {
       };
       const context = { value: 'test123' };
       const result = compile(module, context);
-      
-      expect(result.data).toHaveLength(1);
+
+      expect(result.data).toHaveLength(2);
+      // 最初はSectionElement
       expect(result.data[0]).toEqual({
+        type: 'section',
+        category: 'data',
+        title: 'Current State',
+        items: []
+      });
+      // 次にTextElement
+      expect(result.data[1]).toEqual({
         type: 'text',
         content: 'Value: test123'
       });
@@ -111,9 +119,17 @@ describe('compile', () => {
       };
       const context = { message: 'Hello, AI!' };
       const result = compile(module, context);
-      
-      expect(result.data).toHaveLength(1);
+
+      expect(result.data).toHaveLength(2);
+      // 最初はSectionElement
       expect(result.data[0]).toEqual({
+        type: 'section',
+        category: 'data',
+        title: 'Messages',
+        items: []
+      });
+      // 次にMessageElement
+      expect(result.data[1]).toEqual({
         type: 'message',
         role: 'user',
         content: 'Hello, AI!'
@@ -140,8 +156,16 @@ describe('compile', () => {
       };
       const result = compile(module, context);
       
-      expect(result.data).toHaveLength(1);
+      expect(result.data).toHaveLength(2);
+      // 最初はSectionElement
       expect(result.data[0]).toEqual({
+        type: 'section',
+        category: 'data',
+        title: 'Prepared Materials',
+        items: []
+      });
+      // 次にMaterialElement
+      expect(result.data[1]).toEqual({
         type: 'material',
         id: 'doc1',
         title: 'API Guide',
@@ -167,13 +191,21 @@ describe('compile', () => {
       };
       const result = compile(module, context);
       
-      expect(result.data).toHaveLength(2);
+      expect(result.data).toHaveLength(3);
+      // 最初はSectionElement
       expect(result.data[0]).toEqual({
+        type: 'section',
+        category: 'data',
+        title: 'Input Chunks',
+        items: []
+      });
+      // 次にChunkElement
+      expect(result.data[1]).toEqual({
         type: 'chunk',
         partOf: 'document.txt',
         content: 'Part 1 content'
       });
-      expect(result.data[1]).toEqual({
+      expect(result.data[2]).toEqual({
         type: 'chunk',
         partOf: 'document.txt',
         content: 'Part 2 content'
@@ -585,9 +617,103 @@ describe('compile', () => {
 
     it('createContextがない場合は空オブジェクトを返す', () => {
       const module: PromptModule = {};
-      
+
       const context = createContext(module);
       expect(context).toEqual({});
+    });
+  });
+
+  describe('Elementのみで構成されるセクション', () => {
+    it('MessageElementのみのmessagesセクションでもSectionElementが作成される', () => {
+      const module: PromptModule = {
+        messages: [
+          { type: 'message', role: 'user', content: 'Hello' } as MessageElement,
+          { type: 'message', role: 'assistant', content: 'Hi there!' } as MessageElement
+        ]
+      };
+      const context = {};
+      const result = compile(module, context);
+
+      expect(result.data).toHaveLength(3);
+      // 最初はSectionElement
+      expect(result.data[0]).toEqual({
+        type: 'section',
+        category: 'data',
+        title: 'Messages',
+        items: []
+      });
+      // 次にMessageElement
+      expect(result.data[1]).toEqual({
+        type: 'message',
+        role: 'user',
+        content: 'Hello'
+      });
+      expect(result.data[2]).toEqual({
+        type: 'message',
+        role: 'assistant',
+        content: 'Hi there!'
+      });
+    });
+
+    it('MaterialElementのみのmaterialsセクションでもSectionElementが作成される', () => {
+      const module: PromptModule = {
+        materials: [
+          { type: 'material', id: 'doc1', title: 'Document 1', content: 'Content 1' } as MaterialElement
+        ]
+      };
+      const context = {};
+      const result = compile(module, context);
+
+      expect(result.data).toHaveLength(2);
+      // 最初はSectionElement
+      expect(result.data[0]).toEqual({
+        type: 'section',
+        category: 'data',
+        title: 'Prepared Materials',
+        items: []
+      });
+      // 次にMaterialElement
+      expect(result.data[1]).toEqual({
+        type: 'material',
+        id: 'doc1',
+        title: 'Document 1',
+        content: 'Content 1'
+      });
+    });
+
+    it('ChunkElementのみのchunksセクションでもSectionElementが作成される', () => {
+      const module: PromptModule = {
+        chunks: [
+          { type: 'chunk', partOf: 'dataset', index: 0, total: 2, content: 'Chunk 1' } as ChunkElement,
+          { type: 'chunk', partOf: 'dataset', index: 1, total: 2, content: 'Chunk 2' } as ChunkElement
+        ]
+      };
+      const context = {};
+      const result = compile(module, context);
+
+      expect(result.data).toHaveLength(3);
+      // 最初はSectionElement
+      expect(result.data[0]).toEqual({
+        type: 'section',
+        category: 'data',
+        title: 'Input Chunks',
+        items: []
+      });
+      // 次にChunkElement
+      expect(result.data[1]).toEqual({
+        type: 'chunk',
+        partOf: 'dataset',
+        index: 0,
+        total: 2,
+        content: 'Chunk 1'
+      });
+      expect(result.data[2]).toEqual({
+        type: 'chunk',
+        partOf: 'dataset',
+        index: 1,
+        total: 2,
+        content: 'Chunk 2'
+      });
     });
   });
 });
