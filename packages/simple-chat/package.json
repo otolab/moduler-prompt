@@ -1,6 +1,6 @@
 {
   "name": "@moduler-prompt/simple-chat",
-  "version": "0.1.11",
+  "version": "0.1.12",
   "type": "module",
   "description": "Sample implementation: Simple chat application using Moduler Prompt with MLX models",
   "main": "dist/index.js",
