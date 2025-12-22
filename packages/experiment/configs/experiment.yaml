@@ -1,0 +1,67 @@
+# Experiment configuration for module comparison
+
+models:
+  # Local MLX model - for testing text+json output format
+  - model: "mlx-community/gemma-3-12b-it-qat-4bit"
+    provider: "mlx"
+    capabilities: ["local", "fast", "tools"]
+    priority: 20
+    enabled: true
+
+  # Vertex AI Gemini - for testing with structuredOutput support
+  - model: "gemini-2.0-flash-exp"
+    provider: "vertexai"
+    capabilities: ["tools", "fast", "japanese"]
+    priority: 10
+    enabled: true
+
+  # GoogleGenAI Gemini - alternative for testing
+  - model: "gemini-2.0-flash-exp"
+    provider: "googlegenai"
+    capabilities: ["tools", "fast", "japanese"]
+    priority: 15
+    enabled: false  # Disabled by default
+
+drivers:
+  mlx: {}
+  vertexai:
+    project: "otolab-161708"
+    location: "us-central1"
+    # Path is resolved relative to this config file
+    # Can use ~/ for home directory or absolute paths
+    credentialsPath: "~/.nymphish-claude/otolab-vertexai-key.json"
+  googlegenai:
+    apiKey: "${GOOGLE_API_KEY}"  # Set via environment variable
+
+selection:
+  preferLocal: false  # Don't prefer local for experiments
+  preferFast: true
+  lenient: true
+
+# Evaluation configuration
+# Specifies which model to use for AI-based evaluation
+evaluation:
+  enabled: true
+  model: "gemini-2.0-flash-exp"
+  provider: "vertexai"
+  # You can also specify model capabilities for selection
+  # If model/provider not found, falls back to the best available model
+
+server:
+  port: 4100  # Different port to avoid conflict
+  host: "127.0.0.1"
+
+logging:
+  level: "info"
+  request_response_level: "full"
+
+# Modules to test
+# Each module should have: name, path (relative to this file), description (optional)
+modules: []
+
+# Test cases
+testCases: []
+
+# Evaluators
+# Can be code evaluators (with path) or prompt evaluators (with prompt definition)
+evaluators: []

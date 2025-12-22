@@ -1,0 +1,25 @@
+# Test configuration
+
+models:
+  - model: "test-model"
+    provider: "test"
+    enabled: true
+    role: test
+
+drivers:
+  test: {}
+
+evaluation:
+  enabled: false
+
+modules:
+  - name: test-module
+    path: ./test-module.ts
+    description: Test module
+
+testCases:
+  - name: Test Case 1
+    description: Simple test case
+    input: test input
+
+evaluators: []
