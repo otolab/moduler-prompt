@@ -1,5 +1,15 @@
 # @modular-prompt/driver
 
+## 0.4.5
+
+### Patch Changes
+
+- d85ab2d: MLX ドライバーの Python 環境セットアップを修正
+
+  - Python 3.13 に固定（.python-version、setup-mlx.js、pyproject.toml）
+  - 不要な test\_\*.py ファイルを削除
+  - pyproject.toml に py-modules を明示的に指定して setuptools discovery 問題を解決
+
 ## 0.4.4
 
 ### Patch Changes
