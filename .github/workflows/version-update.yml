@@ -47,9 +47,9 @@ jobs:
         # 1. changesetでパッケージのバージョンとCHANGELOGを更新
         pnpm changeset version
 
-        # 2. ブランチ名からバージョンを抽出してrootを更新
+        # 2. ブランチ名からバージョンを抽出してrootを更新（vの有無に対応）
         BRANCH_NAME="${GITHUB_REF#refs/heads/}"
-        if [[ "$BRANCH_NAME" =~ ^release/([0-9]+\.[0-9]+\.[0-9]+)$ ]]; then
+        if [[ "$BRANCH_NAME" =~ ^release/v?([0-9]+\.[0-9]+\.[0-9]+)$ ]]; then
           VERSION="${BASH_REMATCH[1]}"
           node -e "
             const fs = require('fs');
