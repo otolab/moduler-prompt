@@ -7,7 +7,7 @@ import type {
   ChunkElement,
   SectionElement,
   SubSectionElement
-} from '@moduler-prompt/core';
+} from '@modular-prompt/core';
 import type { SpecialToken, SpecialTokenPair } from './types.js';
 
 describe('DefaultFormatter', () => {

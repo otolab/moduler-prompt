@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { compile } from '@moduler-prompt/core';
+import { compile } from '@modular-prompt/core';
 import { formatCompletionPrompt } from '../../src/formatter/converter.js';
 
 describe('MLX Special Tokens Formatting', () => {

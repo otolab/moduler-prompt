@@ -1,5 +1,5 @@
 /**
- * @moduler-prompt/core
+ * @modular-prompt/core
  * Core functionality for the Modular Prompt Framework
  */
 

@@ -1,7 +1,7 @@
 import Anthropic from '@anthropic-ai/sdk';
-import type { CompiledPrompt, Element } from '@moduler-prompt/core';
+import type { CompiledPrompt, Element } from '@modular-prompt/core';
 import type { AIDriver, QueryOptions, QueryResult, StreamResult } from '../types.js';
-import { extractJSON } from '@moduler-prompt/utils';
+import { extractJSON } from '@modular-prompt/utils';
 
 /**
  * Anthropic driver configuration

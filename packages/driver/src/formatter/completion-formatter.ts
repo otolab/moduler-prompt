@@ -1,4 +1,4 @@
-import type { CompiledPrompt } from '@moduler-prompt/core';
+import type { CompiledPrompt } from '@modular-prompt/core';
 import type { FormatterOptions } from './types.js';
 import { DefaultFormatter } from './formatter.js';
 import { defaultFormatterTexts } from './converter.js';

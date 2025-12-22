@@ -3,7 +3,7 @@
 ## インストール
 
 ```bash
-npm install @moduler-prompt/core @moduler-prompt/driver @moduler-prompt/process
+npm install @modular-prompt/core @modular-prompt/driver @modular-prompt/process
 ```
 
 ## 環境設定
@@ -28,7 +28,7 @@ export GOOGLE_APPLICATION_CREDENTIALS=/path/to/credentials.json
 複数のモデルを登録し、タスクに応じて自動選択：
 
 ```typescript
-import { AIService } from '@moduler-prompt/driver';
+import { AIService } from '@modular-prompt/driver';
 
 const aiService = new AIService({
   models: [
@@ -59,7 +59,7 @@ const aiService = new AIService({
 streamProcessワークフローを使って、長い文章を分割して要約：
 
 ```typescript
-import { streamProcess } from '@moduler-prompt/process';
+import { streamProcess } from '@modular-prompt/process';
 
 // 要約用のプロセスモジュール
 const summaryModule = {
@@ -114,7 +114,7 @@ console.log('要約:', summary);
 concatProcessワークフローを使って、複数のアイテムを個別に処理し、結果を結合：
 
 ```typescript
-import { concatProcess } from '@moduler-prompt/process';
+import { concatProcess } from '@modular-prompt/process';
 
 // 各アイテムを処理するモジュール
 const analysisModule = {
@@ -163,7 +163,7 @@ console.log('回答:\n', answers);
 ### 資料を使った処理
 
 ```typescript
-import { withMaterials } from '@moduler-prompt/process';
+import { withMaterials } from '@modular-prompt/process';
 
 // モジュールを定義
 const analysisModule = {
@@ -213,7 +213,7 @@ console.log(summary);
 ### ストリーミング処理
 
 ```typescript
-import { streamProcess } from '@moduler-prompt/process';
+import { streamProcess } from '@modular-prompt/process';
 
 // ストリーミングモジュール
 const chatModule = {
@@ -263,7 +263,7 @@ const response = await chat('TypeScriptについて教えて');
 大量のデータを分割して処理：
 
 ```typescript
-import { withChunks } from '@moduler-prompt/process';
+import { withChunks } from '@modular-prompt/process';
 
 const processModule = {
   objective: ['データを分析する'],
@@ -351,7 +351,7 @@ async function extractInfo(text: string) {
 ## ローカルモデルの使用
 
 ```typescript
-import { MlxDriver } from '@moduler-prompt/driver';
+import { MlxDriver } from '@modular-prompt/driver';
 
 // AIServiceにローカルモデルを追加
 const aiService = new AIService({

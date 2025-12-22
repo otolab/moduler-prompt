@@ -16,7 +16,7 @@
 TestDriverは`responses`配列をキューとして扱います。`query()`または`streamQuery()`を呼び出すたびに、配列の先頭から順番にレスポンスを取り出します。
 
 ```typescript
-import { TestDriver } from '@moduler-prompt/driver';
+import { TestDriver } from '@modular-prompt/driver';
 
 const driver = new TestDriver({
   responses: [
@@ -61,7 +61,7 @@ const driver = new TestDriver({
 エラーハンドリングのテストのために、finishReasonを制御できます。
 
 ```typescript
-import { TestDriver } from '@moduler-prompt/driver';
+import { TestDriver } from '@modular-prompt/driver';
 
 // MockResponseオブジェクトでfinishReasonを指定
 const driver = new TestDriver({
@@ -156,7 +156,7 @@ console.log(finalResult.structuredOutput);
 ### 基本的な使い方
 
 ```typescript
-import { EchoDriver } from '@moduler-prompt/driver';
+import { EchoDriver } from '@modular-prompt/driver';
 
 const driver = new EchoDriver({
   format: 'text'  // デフォルト
@@ -210,7 +210,7 @@ console.log(debug.formatted.messages);         // メッセージ配列
 
 ```typescript
 import { describe, it, expect } from 'vitest';
-import { TestDriver } from '@moduler-prompt/driver';
+import { TestDriver } from '@modular-prompt/driver';
 
 describe('MyModule', () => {
   it('should handle structured outputs', async () => {

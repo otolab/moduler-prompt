@@ -1,6 +1,6 @@
 import { describe, it, expect, beforeAll, afterAll } from 'vitest';
 import { MlxDriver } from './mlx-driver.js';
-import type { CompiledPrompt } from '@moduler-prompt/core';
+import type { CompiledPrompt } from '@modular-prompt/core';
 import { platform } from 'os';
 
 // Test data types

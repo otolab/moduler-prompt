@@ -42,7 +42,7 @@ try {
 // Setup Python environment
 console.log('\n📦 Setting up Python environment...');
 try {
-  execSync('uv venv', { cwd: targetDir, stdio: 'inherit' });
+  execSync('uv venv --python 3.13', { cwd: targetDir, stdio: 'inherit' });
   execSync('uv pip install -e .', { cwd: targetDir, stdio: 'inherit' });
   console.log('\n✅ MLX driver setup completed successfully!');
   console.log('   You can now use MlxDriver from @moduler-prompt/driver');

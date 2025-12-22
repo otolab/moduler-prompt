@@ -26,7 +26,7 @@
 このプロジェクトはpnpm workspacesを使用したモノレポ構造です：
 
 ```
-@moduler-prompt/
+@modular-prompt/
 ├── core/         # コア機能（型定義、マージ、コンパイル）
 ├── driver/       # 各種AIモデルドライバ（OpenAI、Anthropic、VertexAI、MLX等）
 ├── utils/        # ユーティリティ（レジストリ、フォーマッター）
@@ -58,14 +58,14 @@
 ### インストール
 
 ```bash
-npm install @moduler-prompt/core @moduler-prompt/driver
+npm install @modular-prompt/core @modular-prompt/driver
 ```
 
 ### 基本的な使用例
 
 ```typescript
-import { merge, compile, createContext } from '@moduler-prompt/core';
-import type { PromptModule, ChunkElement } from '@moduler-prompt/core';
+import { merge, compile, createContext } from '@modular-prompt/core';
+import type { PromptModule, ChunkElement } from '@modular-prompt/core';
 
 // モジュールの定義
 interface AnalysisContext {
@@ -106,7 +106,7 @@ const compiled = compile(analysisModule, context);
 ケイパビリティベースで最適なAIモデルを自動選択：
 
 ```typescript
-import { AIService } from '@moduler-prompt/driver';
+import { AIService } from '@modular-prompt/driver';
 
 // AIサービスを設定
 const aiService = new AIService({
@@ -183,7 +183,7 @@ if (result.structuredOutput) {
 開発・テスト用のドライバーを提供：
 
 ```typescript
-import { TestDriver, EchoDriver } from '@moduler-prompt/driver';
+import { TestDriver, EchoDriver } from '@modular-prompt/driver';
 
 // モックレスポンスでテスト
 const testDriver = new TestDriver({
@@ -223,8 +223,8 @@ pnpm dev
 
 ```bash
 # 特定のワークスペースでコマンドを実行
-pnpm --filter @moduler-prompt/core build
-pnpm --filter @moduler-prompt/driver test
+pnpm --filter @modular-prompt/core build
+pnpm --filter @modular-prompt/driver test
 
 # すべてのワークスペースでコマンドを実行
 pnpm run -r build

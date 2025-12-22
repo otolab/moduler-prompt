@@ -1,6 +1,6 @@
 import { describe, it, expect, beforeAll, afterAll } from 'vitest';
 import { GoogleGenAIDriver } from './google-genai-driver.js';
-import type { CompiledPrompt } from '@moduler-prompt/core';
+import type { CompiledPrompt } from '@modular-prompt/core';
 
 // Skip if API key is not available
 const shouldSkip = !process.env.GOOGLE_GENAI_API_KEY;

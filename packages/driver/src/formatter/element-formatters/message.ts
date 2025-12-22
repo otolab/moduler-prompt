@@ -2,7 +2,7 @@
  * MessageElement Formatter
  */
 
-import type { MessageElement } from '@moduler-prompt/core';
+import type { MessageElement } from '@modular-prompt/core';
 import type { SpecialToken, SpecialTokenPair } from '../types.js';
 import { BaseElementFormatter } from './base.js';
 

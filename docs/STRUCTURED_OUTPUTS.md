@@ -1,6 +1,6 @@
 # Structured Outputs仕様
 
-`@moduler-prompt`におけるStructured Outputs（構造化出力）の仕様と実装ガイド。
+`@modular-prompt`におけるStructured Outputs（構造化出力）の仕様と実装ガイド。
 
 ## 概要
 
@@ -79,8 +79,8 @@ APIレベルでstructured outputsをサポート：
 ### 基本的な使用例
 
 ```typescript
-import { compile } from '@moduler-prompt/core';
-import { OpenAIDriver } from '@moduler-prompt/driver';
+import { compile } from '@modular-prompt/core';
+import { OpenAIDriver } from '@modular-prompt/driver';
 
 // モジュールのschemaセクションでJSONElementを定義
 const myModule: PromptModule = {
@@ -123,7 +123,7 @@ if (result.structuredOutput) {
 
 ## JSON抽出ユーティリティ
 
-`@moduler-prompt/utils`パッケージの`extractJSON`関数は、様々な形式からJSONを抽出：
+`@modular-prompt/utils`パッケージの`extractJSON`関数は、様々な形式からJSONを抽出：
 
 ### 対応形式
 
@@ -134,7 +134,7 @@ if (result.structuredOutput) {
 ### 使用例
 
 ```typescript
-import { extractJSON } from '@moduler-prompt/utils';
+import { extractJSON } from '@modular-prompt/utils';
 
 const text = 'Result: ```json\n{"status": "success"}\n```';
 const extracted = extractJSON(text, { multiple: false });

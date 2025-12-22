@@ -5,7 +5,7 @@
 ### 報告された問題
 - `apiStrategy: 'force-completion'` を設定しているにもかかわらず、chat APIが使用される
 - 「システムメッセージが5個検出」という警告が出る（chat API使用の証拠）
-- パッケージバージョン: `@moduler-prompt/driver@0.2.5`（最新）
+- パッケージバージョン: `@modular-prompt/driver@0.2.5`（最新）
 - 対象モデル: `gemma-2-2b-it-4bit`
 
 ### 設定内容（問題報告者のコード）
@@ -551,4 +551,4 @@ const driver = new MlxDriver({
 ---
 
 **作成日**: 2025-11-21
-**対象バージョン**: @moduler-prompt/driver@0.2.5
+**対象バージョン**: @modular-prompt/driver@0.2.5

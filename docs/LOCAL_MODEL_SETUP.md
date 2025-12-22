@@ -29,17 +29,17 @@ Apple Silicon Mac専用の高速ローカルLLM実行環境。
 
 ### 初回セットアップ
 
-`@moduler-prompt/driver`のインストール時に自動的にセットアップされます：
+`@modular-prompt/driver`のインストール時に自動的にセットアップされます：
 
 ```bash
-npm install @moduler-prompt/driver
+npm install @modular-prompt/driver
 # postinstallスクリプトが自動的にPython環境をセットアップ
 ```
 
 手動セットアップが必要な場合：
 
 ```bash
-cd node_modules/@moduler-prompt/driver
+cd node_modules/@modular-prompt/driver
 npm run setup-mlx
 ```
 
@@ -54,7 +54,7 @@ npm run setup-mlx
 開発・テスト・動作確認用の小型モデルをダウンロードできます：
 
 ```bash
-cd node_modules/@moduler-prompt/driver
+cd node_modules/@modular-prompt/driver
 npm run download-model
 ```
 
@@ -70,7 +70,7 @@ npm run download-model
 Hugging Face上の任意のMLXモデルをダウンロードできます：
 
 ```bash
-cd node_modules/@moduler-prompt/driver/src/mlx-ml/python
+cd node_modules/@modular-prompt/driver/src/mlx-ml/python
 uv run mlx_lm.generate --model <model-name> --prompt "test" --max-tokens 1
 ```
 
@@ -103,7 +103,7 @@ uv run mlx_lm.generate --model mlx-community/Llama-3.2-3B-Instruct-4bit --prompt
 curl -LsSf https://astral.sh/uv/install.sh | sh
 
 # MLX環境の再セットアップ
-cd node_modules/@moduler-prompt/driver
+cd node_modules/@modular-prompt/driver
 npm run setup-mlx
 ```
 
@@ -227,7 +227,7 @@ Ollamaはモデルをメモリに読み込むため、モデルサイズの1.5�
 ### MLX
 
 ```typescript
-import { MlxDriver } from '@moduler-prompt/driver';
+import { MlxDriver } from '@modular-prompt/driver';
 
 const driver = new MlxDriver({
   model: 'mlx-community/gemma-2-2b-it-4bit',
@@ -246,7 +246,7 @@ await driver.close();
 ### Ollama
 
 ```typescript
-import { OllamaDriver } from '@moduler-prompt/driver';
+import { OllamaDriver } from '@modular-prompt/driver';
 
 const driver = new OllamaDriver({
   model: 'llama3.2',

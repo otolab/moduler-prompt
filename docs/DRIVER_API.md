@@ -1,6 +1,6 @@
 # Driver APIリファレンス
 
-`@moduler-prompt/driver`パッケージのAPIリファレンス。
+`@modular-prompt/driver`パッケージのAPIリファレンス。
 
 ## 目次
 

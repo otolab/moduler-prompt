@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { compile } from '@moduler-prompt/core';
+import { compile } from '@modular-prompt/core';
 import { withMaterials, answerWithReferences } from './material';
 import type { MaterialContext } from './material';
 

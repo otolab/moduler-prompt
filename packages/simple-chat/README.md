@@ -13,7 +13,7 @@ Moduler Promptフレームワークを使用したチャットアプリケーシ
 ## インストール
 
 ```bash
-npm install @moduler-prompt/simple-chat
+npm install @modular-prompt/simple-chat
 ```
 
 ## 使用方法
@@ -40,7 +40,7 @@ simple-chat -p custom.yaml -l session.json --temperature 0.8 "創造的な回答
 ### ライブラリとして使用
 
 ```typescript
-import { chatPromptModule, performAIChat } from '@moduler-prompt/simple-chat';
+import { chatPromptModule, performAIChat } from '@modular-prompt/simple-chat';
 ```
 
 ## 対話プロファイル
@@ -117,7 +117,7 @@ options:
 このサンプル実装では、Moduler Promptフレームワークの主要な機能を実際のアプリケーションで活用する方法を示しています：
 
 1. **静的なモジュール定義**: `chatPromptModule`は静的に定義されたテンプレート
-2. **モジュールの合成**: `@moduler-prompt/process`の`withMaterials`モジュールとの合成
+2. **モジュールの合成**: `@modular-prompt/process`の`withMaterials`モジュールとの合成
 3. **型安全なコンテキスト**: `ChatContext`による型定義
 4. **段階的なデータバインディング**: createContext → データ設定 → compile
 

@@ -2,7 +2,7 @@
  * Element Formatter基底インターフェース
  */
 
-import type { Element } from '@moduler-prompt/core';
+import type { Element } from '@modular-prompt/core';
 import type { SpecialToken, SpecialTokenPair } from '../types.js';
 
 export interface ElementFormatter<T extends Element = Element> {

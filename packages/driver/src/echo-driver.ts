@@ -1,8 +1,8 @@
-import type { CompiledPrompt } from '@moduler-prompt/core';
+import type { CompiledPrompt } from '@modular-prompt/core';
 import type { AIDriver, QueryOptions, QueryResult, StreamResult } from './types.js';
 import type { FormatterOptions } from './formatter/types.js';
 import { formatCompletionPrompt, formatPromptAsMessages, ECHO_SPECIAL_TOKENS, defaultFormatterTexts } from './formatter/converter.js';
-import { extractJSON } from '@moduler-prompt/utils';
+import { extractJSON } from '@modular-prompt/utils';
 
 /**
  * Echo driver configuration

@@ -1,5 +1,5 @@
 {
-  "name": "@moduler-prompt/utils",
+  "name": "@modular-prompt/utils",
   "version": "0.1.4",
   "description": "Utility functions for moduler-prompt",
   "type": "module",
@@ -25,7 +25,7 @@
     "prepublishOnly": "pnpm run clean && pnpm build"
   },
   "dependencies": {
-    "@moduler-prompt/core": "workspace:*",
+    "@modular-prompt/core": "workspace:*",
     "js-yaml": "^4.1.0",
     "jsonrepair": "^3.8.1",
     "merge-stream": "^2.0.0"

@@ -1,9 +1,8 @@
 [project]
 name = "mlx_driver"
 version = "0.1.0"
-description = "Add your description here"
-readme = "README.md"
-requires-python = ">=3.10,<3.15"
+description = "MLX driver for moduler-prompt"
+requires-python = ">=3.10,<3.14"
 dependencies = [
     "flex>=6.14.1",
     "hf-xet>=1.1.8",
@@ -11,3 +10,10 @@ dependencies = [
     "mlx-lm>=0.28.3",
     "torch>=2.9.0",
 ]
+
+[build-system]
+requires = ["setuptools>=61.0"]
+build-backend = "setuptools.build_meta"
+
+[tool.setuptools]
+py-modules = ["__main__", "chat_template_constraints", "token_utils"]

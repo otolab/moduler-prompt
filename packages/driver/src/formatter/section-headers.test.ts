@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest';
-import { compile } from '@moduler-prompt/core';
-import type { PromptModule, CompiledPrompt } from '@moduler-prompt/core';
+import { compile } from '@modular-prompt/core';
+import type { PromptModule, CompiledPrompt } from '@modular-prompt/core';
 import { formatPromptAsMessages, defaultFormatterTexts } from './converter.js';
 
 describe('Section Headers in Prompts', () => {

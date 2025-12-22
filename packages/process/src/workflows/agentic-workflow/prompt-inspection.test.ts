@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { compile, merge } from '@moduler-prompt/core';
+import { compile, merge } from '@modular-prompt/core';
 import { planning } from './modules/planning.js';
 import { execution } from './modules/execution.js';
 import { integration } from './modules/integration.js';

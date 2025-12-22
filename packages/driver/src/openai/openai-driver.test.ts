@@ -1,6 +1,6 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { OpenAIDriver } from './openai-driver.js';
-import type { CompiledPrompt } from '@moduler-prompt/core';
+import type { CompiledPrompt } from '@modular-prompt/core';
 
 // Mock OpenAI module
 vi.mock('openai', () => {

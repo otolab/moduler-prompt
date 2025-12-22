@@ -26,7 +26,7 @@ packages/*/src/**/*.spec.ts
 **実行コマンド**:
 ```bash
 npm test                    # 全パッケージのユニットテスト
-npm test -w @moduler-prompt/driver  # 特定パッケージのみ
+npm test -w @modular-prompt/driver  # 特定パッケージのみ
 ```
 
 ### 2. インターフェーステスト (Interface Tests)
@@ -93,7 +93,7 @@ test/e2e/**/*.test.ts
 
 ## パッケージ固有のテスト戦略
 
-### @moduler-prompt/process
+### @modular-prompt/process
 
 processパッケージは、プロンプトモジュールとワークフローの実行を担当します。そのテスト戦略は以下の2層構成です。
 

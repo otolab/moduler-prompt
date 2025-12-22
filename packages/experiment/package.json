@@ -1,0 +1,71 @@
+{
+  "name": "@modular-prompt/experiment",
+  "version": "0.1.0",
+  "description": "Experiment framework for comparing and evaluating prompt modules",
+  "type": "module",
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js"
+    }
+  },
+  "bin": {
+    "modular-experiment": "./dist/run-comparison.js"
+  },
+  "files": [
+    "dist",
+    "examples",
+    "README.md"
+  ],
+  "scripts": {
+    "build": "tsc -b --force",
+    "dev": "tsc --watch",
+    "test": "vitest",
+    "test:ui": "vitest --ui",
+    "test:run": "vitest run",
+    "clean": "rm -rf dist",
+    "lint": "eslint src",
+    "typecheck": "tsc --noEmit",
+    "prepublishOnly": "npm run clean && npm run build"
+  },
+  "dependencies": {
+    "@modular-prompt/core": "workspace:*",
+    "@modular-prompt/driver": "workspace:*",
+    "commander": "^12.0.0",
+    "jiti": "^2.4.2",
+    "yaml": "^2.3.4",
+    "zod": "^3.22.4"
+  },
+  "devDependencies": {
+    "@eslint/js": "^9.34.0",
+    "@types/node": "^20.0.0",
+    "@typescript-eslint/eslint-plugin": "^8.42.0",
+    "@typescript-eslint/parser": "^8.42.0",
+    "@vitest/ui": "^3.2.4",
+    "eslint": "^9.34.0",
+    "typescript": "^5.0.0",
+    "vitest": "^3.2.4"
+  },
+  "engines": {
+    "node": ">=18.0.0"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/otolab/moduler-prompt.git",
+    "directory": "packages/experiment"
+  },
+  "keywords": [
+    "prompt",
+    "experiment",
+    "evaluation",
+    "llm",
+    "testing"
+  ],
+  "license": "MIT",
+  "publishConfig": {
+    "access": "public",
+    "registry": "https://registry.npmjs.org/"
+  }
+}

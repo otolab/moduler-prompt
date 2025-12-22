@@ -1,5 +1,5 @@
-import { merge } from '@moduler-prompt/core';
-import type { PromptModule } from '@moduler-prompt/core';
+import { merge } from '@modular-prompt/core';
+import type { PromptModule } from '@modular-prompt/core';
 
 /**
  * Material context interface

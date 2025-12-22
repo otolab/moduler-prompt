@@ -7,8 +7,8 @@ import { MlxProcess } from './process/index.js';
 import type { MlxMessage, MlxMlModelOptions, MlxModelCapabilities } from './types.js';
 import type { MlxRuntimeInfo } from './process/types.js';
 import { createModelSpecificProcessor } from './process/model-specific.js';
-import type { CompiledPrompt } from '@moduler-prompt/core';
-import { extractJSON } from '@moduler-prompt/utils';
+import type { CompiledPrompt } from '@modular-prompt/core';
+import { extractJSON } from '@modular-prompt/utils';
 
 // ========================================================================
 // Utility Functions (exported for testing)

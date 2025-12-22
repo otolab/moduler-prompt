@@ -4,10 +4,10 @@
 
 /* eslint-disable no-console */
 
-import type { PromptModule} from '@moduler-prompt/core';
-import { compile, createContext, merge } from '@moduler-prompt/core';
-import { withMaterials, type MaterialContext } from '@moduler-prompt/process';
-import { type AIDriver, type DriverCapability, MlxDriver, DriverRegistry } from '@moduler-prompt/driver';
+import type { PromptModule} from '@modular-prompt/core';
+import { compile, createContext, merge } from '@modular-prompt/core';
+import { withMaterials, type MaterialContext } from '@modular-prompt/process';
+import { type AIDriver, type DriverCapability, MlxDriver, DriverRegistry } from '@modular-prompt/driver';
 import type { DialogProfile, ChatLog } from './types.js';
 import chalk from 'chalk';
 import { Spinner } from './spinner.js';

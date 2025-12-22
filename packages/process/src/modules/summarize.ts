@@ -1,4 +1,4 @@
-import type { PromptModule, SubSectionElement, TextElement } from '@moduler-prompt/core';
+import type { PromptModule, SubSectionElement, TextElement } from '@modular-prompt/core';
 
 /**
  * Context for summarization modules

@@ -61,7 +61,7 @@ Moduler Promptは4層のレイヤードアーキテクチャで構成される�
 
 ## パッケージ構成
 
-### @moduler-prompt/core
+### @modular-prompt/core
 中核となる型定義と基本機能を提供。
 
 **主要コンポーネント：**
@@ -69,7 +69,7 @@ Moduler Promptは4層のレイヤードアーキテクチャで構成される�
 - `merge.ts`：モジュール合成
 - `compile.ts`：プロンプト生成
 
-### @moduler-prompt/driver
+### @modular-prompt/driver
 各AIサービスへの統一インターフェース。
 
 **主要機能：**
@@ -79,7 +79,7 @@ Moduler Promptは4層のレイヤードアーキテクチャで構成される�
 
 詳細は[Driver APIリファレンス](./DRIVER_API.md)を参照。
 
-### @moduler-prompt/utils
+### @modular-prompt/utils
 共通ユーティリティとヘルパー機能。
 
 **主要機能：**
@@ -88,7 +88,7 @@ Moduler Promptは4層のレイヤードアーキテクチャで構成される�
 - Logger：統一ログシステム
 - デフォルト設定とテキスト
 
-### @moduler-prompt/process
+### @modular-prompt/process
 高レベルの処理パターンとワークフロー。
 
 **提供モジュール：**

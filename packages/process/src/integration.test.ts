@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { compile, merge } from '@moduler-prompt/core';
+import { compile, merge } from '@modular-prompt/core';
 import { withMaterials } from './modules/material';
 import { streamProcessing } from './modules/stream-processing';
 import type { MaterialContext } from './modules/material';
@@ -8,7 +8,7 @@ import { agenticProcess } from './workflows/agentic-workflow/agentic-workflow';
 import type { AgenticWorkflowContext } from './workflows/agentic-workflow/types';
 import { agentProcess } from './workflows/agent-workflow';
 import type { AgentWorkflowContext } from './workflows/agent-workflow';
-import { TestDriver } from '@moduler-prompt/driver';
+import { TestDriver } from '@modular-prompt/driver';
 
 describe('integration tests', () => {
   it('materialモジュールとstreamProcessingを統合できる', () => {

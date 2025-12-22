@@ -1,4 +1,4 @@
-import type { Element } from '@moduler-prompt/core';
+import type { Element } from '@modular-prompt/core';
 
 /**
  * Special token definition

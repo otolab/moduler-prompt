@@ -2,7 +2,7 @@
  * ChunkElement Formatter
  */
 
-import type { ChunkElement } from '@moduler-prompt/core';
+import type { ChunkElement } from '@modular-prompt/core';
 import type { SpecialToken, SpecialTokenPair } from '../types.js';
 import { BaseElementFormatter } from './base.js';
 

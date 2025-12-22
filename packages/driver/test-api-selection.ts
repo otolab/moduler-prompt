@@ -1,4 +1,4 @@
-import { compile } from '@moduler-prompt/core';
+import { compile } from '@modular-prompt/core';
 import { MlxDriver } from './src/index.js';
 
 async function test() {

@@ -1,12 +1,12 @@
-# @moduler-prompt/driver
+# @modular-prompt/driver
 
 ## 0.4.4
 
 ### Patch Changes
 
 - Updated dependencies [afd3c40]
-  - @moduler-prompt/core@0.1.9
-  - @moduler-prompt/utils@0.1.4
+  - @modular-prompt/core@0.1.9
+  - @modular-prompt/utils@0.1.4
 
 ## 0.4.3
 

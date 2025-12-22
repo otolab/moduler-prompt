@@ -17,7 +17,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [0.4.0] - 2025-01-18
 
 ### Added
-- **Driver Package (@moduler-prompt/driver@0.4.0)**
+- **Driver Package (@modular-prompt/driver@0.4.0)**
   - GoogleGenAI driver for Gemini API support via @google/genai SDK
   - Direct access to Gemini models using API key authentication
   - Native structured output support with JSON schema
@@ -28,7 +28,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [0.2.8] - 2025-11-25
 
 ### Fixed
-- **Driver Package (@moduler-prompt/driver@0.2.8)**
+- **Driver Package (@modular-prompt/driver@0.2.8)**
   - chat_template_constraints.pyのmax_system_messages検出ロジックを修正
   - systemロールが完全にサポートされていないモデル（gemma-2-2b-it-4bitなど）で誤って `max_system_messages = 1` を返していた問題を修正
   - 単独systemメッセージのテスト結果も考慮するように変更
@@ -39,7 +39,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [0.2.6] - 2025-01-21
 
 ### Fixed
-- **Driver Package (@moduler-prompt/driver@0.2.6)**
+- **Driver Package (@modular-prompt/driver@0.2.6)**
   - ModelSpecのカスタム設定がプリセットで上書きされる問題を修正（Issue #29）
   - `apiStrategy: 'force-completion'`などのカスタム設定が正しく優先されるように修正
   - `chatRestrictions: undefined`でプリセット制限をクリアできるように修正
@@ -75,7 +75,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 - 初回リリース
-- **Core Package (@moduler-prompt/core)**
+- **Core Package (@modular-prompt/core)**
   - PromptModule型定義システム
   - モジュールのmerge機能
   - compile関数による構造化プロンプト生成
@@ -83,7 +83,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - inputs標準セクション（シンプルな入力データ用）
   - 包括的な型定義（Element、SectionContent等）
 
-- **Driver Package (@moduler-prompt/driver)**
+- **Driver Package (@modular-prompt/driver)**
   - OpenAI GPT-4/GPT-3.5対応
   - Anthropic Claude対応
   - Google Vertex AI (Gemini)対応
@@ -94,12 +94,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - ストリーミング対応
   - ModelSpec によるモデル能力管理
 
-- **Utils Package (@moduler-prompt/utils)**
+- **Utils Package (@modular-prompt/utils)**
   - DriverRegistry（ドライバー自動選択）
   - Formatter（プロンプトのテキスト変換）
   - デフォルト設定管理
 
-- **Process Package (@moduler-prompt/process)**
+- **Process Package (@modular-prompt/process)**
   - withMaterials（資料管理モジュール）
   - streamProcess（ストリーム処理）
   - dialogue（対話処理）

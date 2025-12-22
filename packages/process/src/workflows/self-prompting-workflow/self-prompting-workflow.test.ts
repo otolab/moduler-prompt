@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest';
 import { selfPromptingProcess } from './self-prompting-workflow.js';
-import { TestDriver } from '@moduler-prompt/driver';
+import { TestDriver } from '@modular-prompt/driver';
 import type { SelfPromptingWorkflowContext, SelfPromptingPlan } from './types.js';
 
 describe('selfPromptingProcess', () => {

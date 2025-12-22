@@ -107,7 +107,7 @@ interface ApiSelectionContext {
 
 ### createModulerPromptApiSelector()
 
-moduler-promptの典型的なパターン（system → user → system(cue)）に最適化されたセレクター。
+modular-promptの典型的なパターン（system → user → system(cue)）に最適化されたセレクター。
 
 #### 検出するパターン
 
@@ -129,7 +129,7 @@ moduler-promptの典型的なパターン（system → user → system(cue)）�
 #### 使用例
 
 ```typescript
-import { createModulerPromptApiSelector } from '@moduler-prompt/driver/mlx-ml/model-spec';
+import { createModulerPromptApiSelector } from '@modular-prompt/driver/mlx-ml/model-spec';
 
 const driver = new MlxDriver({
   model: 'gemma-2-2b-it-4bit',
@@ -152,7 +152,7 @@ const driver = new MlxDriver({
 #### 使用例
 
 ```typescript
-import { createSystemMessageBasedSelector } from '@moduler-prompt/driver/mlx-ml/model-spec';
+import { createSystemMessageBasedSelector } from '@modular-prompt/driver/mlx-ml/model-spec';
 
 const driver = new MlxDriver({
   model: 'some-model',
@@ -179,14 +179,14 @@ import {
   combineSelectors,
   createModulerPromptApiSelector,
   createSystemMessageBasedSelector
-} from '@moduler-prompt/driver/mlx-ml/model-spec';
+} from '@modular-prompt/driver/mlx-ml/model-spec';
 
 const driver = new MlxDriver({
   model: 'some-model',
   modelSpec: {
     customProcessor: {
       determineApi: combineSelectors([
-        // 1. moduler-promptパターンをチェック
+        // 1. modular-promptパターンをチェック
         createModulerPromptApiSelector(),
         // 2. システムメッセージ数をチェック
         createSystemMessageBasedSelector(3),
@@ -207,10 +207,10 @@ const driver = new MlxDriver({
 
 ## ユースケース別の推奨設定
 
-### 1. moduler-promptで使用する場合
+### 1. modular-promptで使用する場合
 
 ```typescript
-import { createModulerPromptApiSelector } from '@moduler-prompt/driver/mlx-ml/model-spec';
+import { createModulerPromptApiSelector } from '@modular-prompt/driver/mlx-ml/model-spec';
 
 const driver = new MlxDriver({
   model: 'gemma-2-2b-it-4bit',
