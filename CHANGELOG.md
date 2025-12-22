@@ -7,12 +7,28 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.5.0] - 2025-12-22
+
+### Added
+- **Experiment Package (@modular-prompt/experiment@0.1.0)**
+  - 初回リリース: プロンプトモジュールの比較・評価フレームワーク
+  - 複数のプロンプトモジュールを同一条件で比較実行
+  - コードベースおよびAI評価の両方をサポート
+  - YAML/TypeScript設定ファイル対応（jitiで自動トランスパイル）
+  - CLIコマンド: `modular-experiment <config>`
+
+### Fixed
+- **Driver Package (@modular-prompt/driver@0.4.5)**
+  - MLXドライバーのPython環境セットアップを修正
+  - Python 3.13に固定（.python-version、setup-mlx.js、pyproject.toml）
+  - 不要なtest_*.pyファイルを削除
+  - pyproject.tomlにpy-modulesを明示的に指定
+
 ### Changed
-- **Driver Package (Breaking Change)**
-  - Section/SubSection要素の自動箇条書き変換を削除
-  - Section/SubSectionのitemsは自動的に箇条書きフォーマット（`- `プレフィックス）が付加されなくなりました
-  - 箇条書きが必要な場合は、items内で明示的に`- `を付ける必要があります
-  - 例: `items: ['- item1', '- item2']`
+- **Breaking Change: プロジェクト名変更**
+  - `@moduler-prompt/*` → `@modular-prompt/*` (タイポ修正)
+  - npm organization: https://www.npmjs.com/org/modular-prompt
+  - CLIコマンド: `moduler-experiment` → `modular-experiment`
 
 ## [0.4.0] - 2025-01-18
 
