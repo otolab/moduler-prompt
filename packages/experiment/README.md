@@ -36,7 +36,7 @@ You can use either YAML or TypeScript format.
 
 #### Option A: YAML Configuration (Recommended for static configurations)
 
-Create `configs/experiment.yaml`:
+Create `examples/experiment.yaml`:
 
 ```yaml
 models:
@@ -86,7 +86,7 @@ evaluation:
 
 #### Option B: TypeScript Configuration (For dynamic configurations)
 
-Create `configs/experiment.ts`:
+Create `examples/experiment.ts`:
 
 ```typescript
 export default {
@@ -144,19 +144,19 @@ export default {
 
 ```bash
 # Run with YAML config
-npx moduler-experiment configs/experiment.yaml
+npx moduler-experiment examples/experiment.yaml
 
 # Run with TypeScript config
-npx moduler-experiment configs/experiment.ts
+npx moduler-experiment examples/experiment.ts
 
 # Run specific module
-npx moduler-experiment configs/experiment.yaml --modules my-module
+npx moduler-experiment examples/experiment.yaml --modules my-module
 
 # Run with evaluation
-npx moduler-experiment configs/experiment.yaml --evaluate
+npx moduler-experiment examples/experiment.yaml --evaluate
 
 # Run multiple times for statistics
-npx moduler-experiment configs/experiment.yaml --repeat 10
+npx moduler-experiment examples/experiment.yaml --repeat 10
 ```
 
 ## Configuration
@@ -284,10 +284,11 @@ All prompt evaluators are automatically merged with the base evaluation module.
 
 ## Examples
 
-See `examples/nymphish-claude/` for a complete example with:
-- Module definitions using `@moduler-prompt/anthropic-server` prompts
-- Test case definitions
-- YAML configuration
+See `examples/experiment.yaml` for a complete configuration template with:
+- Model definitions (MLX, Vertex AI, Google GenAI)
+- Driver configurations with credential paths
+- Evaluation settings
+- Empty sections for modules, test cases, and evaluators (ready for your content)
 
 ## API
 
