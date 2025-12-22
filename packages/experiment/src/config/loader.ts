@@ -8,12 +8,12 @@ import { resolve, dirname, extname } from 'path';
 import { createJiti } from 'jiti';
 import { AIService, type ApplicationConfig } from '@moduler-prompt/driver';
 import type { ModuleReference } from './dynamic-loader.js';
-import type { EvaluatorReference } from '../types.js';
+import type { EvaluatorReference, TestCase } from '../types.js';
 
 export interface LoadedConfig {
   serverConfig: any;
   modules: ModuleReference[];
-  testCases: any[];
+  testCases: TestCase[];
   evaluators: EvaluatorReference[];
   aiService: AIService;
   configDir: string;
@@ -79,7 +79,7 @@ export async function loadExperimentConfig(configPath: string): Promise<LoadedCo
 
   // Extract components
   const modules: ModuleReference[] = config.modules || [];
-  const testCases: any[] = config.testCases || [];
+  const testCases: TestCase[] = config.testCases || [];
   const evaluators: EvaluatorReference[] = config.evaluators || [];
 
   // Server config (models, drivers, evaluation, etc.)
@@ -115,6 +115,29 @@ export async function loadExperimentConfig(configPath: string): Promise<LoadedCo
   // Validation
   if (!serverConfig.models || serverConfig.models.length === 0) {
     throw new Error('❌ No models configured in config file');
+  }
+
+  // Validate model names are unique
+  const modelNames = new Set<string>();
+  for (const model of serverConfig.models) {
+    if (!model.name) {
+      throw new Error(`❌ Model missing required 'name' field: ${JSON.stringify(model)}`);
+    }
+    if (modelNames.has(model.name)) {
+      throw new Error(`❌ Duplicate model name '${model.name}' in configuration`);
+    }
+    modelNames.add(model.name);
+  }
+
+  // Validate testCase model references
+  for (const testCase of testCases) {
+    if (testCase.models) {
+      for (const modelName of testCase.models) {
+        if (!modelNames.has(modelName)) {
+          throw new Error(`❌ TestCase '${testCase.name}' references unknown model '${modelName}'`);
+        }
+      }
+    }
   }
 
   // Initialize AIService

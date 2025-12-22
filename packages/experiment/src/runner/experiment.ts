@@ -3,8 +3,8 @@
  */
 
 import { formatCompletionPrompt } from '@moduler-prompt/driver';
-import type { AIService, QueryResult } from '@moduler-prompt/driver';
-import type { ModuleDefinition, TestResult, EvaluationContext, EvaluationResult } from '../types.js';
+import type { AIService, QueryResult, ModelSpec } from '@moduler-prompt/driver';
+import type { ModuleDefinition, TestResult, TestCase, EvaluationContext, EvaluationResult } from '../types.js';
 import type { DriverManager } from './driver-manager.js';
 import type { LoadedEvaluator } from '../config/dynamic-loader.js';
 import { EvaluatorRunner } from './evaluator.js';
@@ -14,11 +14,11 @@ export class ExperimentRunner {
     private aiService: AIService,
     private driverManager: DriverManager,
     private modules: ModuleDefinition[],
-    private testCases: any[],
-    private models: any[],
+    private testCases: TestCase[],
+    private models: ModelSpec[],
     private repeatCount: number,
     private evaluators?: LoadedEvaluator[],
-    private evaluatorModel?: any
+    private evaluatorModel?: ModelSpec
   ) {}
 
   /**
@@ -33,21 +33,16 @@ export class ExperimentRunner {
     for (const testCase of this.testCases) {
       console.log('─'.repeat(80));
       console.log(`Test Case: ${testCase.name}`);
-      console.log(`Description: ${testCase.description}`);
+      if (testCase.description) {
+        console.log(`Description: ${testCase.description}`);
+      }
       console.log('─'.repeat(80));
       console.log();
 
-      // Prepare context
-      const context = {
-        analysisResult: testCase.analysisResult,
-        relevantContext: testCase.relevantContext,
-        toolDefinition: testCase.toolDefinition,
-      };
-
-      // Compile all modules
+      // Compile all modules with testCase.input as context
       const compiledModules = this.modules.map(module => {
         console.log(`📝 [${module.name}] Compiling prompt...`);
-        const compiled = module.compile(context);
+        const compiled = module.compile(testCase.input);
         const prompt = formatCompletionPrompt(compiled);
         console.log(`   Prompt length: ${prompt.length} chars`);
         console.log();
@@ -64,22 +59,41 @@ export class ExperimentRunner {
         this.comparePrompts(compiledModules);
       }
 
+      // Determine which models to test with this testCase
+      const modelsToTest = testCase.models
+        ? testCase.models.map(name => {
+            const model = this.models.find(m => m.name === name);
+            if (!model) {
+              console.warn(`⚠️  Model '${name}' not found in configuration, skipping`);
+            }
+            return model;
+          }).filter(Boolean) as ModelSpec[]
+        : this.models.filter(m => m.enabled !== false);
+
+      if (modelsToTest.length === 0) {
+        console.log('⚠️  No models to test for this test case, skipping');
+        console.log();
+        continue;
+      }
+
       // Test with each model
-      for (const modelSpec of this.models) {
-        console.log(`🤖 Testing with ${modelSpec.model} (${modelSpec.provider})`);
+      let previousDriver: any = null;
+      let previousModelName: string | null = null;
 
-        // Select driver for this model
-        const selectedModels = this.aiService.selectModels(['tools']);
-        const targetModel = selectedModels.find(m => m.provider === modelSpec.provider);
+      for (const modelSpec of modelsToTest) {
+        console.log(`🤖 Testing with ${modelSpec.name} (${modelSpec.provider}:${modelSpec.model})`);
 
-        if (!targetModel) {
-          console.log(`   ⚠️  Skipping: model not selected by AIService`);
-          console.log();
-          continue;
+        // Close previous driver if switching models
+        if (previousDriver && previousModelName && previousModelName !== modelSpec.name) {
+          console.log(`   🔄 Switching from ${previousModelName} to ${modelSpec.name}, closing previous driver...`);
+          await this.driverManager.close(previousModelName);
+          previousDriver = null;
         }
 
-        // Get or create driver
-        const driver = await this.driverManager.getOrCreate(this.aiService, targetModel);
+        // Get or create driver for this model
+        const driver = await this.driverManager.getOrCreate(this.aiService, modelSpec);
+        previousDriver = driver;
+        previousModelName = modelSpec.name;
 
         // Test each module
         for (const { name, compiled, prompt } of compiledModules) {
@@ -87,7 +101,7 @@ export class ExperimentRunner {
 
           allResults.push({
             testCase: testCase.name,
-            model: `${modelSpec.provider}:${modelSpec.model}`,
+            model: modelSpec.name,
             module: name,
             runs: runs.map(r => ({
               success: r.success,

@@ -40,10 +40,11 @@ Create `configs/experiment.yaml`:
 
 ```yaml
 models:
-  - provider: vertexai
+  - name: gemini-fast  # Required: unique name for referencing
+    provider: vertexai
     model: gemini-2.0-flash-exp
+    capabilities: ["tools", "fast"]
     enabled: true
-    role: test
 
 drivers:
   vertexai:
@@ -61,7 +62,11 @@ modules:
 testCases:
   - name: Basic Test
     description: Test basic functionality
-    input: test input data
+    input:  # Structured context object (passed to module.compile)
+      query: user question
+      context: additional information
+    models:  # Optional: specify which models to test (uses all enabled if not specified)
+      - gemini-fast
 
 evaluators:
   - name: json-validator
@@ -76,8 +81,7 @@ evaluators:
 
 evaluation:
   enabled: true
-  provider: vertexai
-  model: gemini-2.0-flash-exp
+  model: gemini-fast  # Reference by model name
 ```
 
 #### Option B: TypeScript Configuration (For dynamic configurations)
@@ -88,10 +92,11 @@ Create `configs/experiment.ts`:
 export default {
   models: [
     {
+      name: 'gemini-fast',  // Required: unique name
       provider: 'vertexai',
       model: 'gemini-2.0-flash-exp',
+      capabilities: ['tools', 'fast'],
       enabled: true,
-      role: 'test',
     },
   ],
   drivers: {
@@ -112,7 +117,11 @@ export default {
     {
       name: 'Basic Test',
       description: 'Test basic functionality',
-      input: 'test input data',
+      input: {  // Structured context object
+        query: 'user question',
+        options: { temperature: 0.7 },
+      },
+      models: ['gemini-fast'],  // Optional
     },
   ],
   evaluators: [
@@ -123,8 +132,7 @@ export default {
   ],
   evaluation: {
     enabled: true,
-    provider: 'vertexai',
-    model: 'gemini-2.0-flash-exp',
+    model: 'gemini-fast',  // Reference by model name
   },
 };
 ```

@@ -6,6 +6,20 @@ import type { PromptModule } from '@moduler-prompt/core';
 import type { QueryResult } from '@moduler-prompt/driver';
 
 /**
+ * Test case definition
+ */
+export interface TestCase {
+  /** Test case name */
+  name: string;
+  /** Test case description */
+  description?: string;
+  /** Input context (passed to module.compile) */
+  input: any;
+  /** Model names to use for this test case (optional, uses all enabled models if not specified) */
+  models?: string[];
+}
+
+/**
  * Result of a single run
  */
 export interface RunResult {

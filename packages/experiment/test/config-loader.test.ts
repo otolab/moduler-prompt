@@ -28,6 +28,7 @@ describe('Config Loader', () => {
 
     // serverConfigが正しくロードされていることを確認
     expect(serverConfig.models).toHaveLength(1);
+    expect(serverConfig.models[0].name).toBe('test-model');
     expect(serverConfig.models[0].model).toBe('test-model');
     expect(serverConfig.models[0].provider).toBe('test');
 
@@ -66,7 +67,10 @@ describe('Config Loader', () => {
 
     expect(testCases).toHaveLength(1);
     expect(testCases[0].name).toBe('Test Case 1');
-    expect(testCases[0].input).toBe('test input');
+    expect(testCases[0].input).toEqual({
+      query: 'test input',
+      context: 'some context',
+    });
   });
 
   it('should load TypeScript config with jiti', async () => {
@@ -85,6 +89,7 @@ describe('Config Loader', () => {
 
     // serverConfigが正しくロードされていることを確認
     expect(serverConfig.models).toHaveLength(1);
+    expect(serverConfig.models[0].name).toBe('test-model-ts');
     expect(serverConfig.models[0].model).toBe('test-model-ts');
     expect(serverConfig.models[0].provider).toBe('test');
 

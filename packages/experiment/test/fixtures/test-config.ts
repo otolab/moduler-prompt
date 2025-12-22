@@ -5,10 +5,11 @@
 export default {
   models: [
     {
+      name: 'test-model-ts',  // Required: unique name
       model: 'test-model-ts',
       provider: 'test',
+      capabilities: ['test'],
       enabled: true,
-      role: 'test',
     },
   ],
   drivers: {
@@ -28,7 +29,10 @@ export default {
     {
       name: 'Test Case from TS',
       description: 'TypeScript config test case',
-      input: 'ts input',
+      input: {
+        query: 'ts input',
+        options: { test: true },
+      },
     },
   ],
   evaluators: [],

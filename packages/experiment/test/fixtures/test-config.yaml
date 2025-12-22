@@ -1,10 +1,11 @@
 # Test configuration
 
 models:
-  - model: "test-model"
+  - name: "test-model"  # Required: unique name
+    model: "test-model"
     provider: "test"
+    capabilities: ["test"]
     enabled: true
-    role: test
 
 drivers:
   test: {}
@@ -20,6 +21,8 @@ modules:
 testCases:
   - name: Test Case 1
     description: Simple test case
-    input: test input
+    input:
+      query: test input
+      context: some context
 
 evaluators: []

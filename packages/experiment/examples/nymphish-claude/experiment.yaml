@@ -2,21 +2,24 @@
 
 models:
   # Local MLX model - for testing text+json output format
-  - model: "mlx-community/gemma-3-12b-it-qat-4bit"
+  - name: "gemma-12b-local"  # Required: unique name for referencing
+    model: "mlx-community/gemma-3-12b-it-qat-4bit"
     provider: "mlx"
     capabilities: ["local", "fast", "tools"]
     priority: 20
     enabled: true
 
   # Vertex AI Gemini - for testing with structuredOutput support
-  - model: "gemini-2.0-flash-exp"
+  - name: "gemini-vertexai"
+    model: "gemini-2.0-flash-exp"
     provider: "vertexai"
     capabilities: ["tools", "fast", "japanese"]
     priority: 10
     enabled: true
 
   # GoogleGenAI Gemini - alternative for testing
-  - model: "gemini-2.0-flash-exp"
+  - name: "gemini-googlegenai"
+    model: "gemini-2.0-flash-exp"
     provider: "googlegenai"
     capabilities: ["tools", "fast", "japanese"]
     priority: 15
@@ -42,10 +45,9 @@ selection:
 # Specifies which model to use for AI-based evaluation
 evaluation:
   enabled: true
-  model: "gemini-2.0-flash-exp"
-  provider: "vertexai"
+  model: "gemini-vertexai"  # Reference by model name
   # You can also specify model capabilities for selection
-  # If model/provider not found, falls back to the best available model
+  # If model not found, falls back to the best available model
 
 server:
   port: 4100  # Different port to avoid conflict
