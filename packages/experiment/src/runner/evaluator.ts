@@ -5,8 +5,7 @@
  */
 
 import { compile } from '@modular-prompt/core';
-import { formatCompletionPrompt, type ModelSpec } from '@modular-prompt/driver';
-import type { AIService } from '@modular-prompt/driver';
+import type { AIService, ModelSpec } from '@modular-prompt/driver';
 import type { EvaluationContext, EvaluationResult } from '../types.js';
 import type { LoadedEvaluator } from '../config/dynamic-loader.js';
 
@@ -58,7 +57,6 @@ export class EvaluatorRunner {
   ): Promise<EvaluationResult> {
     // Compile evaluation prompt
     const compiled = compile(evaluator.promptEvaluator!.module, context);
-    const prompt = formatCompletionPrompt(compiled);
 
     // Create driver for evaluator model
     const driver = await this.aiService.createDriver(this.evaluatorModel);
@@ -105,7 +103,7 @@ export class EvaluatorRunner {
           raw: result.content,
         };
       }
-    } catch (parseError) {
+    } catch {
       console.log(`🔍 [${evaluator.name}] ⚠️  Failed to parse JSON response`);
     }
 
