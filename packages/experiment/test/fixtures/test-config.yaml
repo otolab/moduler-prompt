@@ -1,7 +1,7 @@
 # Test configuration
 
 models:
-  - name: "test-model"  # Required: unique name
+  test-model:
     model: "test-model"
     provider: "test"
     capabilities: ["test"]

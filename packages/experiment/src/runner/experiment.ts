@@ -15,10 +15,10 @@ export class ExperimentRunner {
     private driverManager: DriverManager,
     private modules: ModuleDefinition[],
     private testCases: TestCase[],
-    private models: ModelSpec[],
+    private models: Record<string, ModelSpec>,
     private repeatCount: number,
     private evaluators?: LoadedEvaluator[],
-    private evaluatorModel?: ModelSpec
+    private evaluatorModel?: { name: string; spec: ModelSpec }
   ) {}
 
   /**
@@ -60,15 +60,18 @@ export class ExperimentRunner {
       }
 
       // Determine which models to test with this testCase
-      const modelsToTest = testCase.models
+      const modelsToTest: Array<{ name: string; spec: ModelSpec }> = testCase.models
         ? testCase.models.map(name => {
-            const model = this.models.find(m => m.name === name);
-            if (!model) {
+            const spec = this.models[name];
+            if (!spec) {
               console.warn(`⚠️  Model '${name}' not found in configuration, skipping`);
+              return null;
             }
-            return model;
-          }).filter(Boolean) as ModelSpec[]
-        : this.models.filter(m => m.enabled !== false);
+            return { name, spec };
+          }).filter(Boolean) as Array<{ name: string; spec: ModelSpec }>
+        : Object.entries(this.models)
+            .filter(([_, spec]) => spec.enabled !== false)
+            .map(([name, spec]) => ({ name, spec }));
 
       if (modelsToTest.length === 0) {
         console.log('⚠️  No models to test for this test case, skipping');
@@ -80,20 +83,20 @@ export class ExperimentRunner {
       let previousDriver: any = null;
       let previousModelName: string | null = null;
 
-      for (const modelSpec of modelsToTest) {
-        console.log(`🤖 Testing with ${modelSpec.name} (${modelSpec.provider}:${modelSpec.model})`);
+      for (const { name: modelName, spec: modelSpec } of modelsToTest) {
+        console.log(`🤖 Testing with ${modelName} (${modelSpec.provider}:${modelSpec.model})`);
 
         // Close previous driver if switching models
-        if (previousDriver && previousModelName && previousModelName !== modelSpec.name) {
-          console.log(`   🔄 Switching from ${previousModelName} to ${modelSpec.name}, closing previous driver...`);
+        if (previousDriver && previousModelName && previousModelName !== modelName) {
+          console.log(`   🔄 Switching from ${previousModelName} to ${modelName}, closing previous driver...`);
           await this.driverManager.close(previousModelName);
           previousDriver = null;
         }
 
         // Get or create driver for this model
-        const driver = await this.driverManager.getOrCreate(this.aiService, modelSpec);
+        const driver = await this.driverManager.getOrCreate(this.aiService, modelName, modelSpec);
         previousDriver = driver;
-        previousModelName = modelSpec.name;
+        previousModelName = modelName;
 
         // Test each module
         for (const { name, compiled, prompt } of compiledModules) {
@@ -101,7 +104,7 @@ export class ExperimentRunner {
 
           allResults.push({
             testCase: testCase.name,
-            model: modelSpec.name,
+            model: modelName,
             module: name,
             runs: runs.map(r => ({
               success: r.success,
@@ -189,7 +192,7 @@ export class ExperimentRunner {
     console.log('='.repeat(80));
     console.log();
 
-    const evaluatorRunner = new EvaluatorRunner(this.aiService, this.evaluatorModel);
+    const evaluatorRunner = new EvaluatorRunner(this.aiService, this.evaluatorModel!.spec);
     const allEvaluations: EvaluationResult[] = [];
 
     // Evaluate each module with each evaluator

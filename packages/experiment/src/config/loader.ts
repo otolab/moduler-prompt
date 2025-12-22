@@ -113,21 +113,12 @@ export async function loadExperimentConfig(configPath: string): Promise<LoadedCo
   }
 
   // Validation
-  if (!serverConfig.models || serverConfig.models.length === 0) {
+  if (!serverConfig.models || Object.keys(serverConfig.models).length === 0) {
     throw new Error('❌ No models configured in config file');
   }
 
-  // Validate model names are unique
-  const modelNames = new Set<string>();
-  for (const model of serverConfig.models) {
-    if (!model.name) {
-      throw new Error(`❌ Model missing required 'name' field: ${JSON.stringify(model)}`);
-    }
-    if (modelNames.has(model.name)) {
-      throw new Error(`❌ Duplicate model name '${model.name}' in configuration`);
-    }
-    modelNames.add(model.name);
-  }
+  // Get model names from object keys
+  const modelNames = new Set<string>(Object.keys(serverConfig.models));
 
   // Validate testCase model references
   for (const testCase of testCases) {

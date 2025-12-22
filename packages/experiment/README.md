@@ -40,7 +40,7 @@ Create `configs/experiment.yaml`:
 
 ```yaml
 models:
-  - name: gemini-fast  # Required: unique name for referencing
+  gemini-fast:
     provider: vertexai
     model: gemini-2.0-flash-exp
     capabilities: ["tools", "fast"]
@@ -90,15 +90,14 @@ Create `configs/experiment.ts`:
 
 ```typescript
 export default {
-  models: [
-    {
-      name: 'gemini-fast',  // Required: unique name
+  models: {
+    'gemini-fast': {
       provider: 'vertexai',
       model: 'gemini-2.0-flash-exp',
       capabilities: ['tools', 'fast'],
       enabled: true,
     },
-  ],
+  },
   drivers: {
     vertexai: {
       projectId: 'your-project-id',

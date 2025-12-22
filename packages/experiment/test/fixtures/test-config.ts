@@ -3,15 +3,14 @@
  */
 
 export default {
-  models: [
-    {
-      name: 'test-model-ts',  // Required: unique name
+  models: {
+    'test-model-ts': {
       model: 'test-model-ts',
       provider: 'test',
       capabilities: ['test'],
       enabled: true,
     },
-  ],
+  },
   drivers: {
     test: {},
   },

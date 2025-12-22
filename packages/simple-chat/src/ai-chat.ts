@@ -106,7 +106,6 @@ function initializeRegistry(): DriverRegistry {
 
   // デフォルトモデルを登録
   driverRegistry.registerModel({
-    name: 'mlx-default',
     model: 'mlx-community/gemma-3-270m-it-qat-4bit',
     provider: 'mlx',
     capabilities: ['local', 'streaming', 'chat'],
@@ -138,7 +137,6 @@ export async function createDriver(profile: DialogProfile, customRegistry?: Driv
 
     try {
       const modelSpec = {
-        name: `${provider}-${profile.model}`,
         model: profile.model,
         provider,
         capabilities: ['chat'] as DriverCapability[]

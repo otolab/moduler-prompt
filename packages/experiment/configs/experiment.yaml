@@ -2,7 +2,7 @@
 
 models:
   # Local MLX model - for testing text+json output format
-  - name: "gemma-12b-local"  # Required: unique name for referencing
+  gemma-12b-local:
     model: "mlx-community/gemma-3-12b-it-qat-4bit"
     provider: "mlx"
     capabilities: ["local", "fast", "tools"]
@@ -10,7 +10,7 @@ models:
     enabled: true
 
   # Vertex AI Gemini - for testing with structuredOutput support
-  - name: "gemini-vertexai"
+  gemini-vertexai:
     model: "gemini-2.0-flash-exp"
     provider: "vertexai"
     capabilities: ["tools", "fast", "japanese"]
@@ -18,7 +18,7 @@ models:
     enabled: true
 
   # GoogleGenAI Gemini - alternative for testing
-  - name: "gemini-googlegenai"
+  gemini-googlegenai:
     model: "gemini-2.0-flash-exp"
     provider: "googlegenai"
     capabilities: ["tools", "fast", "japanese"]

@@ -55,20 +55,32 @@ const {
   configDir
 } = await loadExperimentConfig(options.configPath);
 
-// Filter test models (role: test or no role)
-let models = serverConfig.models.filter((m: any) =>
-  m.enabled !== false && (!m.role || m.role === 'test')
+// Keep models as object for experiment runner
+const models = serverConfig.models;
+
+// Display available models for logging
+const modelEntries = Object.entries(models).filter(([_, spec]: [string, any]) =>
+  spec.enabled !== false && (!spec.role || spec.role === 'test')
 );
+
 if (options.modelFilter) {
-  models = models.filter((m: any) => m.provider === options.modelFilter);
-  if (models.length === 0) {
+  const filteredEntries = modelEntries.filter(([_, spec]: [string, any]) =>
+    spec.provider === options.modelFilter
+  );
+  if (filteredEntries.length === 0) {
     console.error(`❌ No enabled test models found for provider: ${options.modelFilter}`);
     process.exit(1);
   }
+  console.log(`📋 Testing with ${filteredEntries.length} model(s) (filtered by ${options.modelFilter}):`);
+  filteredEntries.forEach(([name, spec]: [string, any]) =>
+    console.log(`  - ${name}: ${spec.model} (${spec.provider})`)
+  );
+} else {
+  console.log(`📋 Testing with ${modelEntries.length} model(s):`);
+  modelEntries.forEach(([name, spec]: [string, any]) =>
+    console.log(`  - ${name}: ${spec.model} (${spec.provider})`)
+  );
 }
-
-console.log(`📋 Testing with ${models.length} model(s):`);
-models.forEach((m: any) => console.log(`  - ${m.model} (${m.provider})`));
 console.log();
 
 // Load test cases
@@ -130,22 +142,21 @@ if (options.enableEvaluation) {
 
   const evaluationConfig = serverConfig.evaluation;
 
-  // Find the specified model
-  evaluatorModel = serverConfig.models.find((m: any) =>
-    m.enabled !== false &&
-    m.model === evaluationConfig.model &&
-    m.provider === evaluationConfig.provider
-  );
+  // Find the specified model by name
+  const modelName = evaluationConfig.model;
+  const modelSpec = serverConfig.models[modelName];
 
-  if (!evaluatorModel) {
-    console.error(`❌ Evaluator model not found: ${evaluationConfig.model} (${evaluationConfig.provider})`);
+  if (!modelSpec || modelSpec.enabled === false) {
+    console.error(`❌ Evaluator model not found or disabled: ${modelName}`);
     console.error('   Please ensure the model is defined in the models section and enabled');
     process.exit(1);
   }
 
+  evaluatorModel = { name: modelName, spec: modelSpec };
+
   console.log(`🔍 Evaluation enabled with ${evaluators.length} evaluator(s):`);
   evaluators.forEach(e => console.log(`  - [${e.type}] ${e.name}: ${e.description}`));
-  console.log(`🔍 Evaluator model: ${evaluatorModel.model} (${evaluatorModel.provider})`);
+  console.log(`🔍 Evaluator model: ${modelName} (${modelSpec.provider}:${modelSpec.model})`);
   console.log();
 }
 

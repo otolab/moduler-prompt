@@ -5,7 +5,7 @@
  */
 
 import { compile } from '@moduler-prompt/core';
-import { formatCompletionPrompt } from '@moduler-prompt/driver';
+import { formatCompletionPrompt, type ModelSpec } from '@moduler-prompt/driver';
 import type { AIService } from '@moduler-prompt/driver';
 import type { EvaluationContext, EvaluationResult } from '../types.js';
 import type { LoadedEvaluator } from '../config/dynamic-loader.js';
@@ -13,7 +13,7 @@ import type { LoadedEvaluator } from '../config/dynamic-loader.js';
 export class EvaluatorRunner {
   constructor(
     private aiService: AIService,
-    private evaluatorModel: any
+    private evaluatorModel: ModelSpec
   ) {}
 
   /**

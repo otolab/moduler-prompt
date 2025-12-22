@@ -43,9 +43,6 @@ export type DriverCapability =
  * モデル仕様（code-bugsのModelSpecと同等）
  */
 export interface ModelSpec {
-  /** モデル名（設定ファイル内での参照用、必須） */
-  name: string;
-
   /** モデル識別子（プロバイダ内でユニーク） */
   model: string;
 

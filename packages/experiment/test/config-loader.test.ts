@@ -27,10 +27,10 @@ describe('Config Loader', () => {
     expect(configDir).toBe(resolve(__dirname, 'fixtures'));
 
     // serverConfigが正しくロードされていることを確認
-    expect(serverConfig.models).toHaveLength(1);
-    expect(serverConfig.models[0].name).toBe('test-model');
-    expect(serverConfig.models[0].model).toBe('test-model');
-    expect(serverConfig.models[0].provider).toBe('test');
+    expect(Object.keys(serverConfig.models)).toHaveLength(1);
+    expect(serverConfig.models['test-model']).toBeDefined();
+    expect(serverConfig.models['test-model'].model).toBe('test-model');
+    expect(serverConfig.models['test-model'].provider).toBe('test');
 
     // modules, testCases, evaluatorsが正しくロードされていることを確認
     expect(modules).toHaveLength(1);
@@ -88,10 +88,10 @@ describe('Config Loader', () => {
     expect(configDir).toBe(resolve(__dirname, 'fixtures'));
 
     // serverConfigが正しくロードされていることを確認
-    expect(serverConfig.models).toHaveLength(1);
-    expect(serverConfig.models[0].name).toBe('test-model-ts');
-    expect(serverConfig.models[0].model).toBe('test-model-ts');
-    expect(serverConfig.models[0].provider).toBe('test');
+    expect(Object.keys(serverConfig.models)).toHaveLength(1);
+    expect(serverConfig.models['test-model-ts']).toBeDefined();
+    expect(serverConfig.models['test-model-ts'].model).toBe('test-model-ts');
+    expect(serverConfig.models['test-model-ts'].provider).toBe('test');
 
     // modules, testCases, evaluatorsが正しくロードされていることを確認
     expect(modules).toHaveLength(1);

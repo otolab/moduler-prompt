@@ -14,20 +14,19 @@ export class DriverManager {
    * Reuses existing driver if available.
    *
    * @param aiService - AIService instance
-   * @param model - Model spec
+   * @param modelName - Model name for caching
+   * @param modelSpec - Model spec
    * @returns Driver instance
    */
-  async getOrCreate(aiService: AIService, model: ModelSpec): Promise<any> {
-    const key = model.name;
-
-    if (this.cache.has(key)) {
-      console.log(`   Using cached driver for ${key}`);
-      return this.cache.get(key);
+  async getOrCreate(aiService: AIService, modelName: string, modelSpec: ModelSpec): Promise<any> {
+    if (this.cache.has(modelName)) {
+      console.log(`   Using cached driver for ${modelName}`);
+      return this.cache.get(modelName);
     }
 
-    console.log(`   Creating new driver for ${key} (${model.provider}:${model.model})`);
-    const driver = await aiService.createDriver(model);
-    this.cache.set(key, driver);
+    console.log(`   Creating new driver for ${modelName} (${modelSpec.provider}:${modelSpec.model})`);
+    const driver = await aiService.createDriver(modelSpec);
+    this.cache.set(modelName, driver);
     return driver;
   }
 
