@@ -4,7 +4,7 @@
 
 import { readFile } from 'fs/promises';
 import { resolve, dirname } from 'path';
-import type { MaterialContext } from '@moduler-prompt/process';
+import type { MaterialContext } from '@modular-prompt/process';
 
 /**
  * Load resource files as materials

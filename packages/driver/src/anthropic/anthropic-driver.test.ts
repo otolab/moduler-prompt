@@ -1,6 +1,6 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { AnthropicDriver } from './anthropic-driver.js';
-import type { CompiledPrompt } from '@moduler-prompt/core';
+import type { CompiledPrompt } from '@modular-prompt/core';
 
 // Mock Anthropic SDK
 vi.mock('@anthropic-ai/sdk', () => {

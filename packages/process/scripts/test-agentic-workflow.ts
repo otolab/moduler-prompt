@@ -1,6 +1,6 @@
 import { agenticProcess } from '../src/workflows/agentic-workflow/agentic-workflow.js';
-import { MlxDriver } from '@moduler-prompt/driver';
-import { defaultLogger, LogLevel } from '@moduler-prompt/utils';
+import { MlxDriver } from '@modular-prompt/driver';
+import { defaultLogger, LogLevel } from '@modular-prompt/utils';
 import { platform } from 'os';
 import { readFileSync } from 'fs';
 import { join, dirname } from 'path';

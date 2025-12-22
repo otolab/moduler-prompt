@@ -2,8 +2,8 @@
  * llm-jp-3.1に直接質問するスクリプト
  */
 
-import { MlxDriver } from '@moduler-prompt/driver';
-import { compile, type PromptModule } from '@moduler-prompt/core';
+import { MlxDriver } from '@modular-prompt/driver';
+import { compile, type PromptModule } from '@modular-prompt/core';
 import * as fs from 'fs';
 import * as path from 'path';
 import { fileURLToPath } from 'url';

@@ -8,7 +8,7 @@ import {
   ResponseSchema,
   SchemaType
 } from '@google-cloud/vertexai';
-import type { CompiledPrompt, Element } from '@moduler-prompt/core';
+import type { CompiledPrompt, Element } from '@modular-prompt/core';
 import type { AIDriver, QueryOptions, QueryResult, StreamResult } from '../types.js';
 
 /**

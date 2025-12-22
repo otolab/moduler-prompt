@@ -1,5 +1,5 @@
 {
-  "name": "@moduler-prompt/core",
+  "name": "@modular-prompt/core",
   "version": "0.1.9",
   "description": "Core module for modular prompt framework",
   "type": "module",

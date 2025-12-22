@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { TestDriver } from '@moduler-prompt/driver';
+import { TestDriver } from '@modular-prompt/driver';
 import { agentProcess, type AgentWorkflowContext } from './agent-workflow.js';
 
 describe('agentProcess', () => {

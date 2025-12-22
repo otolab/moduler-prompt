@@ -1,5 +1,5 @@
 ---
-"@moduler-prompt/driver": patch
+"@modular-prompt/driver": patch
 ---
 
 MLXドライバーのPython環境セットアップを修正

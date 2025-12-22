@@ -1,7 +1,7 @@
 import { describe, it, expect } from 'vitest';
 import { formatCompletionPrompt, formatPromptAsMessages, defaultFormatterTexts } from './converter.js';
 import { DefaultFormatter } from './formatter.js';
-import type { CompiledPrompt, Element } from '@moduler-prompt/core';
+import type { CompiledPrompt, Element } from '@modular-prompt/core';
 
 describe('preamble and section descriptions', () => {
   it('should add preamble when provided', () => {

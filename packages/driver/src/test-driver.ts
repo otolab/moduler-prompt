@@ -1,6 +1,6 @@
-import type { CompiledPrompt } from '@moduler-prompt/core';
+import type { CompiledPrompt } from '@modular-prompt/core';
 import type { AIDriver, QueryOptions, QueryResult, StreamResult } from './types.js';
-import { extractJSON } from '@moduler-prompt/utils';
+import { extractJSON } from '@modular-prompt/utils';
 
 /**
  * Mock response configuration

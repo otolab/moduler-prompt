@@ -1,9 +1,9 @@
-import { compile, merge } from '@moduler-prompt/core';
+import { compile, merge } from '@modular-prompt/core';
 import { readFileSync } from 'fs';
 import { join, dirname } from 'path';
 import { fileURLToPath } from 'url';
 import type { AgenticWorkflowContext } from '../src/workflows/agentic-workflow/types.js';
-import type { CompiledPrompt } from '@moduler-prompt/core';
+import type { CompiledPrompt } from '@modular-prompt/core';
 import { agentic } from '../src/workflows/agentic-workflow/modules/agentic.js';
 import { planning } from '../src/workflows/agentic-workflow/modules/planning.js';
 import { executionFreeform } from '../src/workflows/agentic-workflow/modules/execution-freeform.js';

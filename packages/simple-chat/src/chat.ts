@@ -27,7 +27,7 @@ import {
   closeDriver,
 } from './ai-chat.js';
 import { loadResourceFiles } from './resource-files.js';
-import type { MaterialContext } from '@moduler-prompt/process';
+import type { MaterialContext } from '@modular-prompt/process';
 import { Spinner } from './spinner.js';
 
 /**

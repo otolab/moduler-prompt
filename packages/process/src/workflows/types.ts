@@ -1,5 +1,5 @@
 // Re-export types from driver package
-export type { AIDriver, QueryResult } from '@moduler-prompt/driver';
+export type { AIDriver, QueryResult } from '@modular-prompt/driver';
 
 /**
  * Result of workflow execution

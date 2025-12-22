@@ -1,6 +1,6 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { VertexAIDriver } from './vertexai-driver.js';
-import type { CompiledPrompt } from '@moduler-prompt/core';
+import type { CompiledPrompt } from '@modular-prompt/core';
 
 // Mock @google-cloud/vertexai module
 vi.mock('@google-cloud/vertexai', () => {

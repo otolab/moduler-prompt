@@ -6,7 +6,7 @@ import { readFileSync } from 'fs';
 import { parse as parseYaml } from 'yaml';
 import { resolve, dirname, extname } from 'path';
 import { createJiti } from 'jiti';
-import { AIService, type ApplicationConfig } from '@moduler-prompt/driver';
+import { AIService, type ApplicationConfig } from '@modular-prompt/driver';
 import type { ModuleReference } from './dynamic-loader.js';
 import type { EvaluatorReference, TestCase } from '../types.js';
 

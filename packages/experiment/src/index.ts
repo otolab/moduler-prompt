@@ -1,5 +1,5 @@
 /**
- * @moduler-prompt/experiment
+ * @modular-prompt/experiment
  *
  * Experiment framework for comparing and evaluating prompt modules
  */

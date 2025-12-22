@@ -1,7 +1,7 @@
 import type { FormatterOptions } from './formatter/types.js';
 
 // Re-export from core for convenience
-export type { CompiledPrompt } from '@moduler-prompt/core';
+export type { CompiledPrompt } from '@modular-prompt/core';
 
 /**
  * Chat message role
@@ -80,12 +80,12 @@ export interface AIDriver {
   /**
    * Query the AI model with a compiled prompt
    */
-  query(prompt: import('@moduler-prompt/core').CompiledPrompt, options?: QueryOptions): Promise<QueryResult>;
+  query(prompt: import('@modular-prompt/core').CompiledPrompt, options?: QueryOptions): Promise<QueryResult>;
 
   /**
    * Stream query with both stream and result
    */
-  streamQuery(prompt: import('@moduler-prompt/core').CompiledPrompt, options?: QueryOptions): Promise<StreamResult>;
+  streamQuery(prompt: import('@modular-prompt/core').CompiledPrompt, options?: QueryOptions): Promise<StreamResult>;
 
   /**
    * Close the driver connection

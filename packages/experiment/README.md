@@ -1,10 +1,10 @@
-# @moduler-prompt/experiment
+# @modular-prompt/experiment
 
 Experiment framework for comparing and evaluating modular prompt modules.
 
 ## Overview
 
-This framework provides tools to compare and evaluate different prompt module variations under identical conditions. It integrates with the `@moduler-prompt/core` system to test multiple prompt variations and evaluate their output quality.
+This framework provides tools to compare and evaluate different prompt module variations under identical conditions. It integrates with the `@modular-prompt/core` system to test multiple prompt variations and evaluate their output quality.
 
 ### Use Cases
 
@@ -25,7 +25,7 @@ This framework provides tools to compare and evaluate different prompt module va
 ## Installation
 
 ```bash
-pnpm add @moduler-prompt/experiment
+pnpm add @modular-prompt/experiment
 ```
 
 ## Quick Start
@@ -144,19 +144,19 @@ export default {
 
 ```bash
 # Run with YAML config
-npx moduler-experiment examples/experiment.yaml
+npx modular-experiment examples/experiment.yaml
 
 # Run with TypeScript config
-npx moduler-experiment examples/experiment.ts
+npx modular-experiment examples/experiment.ts
 
 # Run specific module
-npx moduler-experiment examples/experiment.yaml --modules my-module
+npx modular-experiment examples/experiment.yaml --modules my-module
 
 # Run with evaluation
-npx moduler-experiment examples/experiment.yaml --evaluate
+npx modular-experiment examples/experiment.yaml --evaluate
 
 # Run multiple times for statistics
-npx moduler-experiment examples/experiment.yaml --repeat 10
+npx modular-experiment examples/experiment.yaml --repeat 10
 ```
 
 ## Configuration
@@ -179,7 +179,7 @@ export const modules: ModuleReference[] = [
 A module file should export a default object with:
 
 ```typescript
-import { compile } from '@moduler-prompt/core';
+import { compile } from '@modular-prompt/core';
 import { myPromptModule } from './prompts.js';
 
 export default {
@@ -198,7 +198,7 @@ Two types of evaluators are supported:
 Programmatic validation (e.g., JSON structure validation):
 
 ```typescript
-import type { CodeEvaluator, EvaluationContext, EvaluationResult } from '@moduler-prompt/experiment';
+import type { CodeEvaluator, EvaluationContext, EvaluationResult } from '@modular-prompt/experiment';
 
 export default {
   name: 'JSON Validator',
@@ -221,8 +221,8 @@ export default {
 AI-based evaluation using LLM:
 
 ```typescript
-import type { PromptEvaluator, EvaluationContext } from '@moduler-prompt/experiment';
-import type { PromptModule } from '@moduler-prompt/core';
+import type { PromptEvaluator, EvaluationContext } from '@modular-prompt/experiment';
+import type { PromptModule } from '@modular-prompt/core';
 
 const evaluationModule: PromptModule<EvaluationContext> = {
   createContext: (): EvaluationContext => ({
@@ -301,7 +301,7 @@ import {
   loadEvaluators,
   ExperimentRunner,
   DriverManager,
-} from '@moduler-prompt/experiment';
+} from '@modular-prompt/experiment';
 
 const { serverConfig, aiService } = loadExperimentConfig('config.yaml');
 const modules = await loadModules(moduleRefs, basePath);
@@ -326,7 +326,7 @@ await driverManager.cleanup();
 ## CLI Options
 
 ```
-Usage: moduler-experiment <config> [options]
+Usage: modular-experiment <config> [options]
 
 Arguments:
   <config>                Config file path (YAML or TypeScript)

@@ -4,7 +4,7 @@
  */
 
 import type { AIDriver } from '../types.js';
-import { Logger, LogLevel } from '@moduler-prompt/utils';
+import { Logger, LogLevel } from '@modular-prompt/utils';
 
 // 標準ドライバーを個別インポート
 import { MlxDriver } from '../mlx-ml/mlx-driver.js';

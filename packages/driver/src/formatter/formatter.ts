@@ -7,7 +7,7 @@ import type {
   SectionElement,
   SubSectionElement,
   JSONElement
-} from '@moduler-prompt/core';
+} from '@modular-prompt/core';
 import type { ElementFormatter, FormatterOptions, SpecialToken, SpecialTokenPair } from './types.js';
 
 /**

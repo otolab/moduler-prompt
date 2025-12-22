@@ -2,7 +2,7 @@
  * MaterialElement Formatter
  */
 
-import type { MaterialElement } from '@moduler-prompt/core';
+import type { MaterialElement } from '@modular-prompt/core';
 import type { SpecialToken, SpecialTokenPair } from '../types.js';
 import { BaseElementFormatter } from './base.js';
 

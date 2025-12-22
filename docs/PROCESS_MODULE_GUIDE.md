@@ -253,7 +253,7 @@ export async function processWorkflow(
 ### ステップ4: 使用例
 
 ```typescript
-import { merge, createContext } from '@moduler-prompt/core';
+import { merge, createContext } from '@modular-prompt/core';
 import { processModule, processWorkflow } from './my-process';
 
 // 1. ユーザーモジュール（タスク定義）

@@ -34,10 +34,10 @@ npm run build
 npm run clean && npm run build
 
 # 個別パッケージのビルド
-npm run build -w @moduler-prompt/core
-npm run build -w @moduler-prompt/driver
-npm run build -w @moduler-prompt/utils
-npm run build -w @moduler-prompt/process
+npm run build -w @modular-prompt/core
+npm run build -w @modular-prompt/driver
+npm run build -w @modular-prompt/utils
+npm run build -w @modular-prompt/process
 
 # テスト
 npm test
@@ -154,24 +154,24 @@ npm run lint
 ## パッケージ構成
 
 ### コアパッケージ
-- `@moduler-prompt/core` - コア機能
+- `@modular-prompt/core` - コア機能
   - 型定義（PromptModule, Element, DynamicContent）
   - マージ機能（モジュール統合）
   - コンパイル機能（モジュール変換）
 
 ### ドライバーパッケージ
-- `@moduler-prompt/driver` - AIモデルドライバー
+- `@modular-prompt/driver` - AIモデルドライバー
   - OpenAI、Anthropic、VertexAI、GoogleGenAI、Ollama、MLX
   - 統一インターフェースとストリーミングサポート
   - StreamResult型: stream（AsyncIterable<string>）+ result（Promise<QueryResult>）
 
 ### ユーティリティパッケージ
-- `@moduler-prompt/utils` - ユーティリティ機能
+- `@modular-prompt/utils` - ユーティリティ機能
   - ドライバーレジストリ（動的ドライバー選択）
   - フォーマッター（テキスト/メッセージ形式変換）
 
 ### 処理パッケージ
-- `@moduler-prompt/process` - ストリーム処理
+- `@modular-prompt/process` - ストリーム処理
   - マテリアル管理モジュール
   - チャンク処理モジュール
 

@@ -4,9 +4,9 @@
  * Runs evaluation (code or prompt-based) for a single module
  */
 
-import { compile } from '@moduler-prompt/core';
-import { formatCompletionPrompt, type ModelSpec } from '@moduler-prompt/driver';
-import type { AIService } from '@moduler-prompt/driver';
+import { compile } from '@modular-prompt/core';
+import { formatCompletionPrompt, type ModelSpec } from '@modular-prompt/driver';
+import type { AIService } from '@modular-prompt/driver';
 import type { EvaluationContext, EvaluationResult } from '../types.js';
 import type { LoadedEvaluator } from '../config/dynamic-loader.js';
 

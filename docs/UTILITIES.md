@@ -2,13 +2,13 @@
 
 ## 概要
 
-`@moduler-prompt/utils`パッケージは、Moduler Promptシステムで使用される共通ユーティリティを提供します。主要な機能として、ドライバレジストリとログシステムが含まれています。
+`@modular-prompt/utils`パッケージは、Moduler Promptシステムで使用される共通ユーティリティを提供します。主要な機能として、ドライバレジストリとログシステムが含まれています。
 
 ## ログシステム (Logger System)
 
 ### 概要
 
-`@moduler-prompt/utils`のログシステムは、構造化ログ出力とログレベル制御機能を提供します。開発・本番環境での適切なログ出力を支援します。
+`@modular-prompt/utils`のログシステムは、構造化ログ出力とログレベル制御機能を提供します。開発・本番環境での適切なログ出力を支援します。
 
 ### なぜログシステムが必要か
 
@@ -26,7 +26,7 @@
 ### ログレベル階層
 
 ```typescript
-import { LogLevel } from '@moduler-prompt/utils';
+import { LogLevel } from '@modular-prompt/utils';
 
 enum LogLevel {
   QUIET = 0,  // ERRORのみ - 重大なエラーのみ記録
@@ -50,7 +50,7 @@ enum LogLevel {
 #### Loggerの初期化
 
 ```typescript
-import { Logger, LogLevel } from '@moduler-prompt/utils';
+import { Logger, LogLevel } from '@modular-prompt/utils';
 
 // デフォルト設定でLoggerを作成
 const logger = new Logger();
@@ -140,8 +140,8 @@ logger.setDebug(false);
 DriverRegistryクラスは内部でLoggerを使用して、モデルの選択とドライバー作成プロセスを追跡します：
 
 ```typescript
-import { DriverRegistry } from '@moduler-prompt/driver';
-import { LogLevel } from '@moduler-prompt/utils';
+import { DriverRegistry } from '@modular-prompt/driver';
+import { LogLevel } from '@modular-prompt/utils';
 
 // ログレベルを指定してRegistryを作成
 const registry = new DriverRegistry(LogLevel.DEBUG);

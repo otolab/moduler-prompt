@@ -2,8 +2,8 @@
  * Experiment runner - orchestrates the entire experiment
  */
 
-import { formatCompletionPrompt } from '@moduler-prompt/driver';
-import type { AIService, QueryResult, ModelSpec } from '@moduler-prompt/driver';
+import { formatCompletionPrompt } from '@modular-prompt/driver';
+import type { AIService, QueryResult, ModelSpec } from '@modular-prompt/driver';
 import type { ModuleDefinition, TestResult, TestCase, EvaluationContext, EvaluationResult } from '../types.js';
 import type { DriverManager } from './driver-manager.js';
 import type { LoadedEvaluator } from '../config/dynamic-loader.js';

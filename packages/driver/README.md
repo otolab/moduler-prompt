@@ -1,22 +1,22 @@
-# @moduler-prompt/driver
+# @modular-prompt/driver
 
 AIモデルドライバーパッケージ - 様々なAIプロバイダーとの統一されたインターフェースを提供
 
 ## 概要
 
-`@moduler-prompt/driver`は、OpenAI、Anthropic、Google Vertex AI、Ollama、MLX MLなど、複数のAIプロバイダーとの統合を提供するドライバーパッケージです。統一されたインターフェースにより、プロバイダーを簡単に切り替えることができます。
+`@modular-prompt/driver`は、OpenAI、Anthropic、Google Vertex AI、Ollama、MLX MLなど、複数のAIプロバイダーとの統合を提供するドライバーパッケージです。統一されたインターフェースにより、プロバイダーを簡単に切り替えることができます。
 
 ## インストール
 
 ```bash
-npm install @moduler-prompt/driver
+npm install @modular-prompt/driver
 ```
 
 ## 基本的な使い方
 
 ```typescript
-import { compile } from '@moduler-prompt/core';
-import { OpenAIDriver } from '@moduler-prompt/driver';
+import { compile } from '@modular-prompt/core';
+import { OpenAIDriver } from '@modular-prompt/driver';
 
 // ドライバーの初期化
 const driver = new OpenAIDriver({
@@ -43,7 +43,7 @@ console.log(result.content);
 OpenAI APIと互換性のあるサービス用のドライバー。
 
 ```typescript
-import { OpenAIDriver } from '@moduler-prompt/driver';
+import { OpenAIDriver } from '@modular-prompt/driver';
 
 const driver = new OpenAIDriver({
   apiKey: process.env.OPENAI_API_KEY,
@@ -66,7 +66,7 @@ const driver = new OpenAIDriver({
 Claude APIのドライバー。
 
 ```typescript
-import { AnthropicDriver } from '@moduler-prompt/driver';
+import { AnthropicDriver } from '@modular-prompt/driver';
 
 const driver = new AnthropicDriver({
   apiKey: process.env.ANTHROPIC_API_KEY,
@@ -88,7 +88,7 @@ const driver = new AnthropicDriver({
 Google Cloud Vertex AI経由でGeminiモデルを使用。
 
 ```typescript
-import { VertexAIDriver } from '@moduler-prompt/driver';
+import { VertexAIDriver } from '@modular-prompt/driver';
 
 const driver = new VertexAIDriver({
   project: 'your-gcp-project',  // または環境変数 GOOGLE_CLOUD_PROJECT
@@ -117,7 +117,7 @@ const driver = new VertexAIDriver({
 GoogleGenAI SDKを使用してGeminiモデルに直接アクセス。APIキーのみで簡単に利用可能。
 
 ```typescript
-import { GoogleGenAIDriver } from '@moduler-prompt/driver';
+import { GoogleGenAIDriver } from '@modular-prompt/driver';
 
 const driver = new GoogleGenAIDriver({
   apiKey: process.env.GOOGLE_GENAI_API_KEY,
@@ -149,7 +149,7 @@ const driver = new GoogleGenAIDriver({
 詳細なセットアップ手順とモデルのダウンロード方法については、[ローカルモデルセットアップガイド](../../docs/LOCAL_MODEL_SETUP.md#ollama)を参照してください。
 
 ```typescript
-import { OllamaDriver } from '@moduler-prompt/driver';
+import { OllamaDriver } from '@modular-prompt/driver';
 
 const driver = new OllamaDriver({
   baseURL: 'http://localhost:11434/v1',  // デフォルト
@@ -170,14 +170,14 @@ Appleシリコン最適化モデル用のPythonベースのドライバー。
 MLXドライバーは初回インストール時に自動的にPython環境をセットアップします：
 
 ```bash
-npm install @moduler-prompt/driver
+npm install @modular-prompt/driver
 # postinstallスクリプトが自動的にPython環境をセットアップ
 ```
 
 手動セットアップが必要な場合：
 
 ```bash
-cd node_modules/@moduler-prompt/driver
+cd node_modules/@modular-prompt/driver
 npm run setup-mlx
 ```
 
@@ -189,7 +189,7 @@ npm run setup-mlx
 #### 使用方法
 
 ```typescript
-import { MlxDriver } from '@moduler-prompt/driver';
+import { MlxDriver } from '@modular-prompt/driver';
 
 const driver = new MlxDriver({
   model: 'mlx-community/gemma-3-2b',
@@ -215,7 +215,7 @@ await driver.close();
 テスト用モデル（約270MB）を事前にダウンロードできます：
 
 ```bash
-cd node_modules/@moduler-prompt/driver
+cd node_modules/@modular-prompt/driver
 npm run download-model
 ```
 
@@ -233,7 +233,7 @@ npm run download-model
 - デバッグや検証のために低レベルAPIを使用したい
 
 ```typescript
-import { MlxProcess, type MlxMessage } from '@moduler-prompt/driver';
+import { MlxProcess, type MlxMessage } from '@modular-prompt/driver';
 
 // 低レベルプロセスを直接使用
 const process = new MlxProcess('mlx-community/gemma-3-27b-it-qat-4bit');
@@ -284,7 +284,7 @@ process.exit();
 開発とテスト用のモックドライバー。
 
 ```typescript
-import { TestDriver } from '@moduler-prompt/driver';
+import { TestDriver } from '@modular-prompt/driver';
 
 const driver = new TestDriver({
   responses: [
@@ -328,7 +328,7 @@ console.log('\nUsage:', finalResult.usage);
 独自のドライバーを作成するには、`AIDriver`インターフェースを実装します：
 
 ```typescript
-import type { AIDriver, CompiledPrompt, QueryOptions, QueryResult, StreamResult } from '@moduler-prompt/driver';
+import type { AIDriver, CompiledPrompt, QueryOptions, QueryResult, StreamResult } from '@modular-prompt/driver';
 
 export class CustomDriver implements AIDriver {
   private apiKey: string;
@@ -394,7 +394,7 @@ export class CustomDriver implements AIDriver {
 ドライバーはプロンプトのフォーマット方法をカスタマイズできます。FormatterOptionsを使用して、マーカー、プリアンブル、セクション説明などをカスタマイズします：
 
 ```typescript
-import type { FormatterOptions } from '@moduler-prompt/driver';
+import type { FormatterOptions } from '@modular-prompt/driver';
 
 export class CustomDriver implements AIDriver {
   private formatterOptions: FormatterOptions;
@@ -519,7 +519,7 @@ try {
 ### 複数のプロバイダーを切り替える
 
 ```typescript
-import { OpenAIDriver, AnthropicDriver, VertexAIDriver } from '@moduler-prompt/driver';
+import { OpenAIDriver, AnthropicDriver, VertexAIDriver } from '@modular-prompt/driver';
 
 function createDriver(provider: string) {
   switch (provider) {

@@ -2,7 +2,7 @@
  * Test module for experiment
  */
 
-import { compile } from '@moduler-prompt/core';
+import { compile } from '@modular-prompt/core';
 
 export default {
   name: 'Test Module',

@@ -53,13 +53,13 @@ AIServiceは、以下の機能を提供する高レベルのサービスクラ�
 ### インストール
 
 ```bash
-npm install @moduler-prompt/driver
+npm install @modular-prompt/driver
 ```
 
 ### 最小限の例
 
 ```typescript
-import { AIService } from '@moduler-prompt/driver';
+import { AIService } from '@modular-prompt/driver';
 
 const config = {
   models: [

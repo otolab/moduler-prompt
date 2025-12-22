@@ -1,4 +1,4 @@
-import type { PromptModule } from '@moduler-prompt/core';
+import type { PromptModule } from '@modular-prompt/core';
 import type { SelfPromptingWorkflowContext } from '../types.js';
 
 /**

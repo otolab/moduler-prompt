@@ -1,5 +1,5 @@
 {
-  "name": "@moduler-prompt/process",
+  "name": "@modular-prompt/process",
   "version": "0.1.10",
   "description": "Process module for modular prompt framework",
   "type": "module",
@@ -35,8 +35,8 @@
     "prepublishOnly": "pnpm run clean && pnpm build"
   },
   "dependencies": {
-    "@moduler-prompt/core": "workspace:*",
-    "@moduler-prompt/driver": "workspace:*"
+    "@modular-prompt/core": "workspace:*",
+    "@modular-prompt/driver": "workspace:*"
   },
   "devDependencies": {
     "@eslint/js": "^9.34.0",

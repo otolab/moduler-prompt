@@ -1,22 +1,22 @@
-# @moduler-prompt/core
+# @modular-prompt/core
 
 プロンプトモジュールフレームワークのコアパッケージ。
 
 ## 📚 ドキュメント
 
-詳細は[ドキュメント](https://github.com/otolab/moduler-prompt/tree/main/docs)を参照してください。
+詳細は[ドキュメント](https://github.com/otolab/modular-prompt/tree/main/docs)を参照してください。
 
 ## インストール
 
 ```bash
-npm install @moduler-prompt/core
+npm install @modular-prompt/core
 ```
 
 ## 基本的な使用方法
 
 ```typescript
-import { compile, merge, createContext } from '@moduler-prompt/core';
-import type { PromptModule } from '@moduler-prompt/core';
+import { compile, merge, createContext } from '@modular-prompt/core';
+import type { PromptModule } from '@modular-prompt/core';
 
 // Context型定義
 interface MyContext {

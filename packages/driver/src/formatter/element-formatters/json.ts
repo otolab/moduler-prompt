@@ -2,7 +2,7 @@
  * JSONElement Formatter
  */
 
-import type { JSONElement } from '@moduler-prompt/core';
+import type { JSONElement } from '@modular-prompt/core';
 import type { SpecialToken, SpecialTokenPair } from '../types.js';
 import { BaseElementFormatter } from './base.js';
 

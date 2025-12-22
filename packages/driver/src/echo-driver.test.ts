@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest';
 import { EchoDriver } from './echo-driver.js';
-import type { CompiledPrompt } from '@moduler-prompt/core';
+import type { CompiledPrompt } from '@modular-prompt/core';
 
 describe('EchoDriver', () => {
   const samplePrompt: CompiledPrompt = {

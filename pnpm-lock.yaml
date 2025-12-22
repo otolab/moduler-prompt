@@ -62,10 +62,10 @@ importers:
       '@google/genai':
         specifier: ^1.34.0
         version: 1.34.0
-      '@moduler-prompt/core':
+      '@modular-prompt/core':
         specifier: workspace:*
         version: link:../core
-      '@moduler-prompt/utils':
+      '@modular-prompt/utils':
         specifier: workspace:*
         version: link:../utils
       '@types/js-yaml':
@@ -108,10 +108,10 @@ importers:
 
   packages/experiment:
     dependencies:
-      '@moduler-prompt/core':
+      '@modular-prompt/core':
         specifier: workspace:*
         version: link:../core
-      '@moduler-prompt/driver':
+      '@modular-prompt/driver':
         specifier: workspace:*
         version: link:../driver
       commander:
@@ -154,10 +154,10 @@ importers:
 
   packages/process:
     dependencies:
-      '@moduler-prompt/core':
+      '@modular-prompt/core':
         specifier: workspace:*
         version: link:../core
-      '@moduler-prompt/driver':
+      '@modular-prompt/driver':
         specifier: workspace:*
         version: link:../driver
     devDependencies:
@@ -188,16 +188,16 @@ importers:
 
   packages/simple-chat:
     dependencies:
-      '@moduler-prompt/core':
+      '@modular-prompt/core':
         specifier: workspace:*
         version: link:../core
-      '@moduler-prompt/driver':
+      '@modular-prompt/driver':
         specifier: workspace:*
         version: link:../driver
-      '@moduler-prompt/process':
+      '@modular-prompt/process':
         specifier: workspace:*
         version: link:../process
-      '@moduler-prompt/utils':
+      '@modular-prompt/utils':
         specifier: workspace:*
         version: link:../utils
       chalk:
@@ -237,7 +237,7 @@ importers:
 
   packages/utils:
     dependencies:
-      '@moduler-prompt/core':
+      '@modular-prompt/core':
         specifier: workspace:*
         version: link:../core
       js-yaml:

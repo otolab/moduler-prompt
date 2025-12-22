@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import type { CompiledPrompt } from '@moduler-prompt/core';
+import type { CompiledPrompt } from '@modular-prompt/core';
 import { formatCompletionPrompt, ECHO_SPECIAL_TOKENS } from './completion-formatter.js';
 
 describe('formatCompletionPrompt', () => {

@@ -5,7 +5,7 @@
  * It defines how test data is presented to the evaluator.
  */
 
-import type { PromptModule, TextElement, JSONElement } from '@moduler-prompt/core';
+import type { PromptModule, TextElement, JSONElement } from '@modular-prompt/core';
 import type { EvaluationContext } from '../types.js';
 
 export const baseEvaluationModule: PromptModule<EvaluationContext> = {

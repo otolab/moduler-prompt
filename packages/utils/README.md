@@ -1,4 +1,4 @@
-# @moduler-prompt/utils
+# @modular-prompt/utils
 
 Moduler Promptフレームワークのユーティリティパッケージ。プロンプトのフォーマット変換とドライバレジストリ機能を提供します。
 
@@ -9,8 +9,8 @@ Moduler Promptフレームワークのユーティリティパッケージ。プ
 CompiledPromptをテキストやメッセージ配列に変換：
 
 ```typescript
-import { formatPrompt, formatPromptAsMessages } from '@moduler-prompt/utils';
-import { compile } from '@moduler-prompt/core';
+import { formatPrompt, formatPromptAsMessages } from '@modular-prompt/utils';
+import { compile } from '@modular-prompt/core';
 
 const compiled = compile(module, context);
 
@@ -26,8 +26,8 @@ const messages = formatPromptAsMessages(compiled);
 AIモデルドライバの自動選択と管理：
 
 ```typescript
-import { DriverRegistry, registerDriverFactories } from '@moduler-prompt/utils';
-import * as Drivers from '@moduler-prompt/driver';
+import { DriverRegistry, registerDriverFactories } from '@modular-prompt/utils';
+import * as Drivers from '@modular-prompt/driver';
 
 // レジストリを初期化
 const registry = new DriverRegistry();
@@ -124,7 +124,7 @@ drivers:
 ### 選択条件の指定
 
 ```typescript
-import type { DriverSelectionCriteria } from '@moduler-prompt/utils';
+import type { DriverSelectionCriteria } from '@modular-prompt/utils';
 
 const criteria: DriverSelectionCriteria = {
   // 必須の能力（すべて満たす必要がある）
@@ -187,10 +187,10 @@ registry.registerDriver({
 ### 使用例
 
 ```typescript
-import { DriverRegistry, registerDriverFactories, formatPrompt } from '@moduler-prompt/utils';
-import * as Drivers from '@moduler-prompt/driver';
-import { compile, createContext } from '@moduler-prompt/core';
-import { chatPromptModule } from '@moduler-prompt/simple-chat';
+import { DriverRegistry, registerDriverFactories, formatPrompt } from '@modular-prompt/utils';
+import * as Drivers from '@modular-prompt/driver';
+import { compile, createContext } from '@modular-prompt/core';
+import { chatPromptModule } from '@modular-prompt/simple-chat';
 
 async function main() {
   // レジストリを設定
@@ -225,7 +225,7 @@ main().catch(console.error);
 ## インストール
 
 ```bash
-npm install @moduler-prompt/utils
+npm install @modular-prompt/utils
 ```
 
 ## API リファレンス

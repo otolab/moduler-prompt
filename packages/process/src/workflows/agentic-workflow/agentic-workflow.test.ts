@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest';
 import { agenticProcess } from './agentic-workflow.js';
-import { TestDriver } from '@moduler-prompt/driver';
+import { TestDriver } from '@modular-prompt/driver';
 import type { AgenticWorkflowContext, AgenticPlan } from './types.js';
 
 describe('agenticProcess', () => {

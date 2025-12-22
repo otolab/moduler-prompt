@@ -1,6 +1,6 @@
 # リリースガイド
 
-このドキュメントは、`@moduler-prompt`パッケージ群のリリース手順とバージョン管理方法を定義する。
+このドキュメントは、`@modular-prompt`パッケージ群のリリース手順とバージョン管理方法を定義する。
 
 ## CI/CDによる自動リリース
 
@@ -69,7 +69,7 @@ git push origin v0.x.x
 5. 以下の情報を入力：
    - **Provider**: GitHub Actions
    - **Organization/User**: `otolab`
-   - **Repository**: `moduler-prompt`
+   - **Repository**: `modular-prompt`
    - **Workflow**: `release.yml`
    - **Environment**: （空欄でOK）
 
@@ -78,11 +78,11 @@ git push origin v0.x.x
 - または、初回のみ従来のNPM_TOKEN方式で公開し、その後Trusted Publisherを設定
 
 **対象パッケージ**:
-- `@moduler-prompt/core`
-- `@moduler-prompt/driver`
-- `@moduler-prompt/utils`
-- `@moduler-prompt/process`
-- `@moduler-prompt/simple-chat`
+- `@modular-prompt/core`
+- `@modular-prompt/driver`
+- `@modular-prompt/utils`
+- `@modular-prompt/process`
+- `@modular-prompt/simple-chat`
 
 #### 従来の方法（NPM_TOKEN）
 
@@ -148,7 +148,7 @@ git checkout -b release/v0.1.1
 
 # 2. バージョン更新
 npm version patch --no-git-tag-version
-# または個別パッケージ: npm version patch -w @moduler-prompt/core --no-git-tag-version
+# または個別パッケージ: npm version patch -w @modular-prompt/core --no-git-tag-version
 
 # 3. 変更をコミット
 git add .
@@ -229,10 +229,10 @@ npm run lint
 npm version <patch|minor|major> --no-git-tag-version
 
 # 個別パッケージのバージョン更新（必要に応じて）
-npm version <patch|minor|major> -w @moduler-prompt/core --no-git-tag-version
-npm version <patch|minor|major> -w @moduler-prompt/driver --no-git-tag-version
-npm version <patch|minor|major> -w @moduler-prompt/utils --no-git-tag-version
-npm version <patch|minor|major> -w @moduler-prompt/process --no-git-tag-version
+npm version <patch|minor|major> -w @modular-prompt/core --no-git-tag-version
+npm version <patch|minor|major> -w @modular-prompt/driver --no-git-tag-version
+npm version <patch|minor|major> -w @modular-prompt/utils --no-git-tag-version
+npm version <patch|minor|major> -w @modular-prompt/process --no-git-tag-version
 ```
 
 ### 3. CHANGELOG更新
@@ -301,10 +301,10 @@ gh release create v0.1.1 \
 npm login
 
 # 個別パッケージの公開
-npm publish -w @moduler-prompt/core
-npm publish -w @moduler-prompt/driver
-npm publish -w @moduler-prompt/utils
-npm publish -w @moduler-prompt/process
+npm publish -w @modular-prompt/core
+npm publish -w @modular-prompt/driver
+npm publish -w @modular-prompt/utils
+npm publish -w @modular-prompt/process
 
 # または一括公開（設定済みの場合）
 npm publish --workspaces
@@ -319,7 +319,7 @@ npm publish --workspaces
 npm version prerelease --preid=alpha --no-git-tag-version
 
 # npm公開（alphaタグ付き）
-npm publish --tag alpha -w @moduler-prompt/core
+npm publish --tag alpha -w @modular-prompt/core
 ```
 
 ### ベータ版
@@ -329,7 +329,7 @@ npm publish --tag alpha -w @moduler-prompt/core
 npm version prerelease --preid=beta --no-git-tag-version
 
 # npm公開（betaタグ付き）
-npm publish --tag beta -w @moduler-prompt/core
+npm publish --tag beta -w @modular-prompt/core
 ```
 
 ## 緊急修正（ホットフィックス）
@@ -387,17 +387,17 @@ npm login
 
 # 権限エラーの場合
 npm access ls-packages
-npm access grant read-write <org>:<team> @moduler-prompt/core
+npm access grant read-write <org>:<team> @modular-prompt/core
 
 # バージョン重複エラーの場合
-npm view @moduler-prompt/core versions --json
+npm view @modular-prompt/core versions --json
 ```
 
 ### workspace参照の解決
 
 ```bash
 # workspace:*を具体的なバージョンに変換
-npm pack --dry-run -w @moduler-prompt/core
+npm pack --dry-run -w @modular-prompt/core
 ```
 
 ## 自動化スクリプト

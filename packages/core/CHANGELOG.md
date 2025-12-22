@@ -1,4 +1,4 @@
-# @moduler-prompt/core
+# @modular-prompt/core
 
 ## 0.1.9
 

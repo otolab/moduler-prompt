@@ -1,5 +1,5 @@
-import { compile, merge } from '@moduler-prompt/core';
-import type { PromptModule, CompiledPrompt } from '@moduler-prompt/core';
+import { compile, merge } from '@modular-prompt/core';
+import type { PromptModule, CompiledPrompt } from '@modular-prompt/core';
 import { WorkflowExecutionError } from '../types.js';
 import type { AIDriver, WorkflowResult } from '../types.js';
 import type {

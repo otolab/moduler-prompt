@@ -4,8 +4,8 @@
  * セクションヘッダーが正しく生成され、モデル固有処理後も保持されるかを確認
  */
 import { describe, it, expect } from 'vitest';
-import { compile } from '@moduler-prompt/core';
-import type { PromptModule } from '@moduler-prompt/core';
+import { compile } from '@modular-prompt/core';
+import type { PromptModule } from '@modular-prompt/core';
 import { createModelSpecificProcessor } from './model-specific.js';
 import { processLlmJpCompletion } from './model-handlers.js';
 import { formatCompletionPrompt, defaultFormatterTexts } from '../../formatter/converter.js';

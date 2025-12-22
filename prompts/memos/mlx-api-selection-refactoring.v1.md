@@ -7,7 +7,7 @@
    - すべてのテストがパス
 
 2. **機能追加の検討**
-   - moduler-promptの典型的パターン（system → user → system(cue)）が、厳格なchat制限（`singleSystemAtStart`）により失敗する問題に対処
+   - modular-promptの典型的パターン（system → user → system(cue)）が、厳格なchat制限（`singleSystemAtStart`）により失敗する問題に対処
    - 外部からAPI選択ロジックをカスタマイズできる機構を追加
    - `customProcessor.determineApi()`の実装
    - ヘルパー関数（`createModulerPromptApiSelector()`など）の実装

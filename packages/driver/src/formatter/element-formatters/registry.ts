@@ -4,7 +4,7 @@
  * Element型ごとのフォーマッターを管理
  */
 
-import type { Element } from '@moduler-prompt/core';
+import type { Element } from '@modular-prompt/core';
 import type { SpecialToken, SpecialTokenPair } from '../types.js';
 import type { ElementFormatter } from './base.js';
 

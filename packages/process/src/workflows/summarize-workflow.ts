@@ -1,5 +1,5 @@
-import { compile, merge } from '@moduler-prompt/core';
-import type { PromptModule } from '@moduler-prompt/core';
+import { compile, merge } from '@modular-prompt/core';
+import type { PromptModule } from '@modular-prompt/core';
 import { streamProcessing } from '../modules/stream-processing.js';
 import { analyzeForSummary, contentSummarize } from '../modules/summarize.js';
 import { WorkflowExecutionError, type AIDriver, type WorkflowResult } from './types.js';

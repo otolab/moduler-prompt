@@ -1,5 +1,5 @@
-import { compile, merge } from '@moduler-prompt/core';
-import type { PromptModule } from '@moduler-prompt/core';
+import { compile, merge } from '@modular-prompt/core';
+import type { PromptModule } from '@modular-prompt/core';
 import { 
   firstOfTwoPassResponse, 
   secondOfTwoPassResponse,

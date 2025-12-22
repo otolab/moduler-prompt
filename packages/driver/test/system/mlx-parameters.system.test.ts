@@ -10,7 +10,7 @@
 
 import { describe, it, expect, beforeAll, afterAll } from 'vitest';
 import { MlxDriver } from '../../src/mlx-ml/mlx-driver.js';
-import type { ChatMessage, CompiledPrompt } from '@moduler-prompt/core';
+import type { ChatMessage, CompiledPrompt } from '@modular-prompt/core';
 import { platform } from 'os';
 
 // MLXはApple Silicon専用なので、他のプラットフォームではスキップ

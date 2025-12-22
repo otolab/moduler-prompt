@@ -1,4 +1,4 @@
-import type { PromptModule, MessageElement, SubSectionElement } from '@moduler-prompt/core';
+import type { PromptModule, MessageElement, SubSectionElement } from '@modular-prompt/core';
 
 /**
  * Context for dialogue modules

@@ -2,7 +2,7 @@
  * SectionElement and SubSectionElement Formatters
  */
 
-import type { SectionElement, SubSectionElement } from '@moduler-prompt/core';
+import type { SectionElement, SubSectionElement } from '@modular-prompt/core';
 import type { SpecialToken, SpecialTokenPair } from '../types.js';
 import { BaseElementFormatter } from './base.js';
 import type { ElementFormatterRegistry } from './registry.js';

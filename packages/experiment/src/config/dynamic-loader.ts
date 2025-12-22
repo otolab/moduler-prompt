@@ -4,7 +4,7 @@
  * Loads evaluators and modules from external files or inline definitions
  */
 
-import { merge } from '@moduler-prompt/core';
+import { merge } from '@modular-prompt/core';
 import { pathToFileURL } from 'url';
 import { resolve } from 'path';
 import type {

@@ -1,5 +1,5 @@
 import OpenAI from 'openai';
-import type { CompiledPrompt, Element } from '@moduler-prompt/core';
+import type { CompiledPrompt, Element } from '@modular-prompt/core';
 import type { AIDriver, QueryOptions, QueryResult, StreamResult } from '../types.js';
 import type {
   ChatCompletionCreateParams,

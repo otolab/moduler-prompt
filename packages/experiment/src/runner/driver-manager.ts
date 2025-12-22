@@ -2,7 +2,7 @@
  * Driver manager for caching and cleanup
  */
 
-import type { AIService, ModelSpec } from '@moduler-prompt/driver';
+import type { AIService, ModelSpec } from '@modular-prompt/driver';
 
 export class DriverManager {
   private cache = new Map<string, any>();

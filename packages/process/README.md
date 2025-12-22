@@ -1,11 +1,11 @@
-# @moduler-prompt/process
+# @modular-prompt/process
 
 プロンプトモジュールとワークフローを提供するパッケージ。
 
 ## インストール
 
 ```bash
-npm install @moduler-prompt/process
+npm install @modular-prompt/process
 ```
 
 ## ワークフロー
@@ -33,9 +33,9 @@ npm install @moduler-prompt/process
 ### チャンク処理
 
 ```typescript
-import { streamProcess } from '@moduler-prompt/process';
-import { streamProcessing } from '@moduler-prompt/process';
-import { TestDriver } from '@moduler-prompt/driver';
+import { streamProcess } from '@modular-prompt/process';
+import { streamProcessing } from '@modular-prompt/process';
+import { TestDriver } from '@modular-prompt/driver';
 
 const driver = new TestDriver(['response1', 'response2']);
 
@@ -53,8 +53,8 @@ const result = await streamProcess(
 ### エージェント型ワークフロー
 
 ```typescript
-import { agenticProcess } from '@moduler-prompt/process';
-import { AnthropicDriver } from '@moduler-prompt/driver';
+import { agenticProcess } from '@modular-prompt/process';
+import { AnthropicDriver } from '@modular-prompt/driver';
 
 const driver = new AnthropicDriver({
   apiKey: process.env.ANTHROPIC_API_KEY,
@@ -99,8 +99,8 @@ console.log(result.metadata); // { planSteps: 5, executedSteps: 5, actionsUsed: 
 ### 簡易エージェントワークフロー
 
 ```typescript
-import { agentProcess } from '@moduler-prompt/process';
-import { TestDriver } from '@moduler-prompt/driver';
+import { agentProcess } from '@modular-prompt/process';
+import { TestDriver } from '@modular-prompt/driver';
 
 const driver = new TestDriver();
 
@@ -138,7 +138,7 @@ console.log(result.metadata); // { planSteps: 3, executedSteps: 3, actionsUsed: 
 ### アクション（外部ツール）の使用
 
 ```typescript
-import { agenticProcess } from '@moduler-prompt/process';
+import { agenticProcess } from '@modular-prompt/process';
 
 // 外部ツール/APIの定義
 const actions = {

@@ -4,7 +4,7 @@
  * Evaluates whether the output meets the functional requirements
  */
 
-import type { PromptModule } from '@moduler-prompt/core';
+import type { PromptModule } from '@modular-prompt/core';
 import type { PromptEvaluator, EvaluationContext } from '../types.js';
 
 const functionalCorrectnessModule: PromptModule<EvaluationContext> = {

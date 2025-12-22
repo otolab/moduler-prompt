@@ -1,6 +1,6 @@
 # 実験とリサーチ
 
-このディレクトリには、@moduler-prompt/processパッケージに関連する実験やリサーチの記録を保存します。
+このディレクトリには、@modular-prompt/processパッケージに関連する実験やリサーチの記録を保存します。
 
 ## Agentic Workflow モデル比較実験
 

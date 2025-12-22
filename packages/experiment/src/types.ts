@@ -2,8 +2,8 @@
  * Common type definitions for module comparison experiments
  */
 
-import type { PromptModule } from '@moduler-prompt/core';
-import type { QueryResult } from '@moduler-prompt/driver';
+import type { PromptModule } from '@modular-prompt/core';
+import type { QueryResult } from '@modular-prompt/driver';
 
 /**
  * Test case definition

@@ -112,7 +112,7 @@ Changes:
 
 ```bash
 # ビルドして検証
-npm run build -w @moduler-prompt/process
+npm run build -w @modular-prompt/process
 FREEFORM_EXECUTION=true MLX_MODEL="mlx-community/llm-jp-3.1-8x13b-instruct4-4bit" \
   npx tsx packages/process/scripts/test-agentic-workflow.ts
 ```
