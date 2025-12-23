@@ -6,7 +6,7 @@
  * - MCP mode support (stdout pollution prevention)
  */
 
-import { appendFileSync } from 'fs';
+import { appendFile } from 'fs/promises';
 
 // ログレベル定数（型の元となる値）
 const LOG_LEVEL_VALUES = ['quiet', 'error', 'warn', 'info', 'verbose', 'debug'] as const;
@@ -37,6 +37,9 @@ const envLogLevel: LogLevel | false =
   && process.env.MODULAR_PROMPT_LOG_LEVEL as LogLevel;
 
 export class Logger {
+  // 進行中のファイル書き込みPromiseを追跡
+  private static pendingWrites: Promise<void>[] = [];
+
   // グローバル設定（全インスタンスで共有）
   private static config: LoggerConfig = {
     level: envLogLevel || 'info',
@@ -52,6 +55,7 @@ export class Logger {
   private instanceConfig: Partial<LoggerConfig> = {}; // インスタンス固有設定
 
   private static logEntries: LogEntry[] = []; // ログエントリ蓄積（全インスタンスで共有）
+  private static fileQueue: LogEntry[] = []; // ファイル書き込み用キュー（accumulate設定と独立）
 
   // ログレベルの数値マッピング（小さいほど重要）
   private readonly LOG_LEVELS: Record<LogLevel, number> = {
@@ -168,16 +172,15 @@ export class Logger {
     return `${timestamp} ${level.toUpperCase()} ${prefix}${message}${formattedArgs}`;
   }
 
-  private writeToFile(entry: LogEntry): void {
+  private async writeToFile(entry: LogEntry): Promise<void> {
     const logFile = this.computedLogFile();
     if (!logFile) {
       return;
     }
 
     try {
-      // JSONL形式で出力（1行1JSON）
       const jsonLine = JSON.stringify(entry) + '\n';
-      appendFileSync(logFile, jsonLine, 'utf-8');
+      await appendFile(logFile, jsonLine, 'utf-8');
     } catch (error) {
       // ファイル書き込みエラーは標準エラー出力に（無限ループ防止のためloggerを使わない）
       console.error(`Failed to write log file: ${error}`);
@@ -188,10 +191,10 @@ export class Logger {
     const shouldOutput = this.shouldLog(level);
     const shouldAccumulate =
       this.computedAccumulate() && this.shouldLogAtLevel(level, this.computedAccumulateLevel());
-    const shouldWriteFile = !!this.computedLogFile();
+    const shouldQueueForFile = !!this.computedLogFile();
 
-    // 出力もせず蓄積もせずファイル書き込みもしない場合は早期リターン
-    if (!shouldOutput && !shouldAccumulate && !shouldWriteFile) {
+    // 出力もせず蓄積もせずファイルキューにも追加しない場合は早期リターン
+    if (!shouldOutput && !shouldAccumulate && !shouldQueueForFile) {
       return;
     }
 
@@ -217,9 +220,9 @@ export class Logger {
       }
     }
 
-    // JSONL形式でファイルに書き込み
-    if (shouldWriteFile) {
-      this.writeToFile(logEntry);
+    // ファイル書き込み用キューに追加（accumulate設定と独立）
+    if (shouldQueueForFile) {
+      Logger.fileQueue.push(logEntry);
     }
 
     // 出力判定に基づいて実際の出力を行う
@@ -386,6 +389,50 @@ export class Logger {
     });
 
     return stats;
+  }
+
+  /**
+   * ファイル書き込み用キューの内容をファイルに書き出す（非同期）
+   *
+   * @param options - フラッシュオプション
+   * @param options.filterByContext - コンテキストで絞り込むか（デフォルト: false、全エントリを書き出す）
+   * @returns 書き込み完了Promise
+   */
+  async flush(options: { filterByContext?: boolean } = {}): Promise<void> {
+    const logFile = this.computedLogFile();
+    if (!logFile || Logger.fileQueue.length === 0) {
+      return;
+    }
+
+    // 書き込むエントリを取得
+    const filterByContext = options.filterByContext ?? false;
+    let entries = Logger.fileQueue;
+
+    if (filterByContext) {
+      const currentContext = this.computedContext();
+      if (currentContext) {
+        entries = entries.filter(entry => entry.context === currentContext);
+      }
+    }
+
+    // 全エントリをファイルに書き込み
+    const writePromises = entries.map(entry => this.writeToFile(entry));
+    Logger.pendingWrites.push(...writePromises);
+
+    // 全ての書き込み完了を待つ
+    await Promise.allSettled(Logger.pendingWrites);
+    Logger.pendingWrites = [];
+
+    // 書き込み完了後、キューから削除
+    if (!filterByContext) {
+      Logger.fileQueue = [];
+    } else {
+      // コンテキストフィルタ時は、書き込んだエントリのみ削除
+      const currentContext = this.computedContext();
+      Logger.fileQueue = Logger.fileQueue.filter(
+        entry => entry.context !== currentContext
+      );
+    }
   }
 }
 

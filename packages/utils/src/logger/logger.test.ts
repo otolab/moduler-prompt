@@ -118,10 +118,12 @@ describe('Logger', () => {
   });
 
   describe('JSONL file output', () => {
-    it('should write logs to JSONL file', () => {
+    it('should write logs to JSONL file', async () => {
       Logger.configure({ logFile: testLogFile });
       logger.info('test message 1');
       logger.error('test message 2');
+
+      await logger.flush();
 
       expect(existsSync(testLogFile)).toBe(true);
 
@@ -142,11 +144,13 @@ describe('Logger', () => {
       expect(entry2.message).toBe('test message 2');
     });
 
-    it('should include context in JSONL output', () => {
+    it('should include context in JSONL output', async () => {
       Logger.configure({ logFile: testLogFile });
 
       const experimentLogger = new Logger({ context: 'experiment' });
       experimentLogger.info('test with context');
+
+      await experimentLogger.flush();
 
       const content = readFileSync(testLogFile, 'utf-8');
       const entry = JSON.parse(content.trim());
@@ -155,13 +159,17 @@ describe('Logger', () => {
       expect(entry.message).toBe('test with context');
     });
 
-    it('should append to existing JSONL file', () => {
+    it('should append to existing JSONL file', async () => {
       Logger.configure({ logFile: testLogFile });
       logger.info('message 1');
+
+      await logger.flush();
 
       // Create a new logger instance (simulating restart)
       Logger.configure({ logFile: testLogFile });
       logger.info('message 2');
+
+      await logger.flush();
 
       const content = readFileSync(testLogFile, 'utf-8');
       const lines = content.trim().split('\n');
@@ -176,11 +184,13 @@ describe('Logger', () => {
       }).not.toThrow();
     });
 
-    it('should write to file independently of accumulation setting', () => {
+    it('should write to file independently of accumulation setting', async () => {
       Logger.configure({ logFile: testLogFile });
       Logger.configure({ accumulate: false });
 
       logger.info('message without accumulation');
+
+      await logger.flush();
 
       expect(existsSync(testLogFile)).toBe(true);
       const content = readFileSync(testLogFile, 'utf-8');
@@ -366,9 +376,11 @@ describe('Logger', () => {
       expect(entries[0].context).toBe('runner');
     });
 
-    it('should update log file', () => {
+    it('should update log file', async () => {
       Logger.configure({ logFile: testLogFile });
       logger.info('test');
+
+      await logger.flush();
 
       expect(existsSync(testLogFile)).toBe(true);
 
@@ -379,6 +391,9 @@ describe('Logger', () => {
       }
 
       logger.info('test 2');
+
+      await logger.flush();
+
       // Should not create file when logFile is undefined
       expect(existsSync(testLogFile)).toBe(false);
     });
@@ -523,7 +538,7 @@ describe('Logger', () => {
       expect(logger2.getLogEntries()).toHaveLength(1);
     });
 
-    it('should write to same log file from all instances', () => {
+    it('should write to same log file from all instances', async () => {
       logger.clearLogEntries();
       Logger.configure({ logFile: testLogFile });
 
@@ -532,6 +547,8 @@ describe('Logger', () => {
 
       logger1.info('message 1');
       logger2.info('message 2');
+
+      await logger.flush();
 
       expect(existsSync(testLogFile)).toBe(true);
       const content = readFileSync(testLogFile, 'utf-8');
