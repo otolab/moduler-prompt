@@ -183,6 +183,7 @@ export class Logger {
       await appendFile(logFile, jsonLine, 'utf-8');
     } catch (error) {
       // ファイル書き込みエラーは標準エラー出力に（無限ループ防止のためloggerを使わない）
+      // eslint-disable-next-line no-console
       console.error(`Failed to write log file: ${error}`);
     }
   }
@@ -230,6 +231,7 @@ export class Logger {
       // MCPモード時は重要なエラーのみstderrに出力、その他は抑制
       if (this.computedIsMcpMode()) {
         if (level === 'error') {
+          // eslint-disable-next-line no-console
           console.error(formattedMessage);
         }
         // MCPモード時はerror以外は出力しない（stdout汚染防止）
@@ -239,16 +241,19 @@ export class Logger {
       // 通常モード時の出力先振り分け
       switch (level) {
         case 'error':
+          // eslint-disable-next-line no-console
           console.error(formattedMessage);
           break;
         case 'warn':
+          // eslint-disable-next-line no-console
           console.warn(formattedMessage);
           break;
         case 'debug':
         case 'verbose':
         case 'info':
         default:
-          console.error(formattedMessage); // stderrに統一してstdout汚染を防止
+          // eslint-disable-next-line no-console
+          console.log(formattedMessage);
           break;
       }
     }

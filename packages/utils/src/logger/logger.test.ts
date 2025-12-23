@@ -558,8 +558,10 @@ describe('Logger', () => {
       const entry1 = JSON.parse(lines[0]);
       const entry2 = JSON.parse(lines[1]);
 
-      expect(entry1.context).toBe('logger1');
-      expect(entry2.context).toBe('logger2');
+      // flush()は並列書き込みなので順序は保証されない
+      // 両方のcontextが存在することのみ確認
+      const contexts = [entry1.context, entry2.context].sort();
+      expect(contexts).toEqual(['logger1', 'logger2']);
     });
 
     it('should update global config dynamically for all instances', () => {
