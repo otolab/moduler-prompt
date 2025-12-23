@@ -9,6 +9,7 @@ import { createJiti } from 'jiti';
 import { AIService, type ApplicationConfig } from '@modular-prompt/driver';
 import type { ModuleReference } from './dynamic-loader.js';
 import type { EvaluatorReference, TestCase } from '../types.js';
+import { logger } from '@modular-prompt/utils';
 
 export interface LoadedConfig {
   serverConfig: any;
@@ -106,7 +107,7 @@ export async function loadExperimentConfig(configPath: string): Promise<LoadedCo
   if (serverConfig.credentials?.googleApplicationCredentials) {
     const resolvedPath = resolveConfigPath(configDir, serverConfig.credentials.googleApplicationCredentials);
     process.env.GOOGLE_APPLICATION_CREDENTIALS = resolvedPath;
-    console.log(`Setting GOOGLE_APPLICATION_CREDENTIALS=${resolvedPath}`);
+    logger.verbose(`Setting GOOGLE_APPLICATION_CREDENTIALS=${resolvedPath}`);
   }
 
   // Validation

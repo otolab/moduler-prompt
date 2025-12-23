@@ -20,6 +20,8 @@ export function parseArgs(): ExtendedExperimentOptions {
     .option('--evaluate', 'Enable AI-based evaluation of outputs', false)
     .option('--evaluators <names>', 'Comma-separated evaluator names (default: all)')
     .option('--dry-run', 'Display execution plan without running the experiment', false)
+    .option('--log-file <path>', 'Log file path for JSONL output (detailed logs)')
+    .option('--verbose', 'Enable verbose output (show detailed internal operations)', false)
     .parse();
 
   const config = program.args[0];
@@ -34,5 +36,7 @@ export function parseArgs(): ExtendedExperimentOptions {
     enableEvaluation: options.evaluate,
     evaluatorFilter: options.evaluators?.split(',').map((s: string) => s.trim()),
     dryRun: options.dryRun,
+    logFile: options.logFile,
+    verbose: options.verbose,
   };
 }

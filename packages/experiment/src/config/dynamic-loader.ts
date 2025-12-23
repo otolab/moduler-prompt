@@ -15,6 +15,7 @@ import type {
 } from '../types.js';
 import { baseEvaluationModule } from '../base-evaluation-module.js';
 import { getBuiltinEvaluator } from '../evaluators/index.js';
+import { logger } from '@modular-prompt/utils';
 
 /**
  * Loaded evaluator (unified type)
@@ -51,7 +52,7 @@ export async function loadEvaluators(
       evaluator = imported.default;
 
       if (!evaluator) {
-        console.warn(`⚠️  No default export in ${ref.path}`);
+        logger.warn(`No default export in ${ref.path}`);
         continue;
       }
     } else if ('prompt' in ref) {
@@ -73,7 +74,7 @@ export async function loadEvaluators(
       evaluator = getBuiltinEvaluator(ref.name);
 
       if (!evaluator) {
-        console.warn(`⚠️  Builtin evaluator not found: ${ref.name}`);
+        logger.warn(`Builtin evaluator not found: ${ref.name}`);
         continue;
       }
     }
@@ -101,7 +102,7 @@ export async function loadEvaluators(
         },
       });
     } else {
-      console.warn(`⚠️  Unknown evaluator type: ${ref.name}`);
+      logger.warn(`Unknown evaluator type: ${ref.name}`);
     }
   }
 
@@ -134,7 +135,7 @@ export async function loadModules(
     const module = imported.default;
 
     if (!module) {
-      console.warn(`⚠️  No default export in ${ref.path}`);
+      logger.warn(`No default export in ${ref.path}`);
       continue;
     }
 

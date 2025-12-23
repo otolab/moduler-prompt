@@ -3,6 +3,7 @@
  */
 
 import type { AIService, ModelSpec } from '@modular-prompt/driver';
+import { logger } from '@modular-prompt/utils';
 
 export class DriverManager {
   private cache = new Map<string, any>();
@@ -20,11 +21,11 @@ export class DriverManager {
    */
   async getOrCreate(aiService: AIService, modelName: string, modelSpec: ModelSpec): Promise<any> {
     if (this.cache.has(modelName)) {
-      console.log(`   Using cached driver for ${modelName}`);
+      logger.verbose(`Using cached driver for ${modelName}`);
       return this.cache.get(modelName);
     }
 
-    console.log(`   Creating new driver for ${modelName} (${modelSpec.provider}:${modelSpec.model})`);
+    logger.info(`Creating new driver for ${modelName} (${modelSpec.provider}:${modelSpec.model})`);
     const driver = await aiService.createDriver(modelSpec);
     this.cache.set(modelName, driver);
     return driver;
@@ -45,11 +46,11 @@ export class DriverManager {
     try {
       if (typeof driver.close === 'function') {
         await driver.close();
-        console.log(`   ✅ Closed driver: ${modelName}`);
+        logger.verbose(`Closed driver: ${modelName}`);
       }
       this.cache.delete(modelName);
     } catch (error) {
-      console.log(`   ⚠️  Failed to close driver ${modelName}: ${error instanceof Error ? error.message : String(error)}`);
+      logger.warn(`Failed to close driver ${modelName}: ${error instanceof Error ? error.message : String(error)}`);
     }
   }
 
@@ -64,10 +65,10 @@ export class DriverManager {
       try {
         if (driver && typeof driver.close === 'function') {
           await driver.close();
-          console.log(`   Closed driver: ${key}`);
+          logger.verbose(`Closed driver: ${key}`);
         }
       } catch (error) {
-        console.log(`   Warning: Failed to close driver ${key}: ${error instanceof Error ? error.message : String(error)}`);
+        logger.warn(`Failed to close driver ${key}: ${error instanceof Error ? error.message : String(error)}`);
       }
     }
 
