@@ -168,6 +168,15 @@ npx modular-experiment examples/experiment.yaml --evaluate
 
 # Run multiple times for statistics
 npx modular-experiment examples/experiment.yaml --repeat 10
+
+# Run with detailed logging to JSONL file
+npx modular-experiment examples/experiment.yaml --log-file experiment.jsonl
+
+# Run with verbose output (show internal operations)
+npx modular-experiment examples/experiment.yaml --verbose
+
+# Combine options
+npx modular-experiment examples/experiment.yaml --evaluate --log-file experiment.jsonl --verbose
 ```
 
 ## Configuration
@@ -393,6 +402,8 @@ Options:
   --evaluate              Enable evaluation phase
   --evaluators <names>    Comma-separated evaluator names (default: all)
   --dry-run               Display execution plan without running the experiment
+  --log-file <path>       Log file path for JSONL output (detailed logs)
+  --verbose               Enable verbose output (show detailed internal operations)
 ```
 
 **Note**: All paths specified in the config file are resolved relative to the config file's directory.

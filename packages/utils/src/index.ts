@@ -1,12 +1,11 @@
 // Logger exports
 export {
   Logger,
-  LogLevel,
-  defaultLogger
+  logger
 } from './logger/index.js';
 
 export type {
-  LoggerOptions
+  LogLevel
 } from './logger/index.js';
 
 // JSON Extractor exports

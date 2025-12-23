@@ -8,6 +8,9 @@ import type { ModuleDefinition, TestResult, TestCase, EvaluationContext, Evaluat
 import type { DriverManager } from './driver-manager.js';
 import type { LoadedEvaluator } from '../config/dynamic-loader.js';
 import { EvaluatorRunner } from './evaluator.js';
+import { logger as baseLogger } from '../logger.js';
+
+const logger = baseLogger.context('runner');
 
 export class ExperimentRunner {
   constructor(
@@ -41,11 +44,10 @@ export class ExperimentRunner {
 
       // Compile all modules with testCase.input as context
       const compiledModules = this.modules.map(module => {
-        console.log(`📝 [${module.name}] Compiling prompt...`);
+        logger.verbose(`Compiling prompt for module: ${module.name}`);
         const compiled = module.compile(testCase.input);
         const prompt = formatCompletionPrompt(compiled);
-        console.log(`   Prompt length: ${prompt.length} chars`);
-        console.log();
+        logger.verbose(`Prompt length for ${module.name}: ${prompt.length} chars`);
 
         return {
           name: module.name,
@@ -88,7 +90,7 @@ export class ExperimentRunner {
 
         // Close previous driver if switching models
         if (previousDriver && previousModelName && previousModelName !== modelName) {
-          console.log(`   🔄 Switching from ${previousModelName} to ${modelName}, closing previous driver...`);
+          logger.verbose(`Switching from ${previousModelName} to ${modelName}, closing previous driver...`);
           await this.driverManager.close(previousModelName);
           previousDriver = null;
         }
@@ -143,12 +145,12 @@ export class ExperimentRunner {
     compiled: any,
     driver: any
   ): Promise<Array<{ success: boolean; elapsed: number; queryResult?: QueryResult; error?: string }>> {
-    console.log(`   [${moduleName}] Running ${this.repeatCount} time(s)...`);
+    logger.verbose(`Running ${this.repeatCount} time(s) for module: ${moduleName}`);
 
     const runs: Array<{ success: boolean; elapsed: number; queryResult?: QueryResult; error?: string }> = [];
 
     for (let i = 0; i < this.repeatCount; i++) {
-      console.log(`   [${moduleName}] Run ${i + 1}/${this.repeatCount}...`);
+      logger.verbose(`Run ${i + 1}/${this.repeatCount} for module: ${moduleName}`);
 
       const startTime = Date.now();
       try {
@@ -158,7 +160,7 @@ export class ExperimentRunner {
         });
         const elapsed = Date.now() - startTime;
 
-        console.log(`   [${moduleName}] ✅ Success (${elapsed}ms)`);
+        logger.verbose(`Module ${moduleName} run ${i + 1}: Success (${elapsed}ms)`);
         runs.push({
           success: true,
           elapsed,
@@ -167,7 +169,7 @@ export class ExperimentRunner {
       } catch (error) {
         const elapsed = Date.now() - startTime;
         const errorMessage = error instanceof Error ? error.message : String(error);
-        console.log(`   [${moduleName}] ❌ Error (${elapsed}ms): ${errorMessage}`);
+        logger.error(`Module ${moduleName} run ${i + 1}: Error (${elapsed}ms): ${errorMessage}`);
         runs.push({
           success: false,
           elapsed,
@@ -176,7 +178,6 @@ export class ExperimentRunner {
       }
     }
 
-    console.log();
     return runs;
   }
 
@@ -225,17 +226,18 @@ export class ExperimentRunner {
         if (module1.prompt === module2.prompt) {
           console.log(`   ✅ [${module1.name}] and [${module2.name}] are identical`);
         } else {
-          console.log(`   ⚠️  [${module1.name}] and [${module2.name}] differ:`);
-          console.log(`      ${module1.name}: ${module1.prompt.length} chars`);
-          console.log(`      ${module2.name}: ${module2.prompt.length} chars`);
-          console.log(`      Diff: ${module2.prompt.length - module1.prompt.length} chars`);
+          console.log(`   ⚠️  [${module1.name}] and [${module2.name}] differ`);
+          logger.verbose(`Prompt comparison details:`);
+          logger.verbose(`  ${module1.name}: ${module1.prompt.length} chars`);
+          logger.verbose(`  ${module2.name}: ${module2.prompt.length} chars`);
+          logger.verbose(`  Diff: ${module2.prompt.length - module1.prompt.length} chars`);
 
-          // Find first difference
+          // Find first difference (verbose only)
           for (let k = 0; k < Math.max(module1.prompt.length, module2.prompt.length); k++) {
             if (module1.prompt[k] !== module2.prompt[k]) {
-              console.log(`      First diff at position ${k}:`);
-              console.log(`        ${module1.name}: ${JSON.stringify(module1.prompt.substring(k, k + 50))}`);
-              console.log(`        ${module2.name}: ${JSON.stringify(module2.prompt.substring(k, k + 50))}`);
+              logger.verbose(`  First diff at position ${k}:`);
+              logger.verbose(`    ${module1.name}: ${JSON.stringify(module1.prompt.substring(k, k + 50))}`);
+              logger.verbose(`    ${module2.name}: ${JSON.stringify(module2.prompt.substring(k, k + 50))}`);
               break;
             }
           }

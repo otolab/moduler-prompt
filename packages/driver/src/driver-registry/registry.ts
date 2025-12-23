@@ -4,7 +4,7 @@
  */
 
 import type { AIDriver } from '../types.js';
-import { Logger, LogLevel } from '@modular-prompt/utils';
+import { Logger, type LogLevel } from '@modular-prompt/utils';
 
 // 標準ドライバーを個別インポート
 import { MlxDriver } from '../mlx-ml/mlx-driver.js';
@@ -34,7 +34,7 @@ export class DriverRegistry implements IDriverRegistry {
   private factories: Map<DriverProvider, DriverFactory> = new Map();
   private logger: Logger;
 
-  constructor(logLevel: LogLevel = LogLevel.INFO) {
+  constructor(logLevel: LogLevel = 'info') {
     this.logger = new Logger({
       level: logLevel,
       prefix: 'DriverRegistry'

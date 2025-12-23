@@ -136,4 +136,6 @@ export interface ExtendedExperimentOptions extends ExperimentOptions {
   enableEvaluation?: boolean;
   evaluatorFilter?: string[];
   dryRun?: boolean;
+  logFile?: string;
+  verbose?: boolean;
 }
