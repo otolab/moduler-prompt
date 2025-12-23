@@ -4,7 +4,7 @@
  */
 
 import type { AIDriver } from '../types.js';
-import { logger } from '@modular-prompt/utils';
+import { Logger, type LogLevel } from '@modular-prompt/utils';
 
 // 標準ドライバーを個別インポート
 import { MlxDriver } from '../mlx-ml/mlx-driver.js';
@@ -32,8 +32,13 @@ import { registerStandardDriverFactories } from './factory-helper.js';
 export class DriverRegistry implements IDriverRegistry {
   private models: Map<string, ModelSpec> = new Map();
   private factories: Map<DriverProvider, DriverFactory> = new Map();
+  private logger: Logger;
 
-  constructor() {
+  constructor(logLevel: LogLevel = 'info') {
+    this.logger = new Logger({
+      level: logLevel,
+      prefix: 'DriverRegistry'
+    });
     // デフォルトのファクトリを登録
     this.registerDefaultFactories();
   }
@@ -245,16 +250,16 @@ export class DriverRegistry implements IDriverRegistry {
 
     // 警告があれば出力
     if (result.warnings) {
-      logger.warn('Driver selection warnings:', result.warnings);
+      this.logger.warn('Driver selection warnings:', result.warnings);
     }
 
-    logger.info(`Selected model: ${result.model.model} (${result.model.provider})`);
-    logger.debug(`Reason: ${result.reason}`);
+    this.logger.info(`Selected model: ${result.model.model} (${result.model.provider})`);
+    this.logger.debug(`Reason: ${result.reason}`);
 
     try {
       return await this.createDriver(result.model);
     } catch (error) {
-      logger.error(`Failed to create driver: ${error}`);
+      this.logger.error(`Failed to create driver: ${error}`);
       return null;
     }
   }
