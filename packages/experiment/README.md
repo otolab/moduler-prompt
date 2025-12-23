@@ -69,8 +69,12 @@ testCases:
       - gemini-fast
 
 evaluators:
-  - name: json-validator
-    path: ./evaluators/json-validator.ts
+  # Built-in evaluators (name only)
+  - name: structured-output-presence
+  - name: llm-requirement-fulfillment
+  # Or external evaluator (with path)
+  - name: custom-validator
+    path: ./evaluators/custom-validator.ts
   # Or inline prompt evaluator
   - name: quality-check
     prompt:
@@ -124,9 +128,13 @@ export default {
     },
   ],
   evaluators: [
+    // Built-in evaluators (name only)
+    { name: 'structured-output-presence' },
+    { name: 'llm-requirement-fulfillment' },
+    // Or external evaluator (with path)
     {
-      name: 'json-validator',
-      path: './evaluators/json-validator.ts',
+      name: 'custom-validator',
+      path: './evaluators/custom-validator.ts',
     },
   ],
   evaluation: {
@@ -249,6 +257,48 @@ export default {
 
 All prompt evaluators are automatically merged with the base evaluation module.
 
+## Built-in Evaluators
+
+The framework includes built-in evaluators that can be referenced by name only (no path required):
+
+### structured-output-presence
+
+- **Type**: Code Evaluator
+- **What it measures**: Checks if `structuredOutput` exists and is a valid object
+- **Evaluation logic**:
+  - Verifies presence of `structuredOutput` in query result
+  - Confirms it's a non-null object type
+- **Score**: `(validCount / totalRuns) * 10`
+- **Use case**: Verify that the model returns structured JSON output (essential for structured output workflows)
+- **Usage**:
+  ```yaml
+  evaluators:
+    - name: "structured-output-presence"
+  ```
+
+### llm-requirement-fulfillment
+
+- **Type**: Prompt Evaluator (uses LLM for evaluation)
+- **What it measures**: Uses LLM to comprehensively evaluate whether output meets functional requirements
+- **Evaluation criteria**:
+  1. **Requirement Fulfillment**: Does it satisfy the intent described in the prompt?
+  2. **Parameter Correctness**: Are all required parameters present and correct?
+  3. **Parameter Completeness**: Are optional parameters appropriately used or omitted?
+  4. **Logical Consistency**: Is the output logically consistent with the facts?
+- **Score**: 0-10 overall score with detailed sub-scores for each criterion
+- **Use case**: Comprehensive quality assessment of output (requires evaluation model to be configured)
+- **Usage**:
+  ```yaml
+  evaluators:
+    - name: "llm-requirement-fulfillment"
+
+  evaluation:
+    enabled: true
+    model: "gemini-fast"  # Model used for evaluation
+  ```
+
+**Note**: `llm-requirement-fulfillment` requires an evaluation model to be configured in the `evaluation` section.
+
 ## Architecture
 
 ```
@@ -280,7 +330,8 @@ All prompt evaluators are automatically merged with the base evaluation module.
 | `runner/evaluator.ts` | Execute evaluations |
 | `runner/driver-manager.ts` | Cache and manage AI drivers |
 | `reporter/statistics.ts` | Generate statistical reports |
-| `evaluators/base-module.ts` | Base evaluation prompt module |
+| `base-evaluation-module.ts` | Base evaluation prompt module |
+| `evaluators/index.ts` | Built-in evaluator registry |
 
 ## Examples
 
