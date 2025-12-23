@@ -1,6 +1,6 @@
 ---
 "@modular-prompt/utils": minor
-"@modular-prompt/experiment": minor
+"@modular-prompt/experiment": patch
 ---
 
 Enhanced logger system with async file output and improved output handling
