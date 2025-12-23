@@ -88,9 +88,6 @@ export async function loadExperimentConfig(configPath: string): Promise<LoadedCo
     drivers: config.drivers,
     evaluation: config.evaluation,
     credentials: config.credentials,
-    selection: config.selection,
-    server: config.server,
-    logging: config.logging,
   };
 
   // Resolve paths in driver configurations relative to config file
@@ -132,6 +129,8 @@ export async function loadExperimentConfig(configPath: string): Promise<LoadedCo
   }
 
   // Initialize AIService
+  // Note: AIService is used only as a driver factory.
+  // Model selection is explicit in experiment configuration, not capability-based.
   const aiServiceConfig: ApplicationConfig = {
     models: serverConfig.models,
     drivers: serverConfig.drivers || {},

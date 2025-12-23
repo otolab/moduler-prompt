@@ -1,5 +1,5 @@
 {
-  "name": "@moduler-prompt/root",
+  "name": "@modular-prompt/root",
   "version": "0.5.0",
   "private": true,
   "description": "Modular prompt framework for generative AI",
@@ -9,7 +9,7 @@
     "test:run": "pnpm run -r --if-present test:run",
     "clean": "pnpm run -r clean",
     "clean:all": "pnpm run -r clean && rm -rf node_modules packages/*/node_modules",
-    "dev": "pnpm --filter @moduler-prompt/core run dev",
+    "dev": "pnpm --filter @modular-prompt/core run dev",
     "lint": "pnpm run -r lint",
     "typecheck": "pnpm run -r typecheck",
     "prepack:all": "pnpm run -r --if-present prepack",
@@ -34,7 +34,7 @@
   "packageManager": "pnpm@9.14.4",
   "repository": {
     "type": "git",
-    "url": "https://github.com/otolab/moduler-prompt.git"
+    "url": "https://github.com/otolab/modular-prompt.git"
   },
   "keywords": [
     "prompt",
