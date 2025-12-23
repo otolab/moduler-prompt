@@ -26,7 +26,7 @@ import { loadModules, loadEvaluators } from './config/dynamic-loader.js';
 import { DriverManager } from './runner/driver-manager.js';
 import { ExperimentRunner } from './runner/experiment.js';
 import { StatisticsReporter } from './reporter/statistics.js';
-import { Logger, logger } from '@modular-prompt/utils';
+import { Logger } from '@modular-prompt/utils';
 
 // Parse CLI arguments
 const options = parseArgs();

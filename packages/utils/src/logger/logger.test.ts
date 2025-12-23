@@ -3,10 +3,10 @@
  */
 
 import { describe, it, expect, beforeEach, afterEach } from 'vitest';
-import { readFileSync, existsSync, unlinkSync, mkdirSync } from 'fs';
+import { readFileSync, existsSync, unlinkSync } from 'fs';
 import { join } from 'path';
 import { tmpdir } from 'os';
-import { Logger, logger, type LogLevel } from './logger.js';
+import { Logger, logger } from './logger.js';
 
 describe('Logger', () => {
   // テスト用の一時ファイルパス
@@ -269,7 +269,6 @@ describe('Logger', () => {
     it('should filter logs by time', () => {
       Logger.configure({ accumulate: true });
 
-      const before = new Date();
       logger.info('old message');
 
       // Wait a bit
