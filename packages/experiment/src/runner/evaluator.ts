@@ -120,8 +120,9 @@ export class EvaluatorRunner {
    * Display evaluation results
    *
    * @param results - Evaluation results to display
+   * @param evaluators - Loaded evaluators (optional, for showing descriptions)
    */
-  displayResults(results: EvaluationResult[]): void {
+  displayResults(results: EvaluationResult[], evaluators?: LoadedEvaluator[]): void {
     console.log();
     console.log('='.repeat(80));
     console.log('📊 Evaluation Results');
@@ -143,6 +144,14 @@ export class EvaluatorRunner {
 
       for (const result of moduleResults) {
         console.log(`   🔍 ${result.evaluator}`);
+
+        // Show description if evaluators are provided
+        if (evaluators) {
+          const evaluator = evaluators.find(e => e.name === result.evaluator);
+          if (evaluator?.description) {
+            console.log(`      ${evaluator.description}`);
+          }
+        }
 
         if (result.error) {
           console.log(`      ❌ Error: ${result.error}`);

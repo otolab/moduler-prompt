@@ -97,6 +97,6 @@ const llmRequirementFulfillmentModule: PromptModule<EvaluationContext> = {
 
 export default {
   name: 'LLM Requirement Fulfillment',
-  description: 'Uses LLM to evaluate whether the output meets the functional requirements',
+  description: 'Overall requirement fulfillment score based on LLM evaluation. Compares prompt and output to evaluate requirement fulfillment, parameter correctness, completeness, and logical consistency.',
   module: llmRequirementFulfillmentModule,
 } satisfies PromptEvaluator;

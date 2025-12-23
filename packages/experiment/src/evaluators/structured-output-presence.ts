@@ -8,7 +8,7 @@ import type { CodeEvaluator, EvaluationContext, EvaluationResult } from '../type
 
 export default {
   name: 'Structured Output Presence',
-  description: 'Checks if structuredOutput exists and is a valid object',
+  description: 'Measures structured output presence rate (percentage of runs with valid structuredOutput). Checks if structuredOutput exists and is an object type for each run.',
 
   async evaluate(context: EvaluationContext): Promise<EvaluationResult> {
     const errors: string[] = [];

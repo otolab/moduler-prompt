@@ -207,7 +207,7 @@ export class ExperimentRunner {
     }
 
     // Display all evaluation results
-    evaluatorRunner.displayResults(allEvaluations);
+    evaluatorRunner.displayResults(allEvaluations, this.evaluators);
   }
 
   /**
