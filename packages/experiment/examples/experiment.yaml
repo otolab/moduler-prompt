@@ -53,5 +53,10 @@ modules: []
 testCases: []
 
 # Evaluators
-# Can be code evaluators (with path) or prompt evaluators (with prompt definition)
-evaluators: []
+# Can be:
+# - Builtin evaluators (name only): "structured-output-presence", "llm-requirement-fulfillment"
+# - External evaluators (with path): { name: "...", path: "...", description: "..." }
+# - Inline prompt evaluators (with prompt): { name: "...", prompt: {...}, description: "..." }
+evaluators:
+  - name: "structured-output-presence"
+  - name: "llm-requirement-fulfillment"

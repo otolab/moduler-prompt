@@ -88,6 +88,16 @@ export interface EvaluationResult {
  */
 export interface CodeEvaluator {
   name: string;
+  /**
+   * Evaluator description
+   *
+   * Should explain:
+   * 1. What metric is being measured (e.g., "Measures structured output presence rate")
+   * 2. What is being checked (e.g., "Checks if structuredOutput exists and is an object type for each run")
+   *
+   * This description is displayed in evaluation results to help users understand
+   * what the score represents and what aspect of the output was evaluated.
+   */
   description: string;
   evaluate: (context: EvaluationContext) => Promise<EvaluationResult>;
 }
@@ -97,6 +107,16 @@ export interface CodeEvaluator {
  */
 export interface PromptEvaluator {
   name: string;
+  /**
+   * Evaluator description
+   *
+   * Should explain:
+   * 1. What metric is being measured (e.g., "Overall requirement fulfillment score based on LLM evaluation")
+   * 2. What is being checked (e.g., "Compares prompt and output to evaluate requirement fulfillment, parameter correctness, completeness, and logical consistency")
+   *
+   * This description is displayed in evaluation results to help users understand
+   * what the score represents and what aspect of the output was evaluated.
+   */
   description: string;
   module: PromptModule<EvaluationContext>;
 }
@@ -106,7 +126,8 @@ export interface PromptEvaluator {
  */
 export type EvaluatorReference =
   | { name: string; path: string; description?: string }
-  | { name: string; prompt: PromptModule<EvaluationContext>; description?: string };
+  | { name: string; prompt: PromptModule<EvaluationContext>; description?: string }
+  | { name: string; description?: string };
 
 /**
  * Extended experiment options with evaluation support
@@ -114,4 +135,5 @@ export type EvaluatorReference =
 export interface ExtendedExperimentOptions extends ExperimentOptions {
   enableEvaluation?: boolean;
   evaluatorFilter?: string[];
+  dryRun?: boolean;
 }

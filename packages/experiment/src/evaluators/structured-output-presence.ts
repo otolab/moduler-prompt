@@ -1,14 +1,14 @@
 /**
- * JSON Validator Evaluator
+ * Structured Output Presence Evaluator
  *
- * Validates JSON structure in structured output
+ * Checks if structuredOutput exists and is a valid object
  */
 
 import type { CodeEvaluator, EvaluationContext, EvaluationResult } from '../types.js';
 
 export default {
-  name: 'JSON Validator',
-  description: 'Validates JSON structure in output',
+  name: 'Structured Output Presence',
+  description: 'Measures structured output presence rate (percentage of runs with valid structuredOutput). Checks if structuredOutput exists and is an object type for each run.',
 
   async evaluate(context: EvaluationContext): Promise<EvaluationResult> {
     const errors: string[] = [];
@@ -41,7 +41,7 @@ export default {
       : 0;
 
     return {
-      evaluator: 'json-validator',
+      evaluator: 'structured-output-presence',
       moduleName: context.moduleName,
       score,
       reasoning: errors.length > 0

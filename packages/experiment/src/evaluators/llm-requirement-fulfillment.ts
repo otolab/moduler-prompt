@@ -1,13 +1,13 @@
 /**
- * Functional Correctness Evaluator
+ * LLM Requirement Fulfillment Evaluator
  *
- * Evaluates whether the output meets the functional requirements
+ * Uses LLM to evaluate whether the output meets the functional requirements
  */
 
 import type { PromptModule } from '@modular-prompt/core';
 import type { PromptEvaluator, EvaluationContext } from '../types.js';
 
-const functionalCorrectnessModule: PromptModule<EvaluationContext> = {
+const llmRequirementFulfillmentModule: PromptModule<EvaluationContext> = {
   createContext: (): EvaluationContext => ({
     moduleName: '',
     prompt: '',
@@ -96,7 +96,7 @@ const functionalCorrectnessModule: PromptModule<EvaluationContext> = {
 };
 
 export default {
-  name: 'Functional Correctness',
-  description: 'Evaluates whether the output meets the functional requirements',
-  module: functionalCorrectnessModule,
+  name: 'LLM Requirement Fulfillment',
+  description: 'Overall requirement fulfillment score based on LLM evaluation. Compares prompt and output to evaluate requirement fulfillment, parameter correctness, completeness, and logical consistency.',
+  module: llmRequirementFulfillmentModule,
 } satisfies PromptEvaluator;
