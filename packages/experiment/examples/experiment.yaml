@@ -36,11 +36,6 @@ drivers:
   googlegenai:
     apiKey: "${GOOGLE_API_KEY}"  # Set via environment variable
 
-selection:
-  preferLocal: false  # Don't prefer local for experiments
-  preferFast: true
-  lenient: true
-
 # Evaluation configuration
 # Specifies which model to use for AI-based evaluation
 evaluation:
@@ -48,14 +43,6 @@ evaluation:
   model: "gemini-vertexai"  # Reference by model name
   # You can also specify model capabilities for selection
   # If model not found, falls back to the best available model
-
-server:
-  port: 4100  # Different port to avoid conflict
-  host: "127.0.0.1"
-
-logging:
-  level: "info"
-  request_response_level: "full"
 
 # Modules to test
 # Each module should have: name, path (relative to this file), description (optional)
