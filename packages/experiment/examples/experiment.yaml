@@ -54,9 +54,9 @@ testCases: []
 
 # Evaluators
 # Can be:
-# - Builtin evaluators (name only): "json-validator", "functional-correctness"
+# - Builtin evaluators (name only): "structured-output-presence", "llm-requirement-fulfillment"
 # - External evaluators (with path): { name: "...", path: "...", description: "..." }
 # - Inline prompt evaluators (with prompt): { name: "...", prompt: {...}, description: "..." }
 evaluators:
-  - name: "json-validator"
-  - name: "functional-correctness"
+  - name: "structured-output-presence"
+  - name: "llm-requirement-fulfillment"
