@@ -12,7 +12,7 @@ export { loadExperimentConfig } from './config/loader.js';
 export { loadModules, loadEvaluators } from './config/dynamic-loader.js';
 
 // Evaluators
-export { baseEvaluationModule } from './evaluators/base-module.js';
+export { baseEvaluationModule } from './base-evaluation-module.js';
 
 // Runners
 export { DriverManager } from './runner/driver-manager.js';

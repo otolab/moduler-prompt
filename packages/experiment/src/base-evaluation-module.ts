@@ -6,7 +6,7 @@
  */
 
 import type { PromptModule, TextElement, JSONElement } from '@modular-prompt/core';
-import type { EvaluationContext } from '../types.js';
+import type { EvaluationContext } from './types.js';
 
 export const baseEvaluationModule: PromptModule<EvaluationContext> = {
   createContext: (): EvaluationContext => ({

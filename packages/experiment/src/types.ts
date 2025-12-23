@@ -106,7 +106,8 @@ export interface PromptEvaluator {
  */
 export type EvaluatorReference =
   | { name: string; path: string; description?: string }
-  | { name: string; prompt: PromptModule<EvaluationContext>; description?: string };
+  | { name: string; prompt: PromptModule<EvaluationContext>; description?: string }
+  | { name: string; description?: string };
 
 /**
  * Extended experiment options with evaluation support
