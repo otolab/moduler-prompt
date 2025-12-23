@@ -295,9 +295,19 @@ export class Logger {
       since?: Date;
       limit?: number;
       search?: string;
+      filterByContext?: boolean; // デフォルト: true（このインスタンスのcontextのみ）
     } = {}
   ): LogEntry[] {
     let filtered = [...Logger.logEntries];
+
+    // コンテキストフィルタ（デフォルト有効）
+    const filterByContext = options.filterByContext ?? true;
+    if (filterByContext) {
+      const currentContext = this.computedContext();
+      if (currentContext) {
+        filtered = filtered.filter(entry => entry.context === currentContext);
+      }
+    }
 
     // レベルフィルタ
     if (options.level) {
@@ -340,14 +350,25 @@ export class Logger {
   }
 
   // ログ統計情報
-  getLogStats(): {
+  getLogStats(options: { filterByContext?: boolean } = {}): {
     totalEntries: number;
     entriesByLevel: Record<LogLevel, number>;
     oldestEntry?: string;
     newestEntry?: string;
   } {
+    // コンテキストフィルタ（デフォルト有効）
+    const filterByContext = options.filterByContext ?? true;
+    let entries = Logger.logEntries;
+
+    if (filterByContext) {
+      const currentContext = this.computedContext();
+      if (currentContext) {
+        entries = entries.filter(entry => entry.context === currentContext);
+      }
+    }
+
     const stats = {
-      totalEntries: Logger.logEntries.length,
+      totalEntries: entries.length,
       entriesByLevel: {
         quiet: 0,
         error: 0,
@@ -356,11 +377,11 @@ export class Logger {
         verbose: 0,
         debug: 0,
       } as Record<LogLevel, number>,
-      oldestEntry: Logger.logEntries[0]?.timestamp,
-      newestEntry: Logger.logEntries[Logger.logEntries.length - 1]?.timestamp,
+      oldestEntry: entries[0]?.timestamp,
+      newestEntry: entries[entries.length - 1]?.timestamp,
     };
 
-    Logger.logEntries.forEach(entry => {
+    entries.forEach(entry => {
       stats.entriesByLevel[entry.level]++;
     });
 

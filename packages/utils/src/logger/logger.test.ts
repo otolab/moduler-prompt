@@ -513,10 +513,14 @@ describe('Logger', () => {
       logger1.info('message 1');
       logger2.info('message 2');
 
-      // All instances see the same log entries
-      expect(logger1.getLogEntries()).toHaveLength(2);
-      expect(logger2.getLogEntries()).toHaveLength(2);
-      expect(logger.getLogEntries()).toHaveLength(2);
+      // All instances see the same log entries (when filterByContext is disabled)
+      expect(logger1.getLogEntries({ filterByContext: false })).toHaveLength(2);
+      expect(logger2.getLogEntries({ filterByContext: false })).toHaveLength(2);
+      expect(logger.getLogEntries({ filterByContext: false })).toHaveLength(2);
+
+      // By default, each instance only sees its own context
+      expect(logger1.getLogEntries()).toHaveLength(1);
+      expect(logger2.getLogEntries()).toHaveLength(1);
     });
 
     it('should write to same log file from all instances', () => {
@@ -558,6 +562,60 @@ describe('Logger', () => {
       testLogger.info('now should log');
 
       expect(logger.getLogEntries()).toHaveLength(2);
+    });
+
+    it('should filter by context by default', () => {
+      logger.clearLogEntries();
+      Logger.configure({ level: 'info', accumulate: true });
+
+      const apiLogger = new Logger({ context: 'api' });
+      const dbLogger = new Logger({ context: 'db' });
+
+      apiLogger.info('api message 1');
+      apiLogger.info('api message 2');
+      dbLogger.info('db message 1');
+      dbLogger.info('db message 2');
+      dbLogger.info('db message 3');
+
+      // Each logger sees only its own context by default
+      expect(apiLogger.getLogEntries()).toHaveLength(2);
+      expect(dbLogger.getLogEntries()).toHaveLength(3);
+
+      // Disable filter to see all
+      expect(apiLogger.getLogEntries({ filterByContext: false })).toHaveLength(5);
+      expect(dbLogger.getLogEntries({ filterByContext: false })).toHaveLength(5);
+    });
+
+    it('should filter stats by context by default', () => {
+      logger.clearLogEntries();
+      Logger.configure({ level: 'info', accumulate: true });
+
+      const apiLogger = new Logger({ context: 'api' });
+      const dbLogger = new Logger({ context: 'db' });
+
+      apiLogger.error('api error');
+      apiLogger.info('api info');
+      dbLogger.warn('db warn');
+      dbLogger.info('db info 1');
+      dbLogger.info('db info 2');
+
+      // Each logger sees only its own context stats
+      const apiStats = apiLogger.getLogStats();
+      expect(apiStats.totalEntries).toBe(2);
+      expect(apiStats.entriesByLevel.error).toBe(1);
+      expect(apiStats.entriesByLevel.info).toBe(1);
+
+      const dbStats = dbLogger.getLogStats();
+      expect(dbStats.totalEntries).toBe(3);
+      expect(dbStats.entriesByLevel.warn).toBe(1);
+      expect(dbStats.entriesByLevel.info).toBe(2);
+
+      // Disable filter to see all
+      const allStats = apiLogger.getLogStats({ filterByContext: false });
+      expect(allStats.totalEntries).toBe(5);
+      expect(allStats.entriesByLevel.error).toBe(1);
+      expect(allStats.entriesByLevel.warn).toBe(1);
+      expect(allStats.entriesByLevel.info).toBe(3);
     });
   });
 });
