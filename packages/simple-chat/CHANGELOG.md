@@ -1,5 +1,22 @@
 # @modular-prompt/simple-chat
 
+## 0.1.14
+
+### Patch Changes
+
+- cac4dab: リネーム後のクリーンアップ
+
+  - prepublishOnly スクリプトを修正（npm run → pnpm run）
+  - リポジトリ URL を新しい名前に更新（moduler-prompt → modular-prompt）
+  - experiment パッケージのビルド出力構造を修正（dist/src/ → dist/）
+  - パッケージ説明文の修正
+
+- Updated dependencies [cac4dab]
+  - @modular-prompt/core@0.1.10
+  - @modular-prompt/driver@0.4.6
+  - @modular-prompt/utils@0.1.5
+  - @modular-prompt/process@0.1.12
+
 ## 0.1.13
 
 ### Patch Changes
