@@ -28,11 +28,11 @@ models:
 drivers:
   mlx: {}
   vertexai:
-    project: "otolab-161708"
+    project: "your-gcp-project-id"
     location: "us-central1"
     # Path is resolved relative to this config file
     # Can use ~/ for home directory or absolute paths
-    credentialsPath: "~/.nymphish-claude/otolab-vertexai-key.json"
+    credentialsPath: "~/path/to/your-credentials.json"
   googlegenai:
     apiKey: "${GOOGLE_API_KEY}"  # Set via environment variable
 
