@@ -13,7 +13,8 @@ import type {
   PromptEvaluator,
   ModuleDefinition,
 } from '../types.js';
-import { baseEvaluationModule } from '../evaluators/base-module.js';
+import { baseEvaluationModule } from '../base-evaluation-module.js';
+import { getBuiltinEvaluator } from '../evaluators/index.js';
 
 /**
  * Loaded evaluator (unified type)
@@ -40,42 +41,18 @@ export async function loadEvaluators(
   const evaluators: LoadedEvaluator[] = [];
 
   for (const ref of refs) {
+    let evaluator: CodeEvaluator | PromptEvaluator | undefined;
+
     if ('path' in ref) {
       // External file
       const filePath = resolve(basePath, ref.path);
       const fileUrl = pathToFileURL(filePath).href;
       const imported = await import(fileUrl);
-      const evaluator = imported.default;
+      evaluator = imported.default;
 
       if (!evaluator) {
         console.warn(`⚠️  No default export in ${ref.path}`);
         continue;
-      }
-
-      // Detect type by checking properties
-      if ('evaluate' in evaluator && typeof evaluator.evaluate === 'function') {
-        // Code evaluator
-        evaluators.push({
-          name: ref.name,
-          description: ref.description || evaluator.description || '',
-          type: 'code',
-          codeEvaluator: evaluator as CodeEvaluator,
-        });
-      } else if ('module' in evaluator) {
-        // Prompt evaluator - merge with base module
-        const mergedModule = merge(baseEvaluationModule, evaluator.module);
-        evaluators.push({
-          name: ref.name,
-          description: ref.description || evaluator.description || '',
-          type: 'prompt',
-          promptEvaluator: {
-            name: evaluator.name,
-            description: evaluator.description,
-            module: mergedModule,
-          },
-        });
-      } else {
-        console.warn(`⚠️  Unknown evaluator type in ${ref.path}`);
       }
     } else if ('prompt' in ref) {
       // Inline prompt definition - merge with base module
@@ -90,6 +67,41 @@ export async function loadEvaluators(
           module: mergedModule,
         },
       });
+      continue;
+    } else {
+      // Builtin evaluator (name only)
+      evaluator = getBuiltinEvaluator(ref.name);
+
+      if (!evaluator) {
+        console.warn(`⚠️  Builtin evaluator not found: ${ref.name}`);
+        continue;
+      }
+    }
+
+    // Detect type by checking properties
+    if ('evaluate' in evaluator && typeof evaluator.evaluate === 'function') {
+      // Code evaluator
+      evaluators.push({
+        name: ref.name,
+        description: ref.description || evaluator.description || '',
+        type: 'code',
+        codeEvaluator: evaluator as CodeEvaluator,
+      });
+    } else if ('module' in evaluator) {
+      // Prompt evaluator - merge with base module
+      const mergedModule = merge(baseEvaluationModule, evaluator.module);
+      evaluators.push({
+        name: ref.name,
+        description: ref.description || evaluator.description || '',
+        type: 'prompt',
+        promptEvaluator: {
+          name: evaluator.name,
+          description: evaluator.description,
+          module: mergedModule,
+        },
+      });
+    } else {
+      console.warn(`⚠️  Unknown evaluator type: ${ref.name}`);
     }
   }
 

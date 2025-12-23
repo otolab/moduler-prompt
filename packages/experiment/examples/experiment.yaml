@@ -53,5 +53,10 @@ modules: []
 testCases: []
 
 # Evaluators
-# Can be code evaluators (with path) or prompt evaluators (with prompt definition)
-evaluators: []
+# Can be:
+# - Builtin evaluators (name only): "json-validator", "functional-correctness"
+# - External evaluators (with path): { name: "...", path: "...", description: "..." }
+# - Inline prompt evaluators (with prompt): { name: "...", prompt: {...}, description: "..." }
+evaluators:
+  - name: "json-validator"
+  - name: "functional-correctness"
