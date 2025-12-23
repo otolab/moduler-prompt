@@ -2,4 +2,11 @@
  * Enhanced logger for @modular-prompt packages
  */
 
-export * from './logger.js';
+export {
+  Logger,
+  logger
+} from './logger.js';
+
+export type {
+  LogLevel
+} from './logger.js';

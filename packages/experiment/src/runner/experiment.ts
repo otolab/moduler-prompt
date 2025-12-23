@@ -8,7 +8,9 @@ import type { ModuleDefinition, TestResult, TestCase, EvaluationContext, Evaluat
 import type { DriverManager } from './driver-manager.js';
 import type { LoadedEvaluator } from '../config/dynamic-loader.js';
 import { EvaluatorRunner } from './evaluator.js';
-import { logger } from '@modular-prompt/utils';
+import { logger as baseLogger } from '../logger.js';
+
+const logger = baseLogger.context('runner');
 
 export class ExperimentRunner {
   constructor(

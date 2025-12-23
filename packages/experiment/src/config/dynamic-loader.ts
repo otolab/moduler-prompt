@@ -15,7 +15,9 @@ import type {
 } from '../types.js';
 import { baseEvaluationModule } from '../base-evaluation-module.js';
 import { getBuiltinEvaluator } from '../evaluators/index.js';
-import { logger } from '@modular-prompt/utils';
+import { logger as baseLogger } from '../logger.js';
+
+const logger = baseLogger.context('dynamic-loader');
 
 /**
  * Loaded evaluator (unified type)

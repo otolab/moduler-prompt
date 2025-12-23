@@ -8,7 +8,9 @@
 
 import { appendFileSync } from 'fs';
 
-export type LogLevel = 'quiet' | 'error' | 'warn' | 'info' | 'verbose' | 'debug';
+// ログレベル定数（型の元となる値）
+const LOG_LEVEL_VALUES = ['quiet', 'error', 'warn', 'info', 'verbose', 'debug'] as const;
+export type LogLevel = (typeof LOG_LEVEL_VALUES)[number];
 
 interface LogEntry {
   timestamp: string;
@@ -30,10 +32,26 @@ interface LoggerConfig {
   logFile?: string; // JSONL出力先パス
 }
 
-class Logger {
-  private config: LoggerConfig;
-  private static instance: Logger;
-  private logEntries: LogEntry[] = []; // ログエントリの蓄積配列
+const envLogLevel: LogLevel | false =
+  LOG_LEVEL_VALUES.includes(process.env.MODULAR_PROMPT_LOG_LEVEL as any)
+  && process.env.MODULAR_PROMPT_LOG_LEVEL as LogLevel;
+
+export class Logger {
+  // グローバル設定（全インスタンスで共有）
+  private static config: LoggerConfig = {
+    level: envLogLevel || 'info',
+    accumulateLevel: 'debug', // デフォルトで全レベル蓄積
+    isMcpMode: false,
+    prefix: '',
+    context: '',
+    accumulate: false,
+    maxEntries: 1000,
+    logFile: undefined,
+  };
+
+  private instanceConfig: Partial<LoggerConfig> = {}; // インスタンス固有設定
+
+  private static logEntries: LogEntry[] = []; // ログエントリ蓄積（全インスタンスで共有）
 
   // ログレベルの数値マッピング（小さいほど重要）
   private readonly LOG_LEVELS: Record<LogLevel, number> = {
@@ -46,41 +64,91 @@ class Logger {
   };
 
   constructor(config: Partial<LoggerConfig> = {}) {
-    // 環境変数からログレベルを取得
-    const envLogLevel = process.env.MODULAR_PROMPT_LOG_LEVEL as LogLevel;
-    const defaultLevel = envLogLevel && this.isValidLogLevel(envLogLevel) ? envLogLevel : 'info';
-
-    this.config = {
-      level: defaultLevel,
-      accumulateLevel: 'debug', // デフォルトで全レベル蓄積
-      isMcpMode: false,
-      prefix: '',
-      context: '',
-      accumulate: false,
-      maxEntries: 1000,
-      logFile: undefined,
-      ...config,
-    };
-  }
-  
-  private isValidLogLevel(level: string): level is LogLevel {
-    return ['quiet', 'error', 'warn', 'info', 'verbose', 'debug'].includes(level);
-  }
-
-  static getInstance(): Logger {
-    if (!Logger.instance) {
-      Logger.instance = new Logger();
+    // グローバル設定はクラス定義時に初期化済み
+    // 引数で渡された設定はインスタンス設定として適用
+    if (Object.keys(config).length > 0) {
+      this.configure(config);
     }
-    return Logger.instance;
   }
 
+  /**
+   * グローバル設定を変更（全インスタンスに影響）
+   *
+   * @example
+   * Logger.configure({ level: 'debug' });
+   * // または
+   * configureLogger({ level: 'debug' });
+   */
   static configure(config: Partial<LoggerConfig>): void {
-    const instance = Logger.getInstance();
-    instance.config = { ...instance.config, ...config };
+    Logger.config = { ...Logger.config, ...config };
+  }
+
+  /**
+   * このインスタンスの設定を変更（このインスタンスのみに影響）
+   * インスタンス設定がグローバル設定より優先される
+   *
+   * @example
+   * const logger = createLogger('driver');
+   * logger.configure({ level: 'verbose' }); // このインスタンスだけverbose
+   */
+  configure(config: Partial<LoggerConfig>): void {
+    this.instanceConfig = { ...this.instanceConfig, ...config };
+  }
+
+  /**
+   * 新しいcontext付きloggerインスタンスを作成
+   * 現在のインスタンス設定を引き継ぎ、contextのみを変更
+   *
+   * @param contextName - 新しいcontext名
+   * @returns 新しいloggerインスタンス
+   *
+   * @example
+   * const baseLogger = new Logger({ prefix: 'app' });
+   * const apiLogger = baseLogger.context('api');
+   * const dbLogger = baseLogger.context('db');
+   */
+  context(contextName: string): Logger {
+    return new Logger({
+      ...this.instanceConfig,
+      context: contextName,
+    });
+  }
+
+  // Computed設定値取得（インスタンス設定 → グローバル設定の優先順位）
+  private computedLevel(): LogLevel {
+    return this.instanceConfig.level ?? Logger.config.level;
+  }
+
+  private computedAccumulateLevel(): LogLevel {
+    return this.instanceConfig.accumulateLevel ?? Logger.config.accumulateLevel;
+  }
+
+  private computedIsMcpMode(): boolean {
+    return this.instanceConfig.isMcpMode ?? Logger.config.isMcpMode;
+  }
+
+  private computedPrefix(): string {
+    return this.instanceConfig.prefix ?? Logger.config.prefix ?? '';
+  }
+
+  private computedContext(): string {
+    return this.instanceConfig.context ?? Logger.config.context ?? '';
+  }
+
+  private computedAccumulate(): boolean {
+    return this.instanceConfig.accumulate ?? Logger.config.accumulate;
+  }
+
+  private computedMaxEntries(): number {
+    return this.instanceConfig.maxEntries ?? Logger.config.maxEntries;
+  }
+
+  private computedLogFile(): string | undefined {
+    return this.instanceConfig.logFile ?? Logger.config.logFile;
   }
 
   private shouldLog(level: LogLevel): boolean {
-    return this.LOG_LEVELS[level] <= this.LOG_LEVELS[this.config.level];
+    return this.LOG_LEVELS[level] <= this.LOG_LEVELS[this.computedLevel()];
   }
 
   private shouldLogAtLevel(level: LogLevel, targetLevel: LogLevel): boolean {
@@ -89,7 +157,7 @@ class Logger {
 
   private formatMessage(level: LogLevel, message: string, ...args: any[]): string {
     const timestamp = new Date().toISOString();
-    const prefix = this.config.prefix ? `[${this.config.prefix}] ` : '';
+    const prefix = this.computedPrefix() ? `[${this.computedPrefix()}] ` : '';
     const formattedArgs =
       args.length > 0
         ? ` ${args
@@ -101,14 +169,15 @@ class Logger {
   }
 
   private writeToFile(entry: LogEntry): void {
-    if (!this.config.logFile) {
+    const logFile = this.computedLogFile();
+    if (!logFile) {
       return;
     }
 
     try {
       // JSONL形式で出力（1行1JSON）
       const jsonLine = JSON.stringify(entry) + '\n';
-      appendFileSync(this.config.logFile, jsonLine, 'utf-8');
+      appendFileSync(logFile, jsonLine, 'utf-8');
     } catch (error) {
       // ファイル書き込みエラーは標準エラー出力に（無限ループ防止のためloggerを使わない）
       console.error(`Failed to write log file: ${error}`);
@@ -118,8 +187,8 @@ class Logger {
   private writeLog(level: LogLevel, message: string, ...args: any[]): void {
     const shouldOutput = this.shouldLog(level);
     const shouldAccumulate =
-      this.config.accumulate && this.shouldLogAtLevel(level, this.config.accumulateLevel);
-    const shouldWriteFile = !!this.config.logFile;
+      this.computedAccumulate() && this.shouldLogAtLevel(level, this.computedAccumulateLevel());
+    const shouldWriteFile = !!this.computedLogFile();
 
     // 出力もせず蓄積もせずファイル書き込みもしない場合は早期リターン
     if (!shouldOutput && !shouldAccumulate && !shouldWriteFile) {
@@ -132,7 +201,7 @@ class Logger {
     const logEntry: LogEntry = {
       timestamp: new Date().toISOString(),
       level,
-      context: this.config.context,
+      context: this.computedContext(),
       message,
       args: args.length > 0 ? args : undefined,
       formatted: formattedMessage,
@@ -140,11 +209,11 @@ class Logger {
 
     // ログエントリを蓄積モードで保存（蓄積レベルで独立判定）
     if (shouldAccumulate) {
-      this.logEntries.push(logEntry);
+      Logger.logEntries.push(logEntry);
 
       // 最大エントリ数を超えた場合、古いものを削除
-      if (this.logEntries.length > this.config.maxEntries) {
-        this.logEntries.shift();
+      if (Logger.logEntries.length > this.computedMaxEntries()) {
+        Logger.logEntries.shift();
       }
     }
 
@@ -156,7 +225,7 @@ class Logger {
     // 出力判定に基づいて実際の出力を行う
     if (shouldOutput) {
       // MCPモード時は重要なエラーのみstderrに出力、その他は抑制
-      if (this.config.isMcpMode) {
+      if (this.computedIsMcpMode()) {
         if (level === 'error') {
           console.error(formattedMessage);
         }
@@ -208,43 +277,15 @@ class Logger {
     this.writeLog('verbose', message, ...args);
   }
 
-  // 設定取得・変更
+  // 設定取得（publicメソッド）
+  // Note: getterはcomputed値を返す（インスタンス設定 || グローバル設定）
+
   getLevel(): LogLevel {
-    return this.config.level;
-  }
-
-  setLevel(level: LogLevel): void {
-    this.config.level = level;
-  }
-
-  setMcpMode(enabled: boolean): void {
-    this.config.isMcpMode = enabled;
-  }
-
-  setPrefix(prefix: string): void {
-    this.config.prefix = prefix;
-  }
-
-  setContext(context: string): void {
-    this.config.context = context;
-  }
-
-  setLogFile(logFile: string | undefined): void {
-    this.config.logFile = logFile;
-  }
-
-  // 蓄積モード関連メソッド
-  enableAccumulation(maxEntries: number = 1000): void {
-    this.config.accumulate = true;
-    this.config.maxEntries = maxEntries;
-  }
-
-  disableAccumulation(): void {
-    this.config.accumulate = false;
+    return this.computedLevel();
   }
 
   isAccumulating(): boolean {
-    return this.config.accumulate;
+    return this.computedAccumulate();
   }
 
   // ログエントリ取得メソッド
@@ -256,7 +297,7 @@ class Logger {
       search?: string;
     } = {}
   ): LogEntry[] {
-    let filtered = [...this.logEntries];
+    let filtered = [...Logger.logEntries];
 
     // レベルフィルタ
     if (options.level) {
@@ -290,7 +331,12 @@ class Logger {
 
   // ログエントリクリア
   clearLogEntries(): void {
-    this.logEntries = [];
+    Logger.logEntries = [];
+  }
+
+  // インスタンス設定をクリア（テスト用）
+  clearInstanceConfig(): void {
+    this.instanceConfig = {};
   }
 
   // ログ統計情報
@@ -301,7 +347,7 @@ class Logger {
     newestEntry?: string;
   } {
     const stats = {
-      totalEntries: this.logEntries.length,
+      totalEntries: Logger.logEntries.length,
       entriesByLevel: {
         quiet: 0,
         error: 0,
@@ -310,11 +356,11 @@ class Logger {
         verbose: 0,
         debug: 0,
       } as Record<LogLevel, number>,
-      oldestEntry: this.logEntries[0]?.timestamp,
-      newestEntry: this.logEntries[this.logEntries.length - 1]?.timestamp,
+      oldestEntry: Logger.logEntries[0]?.timestamp,
+      newestEntry: Logger.logEntries[Logger.logEntries.length - 1]?.timestamp,
     };
 
-    this.logEntries.forEach(entry => {
+    Logger.logEntries.forEach(entry => {
       stats.entriesByLevel[entry.level]++;
     });
 
@@ -322,79 +368,5 @@ class Logger {
   }
 }
 
-// シングルトンインスタンスをエクスポート
-export const logger = Logger.getInstance();
-
-// 設定用ヘルパー関数
-export const configureLogger = Logger.configure;
-
-// 便利なプリセット設定
-export const LoggerPresets = {
-  // MCPサーバーモード：エラーのみstderrに出力
-  mcpServer: (): void => {
-    configureLogger({
-      level: 'error',
-      accumulateLevel: 'error',
-      isMcpMode: true,
-      prefix: 'MCP',
-      accumulate: false,
-    });
-  },
-
-  // MCPサーバーモード（蓄積あり）：エラーのみstderrに出力、info以上を蓄積
-  mcpServerWithAccumulation: (): void => {
-    configureLogger({
-      level: 'error', // 出力はエラーのみ
-      accumulateLevel: 'info', // 蓄積はinfo以上（通常モード）
-      isMcpMode: true,
-      prefix: 'MCP',
-      accumulate: true,
-      maxEntries: 2000,
-    });
-  },
-
-  // MCPサーバーデバッグモード（蓄積あり）：詳細ログ出力、全ログ蓄積
-  mcpServerDebugWithAccumulation: (): void => {
-    configureLogger({
-      level: 'debug', // デバッグモードでは詳細ログ出力
-      accumulateLevel: 'debug', // 蓄積は全レベル（デバッグモード）
-      isMcpMode: false, // デバッグ時はstdout制限なし
-      prefix: 'MCP-DEBUG',
-      accumulate: true,
-      maxEntries: 3000,
-    });
-  },
-
-  // CLIモード：通常の詳細ログ
-  cli: (): void => {
-    configureLogger({
-      level: 'info',
-      accumulateLevel: 'info',
-      isMcpMode: false,
-      prefix: 'CLI',
-      accumulate: false,
-    });
-  },
-
-  // デバッグモード：すべてのログを出力
-  debug: (): void => {
-    configureLogger({
-      level: 'debug',
-      accumulateLevel: 'debug',
-      isMcpMode: false,
-      prefix: 'DEBUG',
-      accumulate: true,
-      maxEntries: 3000,
-    });
-  },
-
-  // サイレントモード：出力なし
-  quiet: (): void => {
-    configureLogger({
-      level: 'quiet',
-      accumulateLevel: 'quiet',
-      isMcpMode: true,
-      accumulate: false,
-    });
-  },
-};
+// デフォルトインスタンスをエクスポート
+export const logger = new Logger();

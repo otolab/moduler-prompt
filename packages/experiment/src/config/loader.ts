@@ -9,7 +9,9 @@ import { createJiti } from 'jiti';
 import { AIService, type ApplicationConfig } from '@modular-prompt/driver';
 import type { ModuleReference } from './dynamic-loader.js';
 import type { EvaluatorReference, TestCase } from '../types.js';
-import { logger } from '@modular-prompt/utils';
+import { logger as baseLogger } from '../logger.js';
+
+const logger = baseLogger.context('config-loader');
 
 export interface LoadedConfig {
   serverConfig: any;

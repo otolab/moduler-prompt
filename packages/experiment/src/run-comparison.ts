@@ -26,18 +26,16 @@ import { loadModules, loadEvaluators } from './config/dynamic-loader.js';
 import { DriverManager } from './runner/driver-manager.js';
 import { ExperimentRunner } from './runner/experiment.js';
 import { StatisticsReporter } from './reporter/statistics.js';
-import { logger, configureLogger } from '@modular-prompt/utils';
+import { Logger, logger } from '@modular-prompt/utils';
 
 // Parse CLI arguments
 const options = parseArgs();
 
 // Configure logger
-configureLogger({
+Logger.configure({
   level: options.verbose ? 'debug' : 'info',
   accumulateLevel: 'debug',
   isMcpMode: false,
-  prefix: 'experiment',
-  context: 'main',
   accumulate: !!options.logFile,
   maxEntries: 10000,
   logFile: options.logFile,

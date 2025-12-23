@@ -1,8 +1,7 @@
 // Logger exports
 export {
-  logger,
-  configureLogger,
-  LoggerPresets
+  Logger,
+  logger
 } from './logger/index.js';
 
 export type {

@@ -3,7 +3,9 @@
  */
 
 import type { AIService, ModelSpec } from '@modular-prompt/driver';
-import { logger } from '@modular-prompt/utils';
+import { logger as baseLogger } from '../logger.js';
+
+const logger = baseLogger.context('driver-manager');
 
 export class DriverManager {
   private cache = new Map<string, any>();

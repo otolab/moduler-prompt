@@ -8,7 +8,9 @@ import { compile } from '@modular-prompt/core';
 import type { AIService, ModelSpec } from '@modular-prompt/driver';
 import type { EvaluationContext, EvaluationResult } from '../types.js';
 import type { LoadedEvaluator } from '../config/dynamic-loader.js';
-import { logger } from '@modular-prompt/utils';
+import { logger as baseLogger } from '../logger.js';
+
+const logger = baseLogger.context('evaluator');
 
 export class EvaluatorRunner {
   constructor(

@@ -6,7 +6,7 @@ import { describe, it, expect, beforeEach, afterEach } from 'vitest';
 import { readFileSync, existsSync, unlinkSync, mkdirSync } from 'fs';
 import { join } from 'path';
 import { tmpdir } from 'os';
-import { logger, configureLogger, LoggerPresets, type LogLevel } from './logger.js';
+import { Logger, logger, type LogLevel } from './logger.js';
 
 describe('Logger', () => {
   // テスト用の一時ファイルパス
@@ -14,7 +14,7 @@ describe('Logger', () => {
 
   beforeEach(() => {
     // 各テスト前にロガーをリセット
-    configureLogger({
+    Logger.configure({
       level: 'info',
       accumulateLevel: 'debug',
       isMcpMode: false,
@@ -41,8 +41,8 @@ describe('Logger', () => {
 
   describe('Basic logging functionality', () => {
     it('should log at different levels', () => {
-      logger.enableAccumulation();
-      configureLogger({ level: 'debug' });
+      Logger.configure({ accumulate: true });
+      Logger.configure({ level: 'debug' });
 
       logger.error('error message');
       logger.warn('warn message');
@@ -62,8 +62,8 @@ describe('Logger', () => {
     });
 
     it('should respect log level filtering', () => {
-      logger.enableAccumulation();
-      configureLogger({ level: 'warn' });
+      Logger.configure({ accumulate: true });
+      Logger.configure({ level: 'warn' });
 
       logger.error('error message');
       logger.warn('warn message');
@@ -72,7 +72,7 @@ describe('Logger', () => {
 
       // Note: accumulate is independent from output level
       // We need to set accumulateLevel to 'warn' as well
-      configureLogger({ level: 'warn', accumulateLevel: 'warn' });
+      Logger.configure({ level: 'warn', accumulateLevel: 'warn' });
       logger.clearLogEntries();
 
       logger.error('error message');
@@ -89,10 +89,11 @@ describe('Logger', () => {
 
   describe('Context support', () => {
     it('should add context to log entries', () => {
-      logger.enableAccumulation();
-      logger.setContext('test-runner');
+      logger.clearLogEntries();
+      Logger.configure({ accumulate: true });
 
-      logger.info('test message');
+      const testLogger = new Logger({ context: 'test-runner' });
+      testLogger.info('test message');
 
       const entries = logger.getLogEntries();
       expect(entries).toHaveLength(1);
@@ -100,13 +101,14 @@ describe('Logger', () => {
     });
 
     it('should update context dynamically', () => {
-      logger.enableAccumulation();
+      logger.clearLogEntries();
+      Logger.configure({ accumulate: true });
 
-      logger.setContext('context-1');
-      logger.info('message 1');
+      const logger1 = new Logger({ context: 'context-1' });
+      logger1.info('message 1');
 
-      logger.setContext('context-2');
-      logger.info('message 2');
+      const logger2 = new Logger({ context: 'context-2' });
+      logger2.info('message 2');
 
       const entries = logger.getLogEntries();
       expect(entries).toHaveLength(2);
@@ -117,7 +119,7 @@ describe('Logger', () => {
 
   describe('JSONL file output', () => {
     it('should write logs to JSONL file', () => {
-      logger.setLogFile(testLogFile);
+      Logger.configure({ logFile: testLogFile });
       logger.info('test message 1');
       logger.error('test message 2');
 
@@ -141,10 +143,10 @@ describe('Logger', () => {
     });
 
     it('should include context in JSONL output', () => {
-      logger.setLogFile(testLogFile);
-      logger.setContext('experiment');
+      Logger.configure({ logFile: testLogFile });
 
-      logger.info('test with context');
+      const experimentLogger = new Logger({ context: 'experiment' });
+      experimentLogger.info('test with context');
 
       const content = readFileSync(testLogFile, 'utf-8');
       const entry = JSON.parse(content.trim());
@@ -154,11 +156,11 @@ describe('Logger', () => {
     });
 
     it('should append to existing JSONL file', () => {
-      logger.setLogFile(testLogFile);
+      Logger.configure({ logFile: testLogFile });
       logger.info('message 1');
 
       // Create a new logger instance (simulating restart)
-      logger.setLogFile(testLogFile);
+      Logger.configure({ logFile: testLogFile });
       logger.info('message 2');
 
       const content = readFileSync(testLogFile, 'utf-8');
@@ -175,8 +177,8 @@ describe('Logger', () => {
     });
 
     it('should write to file independently of accumulation setting', () => {
-      logger.setLogFile(testLogFile);
-      logger.disableAccumulation();
+      Logger.configure({ logFile: testLogFile });
+      Logger.configure({ accumulate: false });
 
       logger.info('message without accumulation');
 
@@ -193,7 +195,7 @@ describe('Logger', () => {
 
   describe('Log accumulation', () => {
     it('should accumulate logs when enabled', () => {
-      logger.enableAccumulation(100);
+      Logger.configure({ accumulate: true, maxEntries: 100 });
 
       logger.info('message 1');
       logger.info('message 2');
@@ -204,7 +206,7 @@ describe('Logger', () => {
     });
 
     it('should not accumulate logs when disabled', () => {
-      logger.disableAccumulation();
+      Logger.configure({ accumulate: false });
 
       logger.info('message 1');
       logger.info('message 2');
@@ -214,7 +216,7 @@ describe('Logger', () => {
     });
 
     it('should respect maxEntries limit', () => {
-      logger.enableAccumulation(3);
+      Logger.configure({ accumulate: true, maxEntries: 3 });
 
       logger.info('message 1');
       logger.info('message 2');
@@ -228,7 +230,7 @@ describe('Logger', () => {
     });
 
     it('should filter logs by level', () => {
-      logger.enableAccumulation();
+      Logger.configure({ accumulate: true });
 
       logger.error('error msg');
       logger.warn('warn msg');
@@ -244,7 +246,7 @@ describe('Logger', () => {
     });
 
     it('should filter logs by search term', () => {
-      logger.enableAccumulation();
+      Logger.configure({ accumulate: true });
 
       logger.info('test message');
       logger.info('another message');
@@ -255,7 +257,7 @@ describe('Logger', () => {
     });
 
     it('should filter logs by time', () => {
-      logger.enableAccumulation();
+      Logger.configure({ accumulate: true });
 
       const before = new Date();
       logger.info('old message');
@@ -270,7 +272,7 @@ describe('Logger', () => {
     });
 
     it('should limit number of returned logs', () => {
-      logger.enableAccumulation();
+      Logger.configure({ accumulate: true });
 
       for (let i = 0; i < 10; i++) {
         logger.info(`message ${i}`);
@@ -283,7 +285,7 @@ describe('Logger', () => {
     });
 
     it('should clear accumulated logs', () => {
-      logger.enableAccumulation();
+      Logger.configure({ accumulate: true });
 
       logger.info('message 1');
       logger.info('message 2');
@@ -298,7 +300,7 @@ describe('Logger', () => {
 
   describe('Log statistics', () => {
     it('should provide accurate statistics', () => {
-      logger.enableAccumulation();
+      Logger.configure({ accumulate: true });
 
       logger.error('error 1');
       logger.error('error 2');
@@ -327,55 +329,25 @@ describe('Logger', () => {
     });
   });
 
-  describe('Logger presets', () => {
-    it('should apply MCP server preset', () => {
-      LoggerPresets.mcpServer();
-
-      expect(logger.getLevel()).toBe('error');
-      expect(logger.isAccumulating()).toBe(false);
-    });
-
-    it('should apply MCP server with accumulation preset', () => {
-      LoggerPresets.mcpServerWithAccumulation();
-
-      expect(logger.getLevel()).toBe('error');
-      expect(logger.isAccumulating()).toBe(true);
-    });
-
-    it('should apply debug preset', () => {
-      LoggerPresets.debug();
-
-      expect(logger.getLevel()).toBe('debug');
-      expect(logger.isAccumulating()).toBe(true);
-    });
-
-    it('should apply quiet preset', () => {
-      LoggerPresets.quiet();
-
-      expect(logger.getLevel()).toBe('quiet');
-      expect(logger.isAccumulating()).toBe(false);
-    });
-  });
-
   describe('Setter methods', () => {
     it('should update log level', () => {
-      logger.setLevel('debug');
+      Logger.configure({ level: 'debug' });
       expect(logger.getLevel()).toBe('debug');
 
-      logger.setLevel('error');
+      Logger.configure({ level: 'error' });
       expect(logger.getLevel()).toBe('error');
     });
 
     it('should update MCP mode', () => {
-      logger.setMcpMode(true);
+      Logger.configure({ isMcpMode: true });
       // Cannot directly test isMcpMode, but we can verify behavior
       // In MCP mode, only errors should be output
       // (This would require capturing console output, which is complex)
     });
 
     it('should update prefix', () => {
-      logger.enableAccumulation();
-      logger.setPrefix('TEST');
+      Logger.configure({ accumulate: true });
+      Logger.configure({ prefix: 'TEST' });
 
       logger.info('message');
 
@@ -384,23 +356,24 @@ describe('Logger', () => {
     });
 
     it('should update context', () => {
-      logger.enableAccumulation();
-      logger.setContext('runner');
+      logger.clearLogEntries();
+      Logger.configure({ accumulate: true });
 
-      logger.info('message');
+      const runnerLogger = new Logger({ context: 'runner' });
+      runnerLogger.info('message');
 
       const entries = logger.getLogEntries();
       expect(entries[0].context).toBe('runner');
     });
 
     it('should update log file', () => {
-      logger.setLogFile(testLogFile);
+      Logger.configure({ logFile: testLogFile });
       logger.info('test');
 
       expect(existsSync(testLogFile)).toBe(true);
 
       // Clear log file
-      logger.setLogFile(undefined);
+      Logger.configure({ logFile: undefined });
       if (existsSync(testLogFile)) {
         unlinkSync(testLogFile);
       }
@@ -413,7 +386,7 @@ describe('Logger', () => {
 
   describe('Backward compatibility', () => {
     it('should support all logging methods from old API', () => {
-      logger.enableAccumulation();
+      Logger.configure({ accumulate: true });
 
       // All these methods should exist and work
       logger.error('error');
@@ -427,18 +400,17 @@ describe('Logger', () => {
       expect(entries).toHaveLength(6);
     });
 
-    it('should support method chaining with setters', () => {
-      // Old API compatibility
-      logger.setLevel('debug');
-      logger.setPrefix('APP');
-      logger.setContext('test');
+    it('should support configure for global and instance settings', () => {
+      logger.clearLogEntries();
+      Logger.configure({ level: 'debug', prefix: 'APP', accumulate: true });
 
-      logger.enableAccumulation();
-      logger.info('test');
+      const testLogger = new Logger({ context: 'test' });
+      testLogger.info('test');
 
       const entries = logger.getLogEntries();
       expect(entries).toHaveLength(1);
       expect(entries[0].context).toBe('test');
+      expect(entries[0].formatted).toContain('[APP]');
     });
   });
 
@@ -460,10 +432,11 @@ describe('Logger', () => {
 
   describe('Log entry structure', () => {
     it('should create complete log entries', () => {
-      logger.enableAccumulation();
-      logger.setContext('test-context');
+      logger.clearLogEntries();
+      Logger.configure({ accumulate: true });
 
-      logger.info('test message', { extra: 'data' });
+      const testLogger = new Logger({ context: 'test-context' });
+      testLogger.info('test message', { extra: 'data' });
 
       const entries = logger.getLogEntries();
       const entry = entries[0];
@@ -479,7 +452,7 @@ describe('Logger', () => {
     });
 
     it('should format args in log entry', () => {
-      logger.enableAccumulation();
+      Logger.configure({ accumulate: true });
 
       logger.info('message', 'arg1', { key: 'value' }, 123);
 
@@ -490,6 +463,101 @@ describe('Logger', () => {
       expect(entry.formatted).toContain('arg1');
       expect(entry.formatted).toContain('{"key":"value"}');
       expect(entry.formatted).toContain('123');
+    });
+  });
+
+  describe('Logger instances', () => {
+    it('should create logger with instance-specific context', () => {
+      logger.clearLogEntries();
+      Logger.configure({ level: 'info', accumulate: true });
+
+      const mainLogger = new Logger({ context: 'main' });
+      const driverLogger = new Logger({ context: 'driver:mlx' });
+
+      mainLogger.info('main message');
+      driverLogger.info('driver message');
+
+      const entries = logger.getLogEntries();
+      expect(entries).toHaveLength(2);
+      expect(entries[0].context).toBe('main');
+      expect(entries[1].context).toBe('driver:mlx');
+    });
+
+    it('should share global configuration across all instances', () => {
+      logger.clearLogEntries();
+      Logger.configure({ level: 'error', accumulate: true, accumulateLevel: 'error' });
+
+      const logger1 = new Logger({ context: 'logger1' });
+      const logger2 = new Logger({ context: 'logger2' });
+
+      logger1.info('should not log');  // level is 'error'
+      logger1.error('should log');
+      logger2.warn('should not log');  // level is 'error'
+      logger2.error('should log 2');
+
+      const entries = logger.getLogEntries();
+      expect(entries).toHaveLength(2);
+      expect(entries[0].level).toBe('error');
+      expect(entries[0].context).toBe('logger1');
+      expect(entries[1].level).toBe('error');
+      expect(entries[1].context).toBe('logger2');
+    });
+
+    it('should share log entries across all instances', () => {
+      logger.clearLogEntries();
+      Logger.configure({ level: 'info', accumulate: true });
+
+      const logger1 = new Logger({ context: 'logger1' });
+      const logger2 = new Logger({ context: 'logger2' });
+
+      logger1.info('message 1');
+      logger2.info('message 2');
+
+      // All instances see the same log entries
+      expect(logger1.getLogEntries()).toHaveLength(2);
+      expect(logger2.getLogEntries()).toHaveLength(2);
+      expect(logger.getLogEntries()).toHaveLength(2);
+    });
+
+    it('should write to same log file from all instances', () => {
+      logger.clearLogEntries();
+      Logger.configure({ logFile: testLogFile });
+
+      const logger1 = new Logger({ context: 'logger1' });
+      const logger2 = new Logger({ context: 'logger2' });
+
+      logger1.info('message 1');
+      logger2.info('message 2');
+
+      expect(existsSync(testLogFile)).toBe(true);
+      const content = readFileSync(testLogFile, 'utf-8');
+      const lines = content.trim().split('\n');
+
+      expect(lines).toHaveLength(2);
+      const entry1 = JSON.parse(lines[0]);
+      const entry2 = JSON.parse(lines[1]);
+
+      expect(entry1.context).toBe('logger1');
+      expect(entry2.context).toBe('logger2');
+    });
+
+    it('should update global config dynamically for all instances', () => {
+      logger.clearLogEntries();
+      Logger.configure({ level: 'warn', accumulate: true, accumulateLevel: 'warn' });
+
+      const testLogger = new Logger({ context: 'test' });
+
+      testLogger.info('should not log');
+      testLogger.warn('should log');
+
+      expect(logger.getLogEntries()).toHaveLength(1);
+
+      // Change global config
+      Logger.configure({ level: 'info', accumulateLevel: 'info' });
+
+      testLogger.info('now should log');
+
+      expect(logger.getLogEntries()).toHaveLength(2);
     });
   });
 });
