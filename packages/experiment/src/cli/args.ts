@@ -19,6 +19,7 @@ export function parseArgs(): ExtendedExperimentOptions {
     .option('--repeat <count>', 'Number of repetitions', '1')
     .option('--evaluate', 'Enable AI-based evaluation of outputs', false)
     .option('--evaluators <names>', 'Comma-separated evaluator names (default: all)')
+    .option('--dry-run', 'Display execution plan without running the experiment', false)
     .parse();
 
   const config = program.args[0];
@@ -32,5 +33,6 @@ export function parseArgs(): ExtendedExperimentOptions {
     repeatCount: parseInt(options.repeat, 10),
     enableEvaluation: options.evaluate,
     evaluatorFilter: options.evaluators?.split(',').map((s: string) => s.trim()),
+    dryRun: options.dryRun,
   };
 }

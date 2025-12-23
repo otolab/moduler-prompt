@@ -151,6 +151,9 @@ export default {
 ### 2. Run Experiment
 
 ```bash
+# Validate configuration and display execution plan (recommended first step)
+npx modular-experiment examples/experiment.yaml --dry-run
+
 # Run with YAML config
 npx modular-experiment examples/experiment.yaml
 
@@ -389,6 +392,7 @@ Options:
   --repeat <count>        Number of repetitions (default: 1)
   --evaluate              Enable evaluation phase
   --evaluators <names>    Comma-separated evaluator names (default: all)
+  --dry-run               Display execution plan without running the experiment
 ```
 
 **Note**: All paths specified in the config file are resolved relative to the config file's directory.

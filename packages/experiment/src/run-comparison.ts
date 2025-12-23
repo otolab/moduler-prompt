@@ -17,6 +17,7 @@
  *   --repeat <count>     Number of repetitions (default: 1)
  *   --evaluate           Enable evaluation phase
  *   --evaluators <names> Comma-separated evaluator names (default: all)
+ *   --dry-run            Display execution plan without running the experiment
  */
 
 import { parseArgs } from './cli/args.js';
@@ -42,6 +43,7 @@ console.log(`Evaluation: ${options.enableEvaluation ? 'enabled' : 'disabled'}`);
 if (options.enableEvaluation) {
   console.log(`Evaluators: ${options.evaluatorFilter?.join(', ') || 'all'}`);
 }
+console.log(`Dry run: ${options.dryRun ? 'enabled (plan only)' : 'disabled'}`);
 console.log('='.repeat(80));
 console.log();
 
@@ -80,6 +82,13 @@ if (options.modelFilter) {
   modelEntries.forEach(([name, spec]: [string, any]) =>
     console.log(`  - ${name}: ${spec.model} (${spec.provider})`)
   );
+}
+
+// Warn about MLX resource usage
+const hasMLX = modelEntries.some(([_, spec]: [string, any]) => spec.provider === 'mlx');
+if (hasMLX) {
+  console.log();
+  console.log('⚠️  MLX models detected: Running multiple MLX models may consume significant system resources (CPU/Memory)');
 }
 console.log();
 
@@ -158,6 +167,16 @@ if (options.enableEvaluation) {
   evaluators.forEach(e => console.log(`  - [${e.type}] ${e.name}: ${e.description}`));
   console.log(`🔍 Evaluator model: ${modelName} (${modelSpec.provider}:${modelSpec.model})`);
   console.log();
+}
+
+// Exit if dry run
+if (options.dryRun) {
+  console.log('='.repeat(80));
+  console.log('✅ Configuration validated successfully');
+  console.log('📋 Execution plan displayed above');
+  console.log('   Remove --dry-run to execute the experiment');
+  console.log('='.repeat(80));
+  process.exit(0);
 }
 
 // Run experiment
