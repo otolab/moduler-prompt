@@ -8,6 +8,7 @@ import { compile } from '@modular-prompt/core';
 import type { AIService, ModelSpec } from '@modular-prompt/driver';
 import type { EvaluationContext, EvaluationResult } from '../types.js';
 import type { LoadedEvaluator } from '../config/dynamic-loader.js';
+import { logger } from '@modular-prompt/utils';
 
 export class EvaluatorRunner {
   constructor(
@@ -26,7 +27,7 @@ export class EvaluatorRunner {
     evaluator: LoadedEvaluator,
     context: EvaluationContext
   ): Promise<EvaluationResult> {
-    console.log(`🔍 [${evaluator.name}] Evaluating ${context.moduleName}...`);
+    logger.verbose(`Evaluating ${context.moduleName} with evaluator: ${evaluator.name}`);
 
     try {
       if (evaluator.type === 'code') {
@@ -38,7 +39,7 @@ export class EvaluatorRunner {
       }
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : String(error);
-      console.log(`🔍 [${evaluator.name}] ❌ Error: ${errorMessage}`);
+      logger.error(`Evaluation error for ${context.moduleName} (${evaluator.name}): ${errorMessage}`);
 
       return {
         evaluator: evaluator.name,
@@ -69,7 +70,7 @@ export class EvaluatorRunner {
     });
     const elapsed = Date.now() - startTime;
 
-    console.log(`🔍 [${evaluator.name}] ✅ Completed (${elapsed}ms)`);
+    logger.verbose(`Evaluation completed for ${context.moduleName} (${evaluator.name}): ${elapsed}ms`);
 
     // Close driver
     if (driver && typeof driver.close === 'function') {
@@ -104,7 +105,7 @@ export class EvaluatorRunner {
         };
       }
     } catch {
-      console.log(`🔍 [${evaluator.name}] ⚠️  Failed to parse JSON response`);
+      logger.warn(`Failed to parse JSON response for evaluator: ${evaluator.name}`);
     }
 
     // Fallback: return raw response
