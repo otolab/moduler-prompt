@@ -78,8 +78,13 @@ jobs:
         LATEST_VERSION=${LATEST_TAG#v}
         echo "Latest version: $LATEST_VERSION"
 
-        # semverの比較（npx semver使用）
-        if ! npx semver "$VERSION" -r ">$LATEST_VERSION" >/dev/null 2>&1; then
+        # semverの比較（Node.jsスクリプトを使用）
+        COMPARISON=$(node -p "
+          const semver = require('semver');
+          semver.gt('$VERSION', '$LATEST_VERSION') ? 'true' : 'false'
+        ")
+
+        if [ "$COMPARISON" != "true" ]; then
           echo "❌ Version $VERSION is not greater than $LATEST_VERSION"
           echo "New version must be greater than the latest version"
           exit 1
