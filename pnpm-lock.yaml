@@ -17,6 +17,9 @@ importers:
       '@vitest/ui':
         specifier: ^3.2.4
         version: 3.2.4(vitest@3.2.4)
+      semver:
+        specifier: ^7.7.3
+        version: 7.7.3
       typescript:
         specifier: ^5.0.0
         version: 5.9.3
