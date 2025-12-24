@@ -18,6 +18,8 @@ jobs:
     steps:
     - name: Checkout code
       uses: actions/checkout@v4
+      with:
+        fetch-depth: 0  # 全履歴を取得（タグ比較に必要）
 
     - uses: pnpm/action-setup@v4
 
