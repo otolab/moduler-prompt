@@ -32,9 +32,17 @@ jobs:
     - name: Check for changesets
       id: changesets
       run: |
-        if [ -n "$(ls -A .changeset/*.md 2>/dev/null | grep -v README.md)" ]; then
+        # コミットメッセージに [skip-changeset] が含まれている場合はスキップ
+        COMMIT_MSG=$(git log -1 --pretty=%B)
+        if [[ "$COMMIT_MSG" =~ \[skip-changeset\] ]]; then
+          echo "skip_changeset=true" >> $GITHUB_OUTPUT
+          echo "has_changesets=false" >> $GITHUB_OUTPUT
+          echo "ℹ️ Skipping changeset check (found [skip-changeset] in commit message)"
+        elif [ -n "$(ls -A .changeset/*.md 2>/dev/null | grep -v README.md)" ]; then
+          echo "skip_changeset=false" >> $GITHUB_OUTPUT
           echo "has_changesets=true" >> $GITHUB_OUTPUT
         else
+          echo "skip_changeset=false" >> $GITHUB_OUTPUT
           echo "has_changesets=false" >> $GITHUB_OUTPUT
         fi
 
@@ -70,24 +78,66 @@ jobs:
           git push
         fi
 
+    - name: Update root version only (when skipping changeset)
+      if: steps.changesets.outputs.skip_changeset == 'true'
+      run: |
+        git config --global user.email "github-actions[bot]@users.noreply.github.com"
+        git config --global user.name "github-actions[bot]"
+
+        # ブランチ名からバージョンを抽出してrootを更新
+        BRANCH_NAME="${GITHUB_REF#refs/heads/}"
+        if [[ "$BRANCH_NAME" =~ ^release/v?([0-9]+\.[0-9]+\.[0-9]+)$ ]]; then
+          VERSION="${BASH_REMATCH[1]}"
+          node -e "
+            const fs = require('fs');
+            const pkg = JSON.parse(fs.readFileSync('package.json', 'utf8'));
+            pkg.version = '$VERSION';
+            fs.writeFileSync('package.json', JSON.stringify(pkg, null, 2) + '\n');
+          "
+          echo "Updated root package.json to version $VERSION (changeset skipped)"
+
+          # 変更をコミット・push
+          if [ -n "$(git status --porcelain)" ]; then
+            git add package.json
+            git commit -m "chore: update root version to $VERSION [skip-changeset]"
+            git push
+          fi
+        else
+          echo "⚠️ Invalid branch name format: $BRANCH_NAME"
+          exit 1
+        fi
+
     - name: Create or update PR
-      if: steps.changesets.outputs.has_changesets == 'true'
+      if: steps.changesets.outputs.has_changesets == 'true' || steps.changesets.outputs.skip_changeset == 'true'
       env:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       run: |
         VERSION=$(node -p "require('./package.json').version")
         BRANCH_NAME="${GITHUB_REF#refs/heads/}"
+        SKIP_CHANGESET="${{ steps.changesets.outputs.skip_changeset }}"
 
         # PRが既に存在するか確認
         PR_NUMBER=$(gh pr list --head "$BRANCH_NAME" --json number -q '.[0].number')
 
         if [ -z "$PR_NUMBER" ]; then
-          # 新規PR作成
-          gh pr create \
-            --base main \
-            --head "$BRANCH_NAME" \
-            --title "Release v$VERSION" \
-            --body "## 🚀 Release v$VERSION
+          # PRボディを生成
+          if [ "$SKIP_CHANGESET" = "true" ]; then
+            PR_BODY="## 🚀 Release v$VERSION
+
+        このPRはrelease/$VERSIONブランチからの自動生成です。
+
+        ### 変更内容
+        - ルートパッケージバージョンの更新のみ
+        - ⚠️ changesetスキップモード
+
+        ### マージ後の動作
+        - mainブランチへのマージ時に自動的にnpmへ公開されます
+
+        ### 確認事項
+        - [ ] バージョン番号が正しいか
+        - [ ] すべてのテストがパスしているか"
+          else
+            PR_BODY="## 🚀 Release v$VERSION
 
         このPRはrelease/$VERSIONブランチからの自動生成です。
 
@@ -102,13 +152,22 @@ jobs:
         - [ ] CHANGELOGの内容が正しいか
         - [ ] バージョン番号が正しいか
         - [ ] すべてのテストがパスしているか"
+          fi
+
+          # 新規PR作成
+          gh pr create \
+            --base main \
+            --head "$BRANCH_NAME" \
+            --title "Release v$VERSION" \
+            --body "$PR_BODY"
         else
           echo "PR #$PR_NUMBER already exists for $BRANCH_NAME"
         fi
 
     - name: No changesets found
-      if: steps.changesets.outputs.has_changesets == 'false'
+      if: steps.changesets.outputs.has_changesets == 'false' && steps.changesets.outputs.skip_changeset == 'false'
       run: |
         echo "⚠️ .changesetディレクトリにchangesetファイルが見つかりません"
         echo "リリース前に 'npx changeset' で変更内容を記録してください"
+        echo "または、コミットメッセージに [skip-changeset] を含めてchangesetをスキップしてください"
         exit 1
