@@ -1,5 +1,13 @@
 # @modular-prompt/driver
 
+## 0.5.0
+
+### Minor Changes
+
+- 9a7660e: ドライバーの defaultOptions を動的に変更可能にする getter/setter を追加
+
+  全てのドライバー（OpenAI、Anthropic、VertexAI、GoogleGenAI、MLX）で defaultOptions プロパティに getter/setter を実装し、ドライバーインスタンス生成後に設定を動的に変更できるようにしました。これにより、ModelSpec.maxOutputTokens を使用して defaultOptions.maxTokens を設定するなどのユースケースが可能になります。
+
 ## 0.4.7
 
 ### Patch Changes
