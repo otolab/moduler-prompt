@@ -50,7 +50,15 @@ export interface OpenAIQueryOptions extends QueryOptions {
 export class OpenAIDriver implements AIDriver {
   private client: OpenAI;
   private defaultModel: string;
-  private defaultOptions: Partial<OpenAIQueryOptions>;
+  private _defaultOptions: Partial<OpenAIQueryOptions>;
+
+  get defaultOptions(): Partial<OpenAIQueryOptions> {
+    return this._defaultOptions;
+  }
+
+  set defaultOptions(value: Partial<OpenAIQueryOptions>) {
+    this._defaultOptions = value;
+  }
 
   constructor(config: OpenAIDriverConfig = {}) {
     this.client = new OpenAI({
@@ -60,7 +68,7 @@ export class OpenAIDriver implements AIDriver {
     });
 
     this.defaultModel = config.model || 'gpt-4o-mini';
-    this.defaultOptions = config.defaultOptions || {};
+    this._defaultOptions = config.defaultOptions || {};
   }
 
   /**

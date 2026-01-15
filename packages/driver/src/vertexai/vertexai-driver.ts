@@ -58,8 +58,16 @@ export class VertexAIDriver implements AIDriver {
   private vertexAI: VertexAI;
   private defaultModel: string;
   private defaultTemperature: number;
-  private defaultOptions: Partial<VertexAIQueryOptions>;
-  
+  private _defaultOptions: Partial<VertexAIQueryOptions>;
+
+  get defaultOptions(): Partial<VertexAIQueryOptions> {
+    return this._defaultOptions;
+  }
+
+  set defaultOptions(value: Partial<VertexAIQueryOptions>) {
+    this._defaultOptions = value;
+  }
+
   constructor(config: VertexAIDriverConfig = {}) {
     const project = config.project || process.env.GOOGLE_CLOUD_PROJECT || process.env.ANTHROPIC_VERTEX_PROJECT_ID;
     const location = config.location || process.env.GOOGLE_CLOUD_REGION || process.env.CLOUD_ML_REGION || 'us-central1';
@@ -71,7 +79,7 @@ export class VertexAIDriver implements AIDriver {
     this.vertexAI = new VertexAI({ project, location });
     this.defaultModel = config.model || 'gemini-2.0-flash-001';
     this.defaultTemperature = config.temperature ?? 0.05;
-    this.defaultOptions = config.defaultOptions || {};
+    this._defaultOptions = config.defaultOptions || {};
   }
   
   /**

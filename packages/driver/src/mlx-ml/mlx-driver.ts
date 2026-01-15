@@ -96,15 +96,22 @@ function createStreamIterable(stream: Readable): {
 export class MlxDriver implements AIDriver {
   private process: MlxProcess;
   private model: string;
-  private defaultOptions: Partial<MlxMlModelOptions>;
+  private _defaultOptions: Partial<MlxMlModelOptions>;
   private runtimeInfo: MlxRuntimeInfo | null = null;
   private modelProcessor;
   private formatterOptions: FormatterOptions;
-  
-  
+
+  get defaultOptions(): Partial<MlxMlModelOptions> {
+    return this._defaultOptions;
+  }
+
+  set defaultOptions(value: Partial<MlxMlModelOptions>) {
+    this._defaultOptions = value;
+  }
+
   constructor(config: MlxDriverConfig) {
     this.model = config.model;
-    this.defaultOptions = config.defaultOptions || {};
+    this._defaultOptions = config.defaultOptions || {};
     this.formatterOptions = config.formatterOptions || {};
     this.process = new MlxProcess(config.model);
     this.modelProcessor = createModelSpecificProcessor(config.model);
