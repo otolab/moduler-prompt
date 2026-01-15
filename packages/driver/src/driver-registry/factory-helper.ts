@@ -6,6 +6,7 @@
 import type { DriverRegistry } from './registry.js';
 import type { ModelSpec, DriverProvider } from './types.js';
 import type { AIDriver } from '../types.js';
+import { logger } from '@modular-prompt/utils';
 
 // 個別ドライバーのインポート（型安全性のため）
 import type { MlxDriver } from '../mlx-ml/mlx-driver.js';
@@ -15,6 +16,36 @@ import type { VertexAIDriver } from '../vertexai/vertexai-driver.js';
 import type { OllamaDriver } from '../ollama/ollama-driver.js';
 import type { EchoDriver } from '../echo-driver.js';
 import type { TestDriver } from '../test-driver.js';
+
+/**
+ * defaultOptionsのmaxTokensをModelSpec.maxOutputTokensで制限
+ *
+ * @param spec - モデル仕様
+ * @param defaultOptions - デフォルトオプション（spec.metadataから取得）
+ * @returns 検証・制限されたdefaultOptions
+ */
+function validateAndClampMaxTokens(
+  spec: ModelSpec,
+  defaultOptions: any
+): any {
+  if (!spec.maxOutputTokens || !defaultOptions?.maxTokens) {
+    return defaultOptions;
+  }
+
+  if (defaultOptions.maxTokens > spec.maxOutputTokens) {
+    logger.warn(
+      `maxTokens (${defaultOptions.maxTokens}) exceeds model limit ` +
+      `(${spec.maxOutputTokens}) for model "${spec.model}". ` +
+      `Clamping to ${spec.maxOutputTokens}.`
+    );
+    return {
+      ...defaultOptions,
+      maxTokens: spec.maxOutputTokens
+    };
+  }
+
+  return defaultOptions;
+}
 
 /**
  * 標準ドライバーのファクトリー関数を登録
@@ -40,7 +71,10 @@ export function registerStandardDriverFactories(
     registry.registerFactory('mlx', (spec: ModelSpec) => {
       return new Driver({
         model: spec.model,
-        defaultOptions: spec.metadata as Partial<import('../mlx-ml/types.js').MlxMlModelOptions>
+        defaultOptions: validateAndClampMaxTokens(
+          spec,
+          spec.metadata
+        ) as Partial<import('../mlx-ml/types.js').MlxMlModelOptions>
       });
     });
   }
@@ -52,7 +86,10 @@ export function registerStandardDriverFactories(
       return new Driver({
         apiKey: process.env.OPENAI_API_KEY || '',
         model: spec.model,
-        defaultOptions: spec.metadata as Record<string, unknown>
+        defaultOptions: validateAndClampMaxTokens(
+          spec,
+          spec.metadata
+        ) as Record<string, unknown>
       });
     });
   }
@@ -64,7 +101,10 @@ export function registerStandardDriverFactories(
       return new Driver({
         apiKey: process.env.ANTHROPIC_API_KEY || '',
         model: spec.model,
-        defaultOptions: spec.metadata as Record<string, unknown>
+        defaultOptions: validateAndClampMaxTokens(
+          spec,
+          spec.metadata
+        ) as Record<string, unknown>
       });
     });
   }
@@ -77,7 +117,10 @@ export function registerStandardDriverFactories(
         project: process.env.VERTEX_AI_PROJECT,
         location: process.env.VERTEX_AI_LOCATION || 'us-central1',
         model: spec.model,
-        defaultOptions: spec.metadata as Record<string, unknown>
+        defaultOptions: validateAndClampMaxTokens(
+          spec,
+          spec.metadata
+        ) as Record<string, unknown>
       });
     });
   }
@@ -89,7 +132,10 @@ export function registerStandardDriverFactories(
       return new Driver({
         baseURL: 'http://localhost:11434',
         model: spec.model,
-        defaultOptions: spec.metadata as Record<string, unknown>
+        defaultOptions: validateAndClampMaxTokens(
+          spec,
+          spec.metadata
+        ) as Record<string, unknown>
       });
     });
   }

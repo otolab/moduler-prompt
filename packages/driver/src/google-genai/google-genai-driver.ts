@@ -53,7 +53,15 @@ export class GoogleGenAIDriver implements AIDriver {
   private client: GoogleGenAI;
   private defaultModel: string;
   private defaultTemperature: number;
-  private defaultOptions: Partial<GoogleGenAIQueryOptions>;
+  private _defaultOptions: Partial<GoogleGenAIQueryOptions>;
+
+  get defaultOptions(): Partial<GoogleGenAIQueryOptions> {
+    return this._defaultOptions;
+  }
+
+  set defaultOptions(value: Partial<GoogleGenAIQueryOptions>) {
+    this._defaultOptions = value;
+  }
 
   constructor(config: GoogleGenAIDriverConfig = {}) {
     const apiKey = config.apiKey || process.env.GOOGLE_GENAI_API_KEY;
@@ -65,7 +73,7 @@ export class GoogleGenAIDriver implements AIDriver {
     this.client = new GoogleGenAI({ apiKey });
     this.defaultModel = config.model || 'gemma-3-27b';
     this.defaultTemperature = config.temperature ?? 0.7;
-    this.defaultOptions = config.defaultOptions || {};
+    this._defaultOptions = config.defaultOptions || {};
   }
 
   /**

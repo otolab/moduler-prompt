@@ -30,7 +30,15 @@ export interface AnthropicQueryOptions extends QueryOptions {
 export class AnthropicDriver implements AIDriver {
   private client: Anthropic;
   private defaultModel: string;
-  private defaultOptions: Partial<AnthropicQueryOptions>;
+  private _defaultOptions: Partial<AnthropicQueryOptions>;
+
+  get defaultOptions(): Partial<AnthropicQueryOptions> {
+    return this._defaultOptions;
+  }
+
+  set defaultOptions(value: Partial<AnthropicQueryOptions>) {
+    this._defaultOptions = value;
+  }
 
   constructor(config: AnthropicDriverConfig = {}) {
     this.client = new Anthropic({
@@ -38,7 +46,7 @@ export class AnthropicDriver implements AIDriver {
     });
 
     this.defaultModel = config.model || 'claude-3-5-sonnet-20241022';
-    this.defaultOptions = config.defaultOptions || {};
+    this._defaultOptions = config.defaultOptions || {};
   }
 
   /**
